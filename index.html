@@ -13,15 +13,20 @@
             justify-content: center;
             height: 100vh;
             margin: 0;
+            overflow: hidden; /* Prevents page extension */
+            background-image: url('background.jpg'); /* Replace with your image path */
+            background-size: cover; /* Adjusts the image to cover the entire background */
+            background-repeat: no-repeat; /* Prevents the image from repeating */
+            background-position: center; /* Centers the background image */
         }
         #countdown {
             font-family: 'Arial Black', sans-serif;
-            font-size: 22px;
+            font-size: 100px;
             text-align: center;
         }
         #bee {
             position: absolute;
-            width: 50px;
+            width: 70px;
             animation: fly 5s linear infinite;
         }
     
