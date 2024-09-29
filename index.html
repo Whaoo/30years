@@ -5,24 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Countdown Timer</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
         #countdown {
-            font-size: 2em;
-            margin-top: 20px;
+            font-family: 'Arial Black', sans-serif;
+            font-size: 22px;
+            text-align: center;
         }
         #bee {
             position: absolute;
-            bottom: 10px;
+            width: 50px;
             animation: fly 5s linear infinite;
         }
+  
         @keyframes fly {
-            0% { left: 0; }
-            50% { left: 50%; }
-            100% { left: 100%; }
+            0% { left: 0; top: 50%; }
+            100% { left: 100%; top: 50%; }
         }
     </style>
 </head>
 <body>
-    <h1>Countdown to Target Date</h1>
     <div id="countdown"></div>
     <img id="bee" src="bee.png" alt="Flying Bee">
     <script src="script.js"></script>
