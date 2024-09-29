@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Countdown Timer</title>
+    <style>
+        #countdown {
+            font-size: 2em;
+            margin-top: 20px;
+        }
+        #bee {
+            position: absolute;
+            bottom: 10px;
+            animation: fly 5s infinite;
+        }
+        @keyframes fly {
+            0% { left: 0; }
+            50% { left: 50%; }
+            100% { left: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Countdown to Target Date</h1>
+    <div id="countdown"></div>
+    <img id="bee" src="bee.png" alt="Flying Bee">
+    <script src="script.js"></script>
+</body>
+</html>
