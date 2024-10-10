@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>30 years in</title>
-    <link rel="icon" href="favicon.ico" type="image/x-icon"> <!-- Add this line for the favicon -->
+    <title>44 anniversaires</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,35 +13,89 @@
             justify-content: center;
             height: 100vh;
             margin: 0;
-            overflow: hidden; /* Prevents page extension */
-            background-color: #121212; /* Dark background color */
-            color: #ffffff; /* Light text color */
-            background-image: url('background.jpg'); /* Replace with your image path */
-            background-size: cover; /* Adjusts the image to cover the entire background */
-            background-repeat: no-repeat; /* Prevents the image from repeating */
-            background-position: center; /* Centers the background image */
+            overflow: hidden;
+            background-color: #121212;
+            color: #ffffff;
+            background-image: url('background.jpg');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
         }
-        #countdown {
+        #main-countdown {
             font-family: 'Arial Black', sans-serif;
-            font-size: 100px;
+            font-size: 150px;
             text-align: center;
-            color: #ffffff; /* Light text color */
+            color: #ffffff;
+        }
+        #shortest-countdowns {
+            font-family: 'Arial Black', sans-serif;
+            font-size: 20px;
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        .countdown {
+            text-align: center;
+            margin: 5px 0;
+        }
+        .countdown-time {
+            font-size: 20px;
+        }
+        .countdown-name {
+            font-size: 12px;
+        }
+        .main-countdown-name {
+        font-size: 50px; 
         }
         #bee {
             position: absolute;
-            width: 100px;
-            animation: fly 4s linear infinite;
+            bottom: 10px;
+            left: 10px;
+            width: 70px;
         }
-    
-        @keyframes fly {
-            0% { left: -50px; top: 50%; }
-            100% { left: 100%; top: 50%; }
+        #greeting {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(255, 255, 255, 0.8); /* Optional: Add a background for better readability */
+            color: #000000;
+            padding: 10px; /* Optional: Add some padding */
+            border-radius: 10px; /* Optional: Add rounded corners */
         }
+        .weather-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .bee {
+            margin-right: 10px;
+        }
+
+        .weather-details {
+            display: flex;
+            flex-direction: column;
+        }
+        #weather-emote {
+            position: fixed;
+            bottom: 0;
+            left: 90px; /* Adjust this value based on the width of the bee image */
+            padding: 10px; /* Optional: Add padding */
+            background-color: rgba(255, 255, 255, 0.8); /* Optional: Add a background for better readability */
+            color: #000000;
+            border-radius: 10px; /* Optional: Add border radius */
+        }
+
     </style>
 </head>
 <body>
-    <div id="countdown"></div>
+    <div id="greeting"></div>
+    <div id="main-countdown"></div>
+    <div id="shortest-countdowns"></div>
     <img id="bee" src="bee.png" alt="Flying Bee">
+    <div id="weather-emote"></div>
     <script src="script.js"></script>
 </body>
 </html>
