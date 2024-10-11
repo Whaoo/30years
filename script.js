@@ -1,8 +1,19 @@
 const birthdays = [
-    { name: 'John', date: '11-07' }, // 5th April
-    { name: 'Kevin', date: '15-07' }, // 15th July
-    { name: 'Arthur', date: '11-11' }, // 11th November
-    { name: 'Ben', date: '11-10' }    // 11th October
+    { name: 'Nathalie', date: '13-11' }, // 13th November
+    { name: 'Eddy', date: '12-04' }, // 12th April
+    { name: 'Théophane', date: '16-03' }, // 16th March
+    { name: 'Alice', date: '10-12' }, // 10th December
+    { name: 'Aziz', date: '05-10' }, // 5th October
+    { name: 'Dorian', date: '01-07' }, // 1st July
+    { name: 'Hugo', date: '07-08' }, // 7th August
+    { name: 'Julian', date: '15-08' }, // 15th August
+    { name: 'Louis', date: '19-09' }, // 19th September
+    { name: 'Mélissa', date: '16-09' }, // 16th September
+    { name: 'Noémie', date: '14-06' }, // 14th June
+    { name: 'Clément', date: '30-09' }, // 30th September
+    { name: 'Sophie', date: '02-07' }, // 02th July
+    { name: 'Sarah', date: '27-12' } // 30th September
+
 ];
 
 function getNextBirthday(dateStr) {
