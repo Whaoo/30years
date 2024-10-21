@@ -183,6 +183,12 @@ async function displayWeatherEmote() {
         <div>${day} ${date}. 😊</div>
         <div>Matin ${morningEmote}, Après-midi ${afternoonEmote}, Soir ${eveningEmote}</div>
     `;
+
+    // Update the greeting element
+    const greetingElement2 = document.getElementById('greeting2');
+        greetingElement.innerHTML = `
+        <div>Bravo aux coureuses de la parisienne 🎉</div>
+    `;
 }
 
 // Function to fetch weather data from Open-Meteo API
