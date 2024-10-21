@@ -62,6 +62,8 @@ function formatTime(ms) {
         return `${min}min`;
     } else if (days === 0 && hours > 0) {
         return `${hours}h`;
+    } else if (days >= 0 && hours > 0) {
+        return `${days}+1 j`;
     }
     return `${days}j`;
 }
