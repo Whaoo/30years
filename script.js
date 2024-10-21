@@ -12,8 +12,18 @@ const birthdays = [
     { name: 'Noémie', date: '14-06' }, // 14th June
     { name: 'Clément', date: '30-09' }, // 30th September
     { name: 'Sophie', date: '02-07' }, // 02th July
-    { name: 'Sarah', date: '27-12' } // 30th September
-
+    { name: 'Sarah', date: '27-12' }, // 
+    { name: 'Benjamin', date: '29-04' }, // 
+    { name: 'Paul Henri', date: '08-05' }, // 
+    { name: 'Pierre', date: '17-05' }, // 
+    { name: 'Claire', date: '19-08' }, // 
+    { name: 'Guillaume', date: '31-10' }, // 
+    { name: 'Soizic', date: '05-12' }, // 
+    { name: 'Thomas', date: '30-04' }, // 
+    { name: 'Laetitia', date: '17-06' }, // 
+    { name: 'Jeremy', date: '25-01' }, // 
+    { name: 'Sylvain', date: '25-11' }, // 
+    { name: 'Thibault', date: '03-12' } // 
 ];
 
 function getNextBirthday(dateStr) {
@@ -53,7 +63,7 @@ function formatTime(ms) {
     } else if (days === 0 && hours > 0) {
         return `${hours}h`;
     }
-    return `${days}j ${hours}h`;
+    return `${days}j`;
 }
 
 function updateCountdowns() {
@@ -169,7 +179,7 @@ async function displayWeatherEmote() {
     const date = today.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 
     greetingElement.innerHTML = `
-        <div>Bonjour, nous sommes le ${day} ${date}. 😊</div>
+        <div>${day} ${date}. 😊</div>
         <div>Matin ${morningEmote}, Après-midi ${afternoonEmote}, Soir ${eveningEmote}</div>
     `;
 }
