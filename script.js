@@ -186,7 +186,7 @@ async function displayWeatherEmote() {
 
     // Update the greeting element
     const greetingElement2 = document.getElementById('greeting2');
-        greetingElement.innerHTML = `
+        greetingElement2.innerHTML = `
         <div>Bravo aux coureuses de la parisienne 🎉</div>
     `;
 }
