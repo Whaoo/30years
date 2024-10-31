@@ -23,7 +23,8 @@ const birthdays = [
     { name: 'Laetitia', date: '17-06' }, // 
     { name: 'Jeremy', date: '25-01' }, // 
     { name: 'Sylvain', date: '25-11' }, // 
-    { name: 'Thibault', date: '03-12' } // 
+    { name: 'Thibault', date: '03-12' }, // 
+    { name : 'Khaled', date : '17-08'}   
 ];
 
 function getNextBirthday(dateStr) {
