@@ -10,7 +10,7 @@ const birthdays = [
     { name: 'Louis', date: '19-09' }, // 19th September
     { name: 'Mélissa', date: '16-09' }, // 16th September
     { name: 'Noémie', date: '14-06' }, // 14th June
-    { name: 'Clément', date: '30-09' }, // 30th September
+    { name: 'Clément', date: '30-01' }, // 30th January
     { name: 'Sophie', date: '02-07' }, // 02th July
     { name: 'Sarah', date: '27-12' }, // 
     { name: 'Benjamin', date: '29-04' }, // 
