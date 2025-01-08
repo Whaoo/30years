@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Les anniversaires</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><text y=%2222%22 font-size=%2222%22>🎂</text></svg>">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,75 +15,68 @@
             height: 100vh;
             margin: 0;
             overflow: hidden;
-            /*background-color: #F75F1C;*/
             color: #ffffff;
-            background-image: url('dalle3.webp');
+            background-image: url('wall2.jpg');
             background-size: cover;
             background-repeat: no-repeat;
             background-position: center;
         }
         #main-countdown {
             font-family: 'Arial Black', sans-serif;
-            font-size: 150px;
+            font-size: 10vw;
             text-align: center;
             color: #ffffff;
         }
         #shortest-countdowns {
             font-family: 'Arial Black', sans-serif;
-            font-size: 20px;
+            font-size: 2vw;
             position: absolute;
-            bottom: 40px;
-            right: 40px;
+            bottom: 4vh;
+            right: 4vw;
             display: flex;
             flex-direction: column;
             align-items: flex-end;
         }
         .countdown {
             text-align: center;
-            margin: 5px 0;
+            margin: 0.5vh 0;
         }
         .countdown-time {
-            font-size: 20px;
+            font-size: 2vw;
         }
         .countdown-name {
-            font-size: 12px;
+            font-size: 1.2vw;
         }
         .main-countdown-name {
-        font-size: 50px; 
+            font-size: 5vw;
         }
         #bee {
             position: absolute;
-            bottom: 10px;
-            left: 10px;
-            width: 70px;
+            bottom: 1vh;
+            left: 1vw;
+            width: 7vw;
+        }
+        #greeting, #greeting2 {
+            font-family: 'Arial Black', sans-serif;
+            font-size: 3vw;
+            position: absolute;
+            top: 1vh;
+            color: #ffffff;
+            padding: 1vh;
         }
         #greeting {
-            font-family: 'Arial Black', sans-serif;
-            font-size: 30px;
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            color: #ffffff;
-            padding: 10px; /* Optional: Add some padding */
+            left: 1vw;
         }
         #greeting2 {
-            font-family: 'Arial Black', sans-serif;
-            font-size: 30px;
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            color: #ffffff;
-            padding: 10px; /* Optional: Add some padding */
+            right: 1vw;
         }
         .weather-info {
             display: flex;
             align-items: center;
         }
-
         .bee {
-            margin-right: 10px;
+            margin-right: 1vw;
         }
-
         .weather-details {
             display: flex;
             flex-direction: column;
@@ -90,20 +84,81 @@
         #weather-emote {
             position: fixed;
             bottom: 0;
-            left: 90px; /* Adjust this value based on the width of the bee image */
-            padding: 10px; /* Optional: Add padding */
-            background-color: rgba(255, 255, 255, 0.8); /* Optional: Add a background for better readability */
+            left: 9vw;
+            padding: 1vh;
+            background-color: rgba(255, 255, 255, 0.8);
             color: #000000;
-            border-radius: 10px; /* Optional: Add border radius */
+            border-radius: 1vh;
         }
 
+        @media (max-width: 768px) {
+            #main-cou
+    ntdown {
+                font-size: 12vw;
+            }
+            .main-countdown-name {
+                font-size: 6vw;
+            }
+            #greeting, #greeting2 {
+                font-size: 4vw;
+            }
+            #shortest-countdowns {
+                font-size: 3vw;
+                bottom: 5vh;
+                right: 5vw;
+            }
+            .countdown-time {
+                font-size: 3vw;
+            }
+            .countdown-name {
+                font-size: 2vw;
+            }
+            #bee {
+                width: 10vw;
+            }
+            #weather-emote {
+                left: 12vw;
+                font-size: 3vw;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #main-countdown {
+                font-size: 15vw;
+            }
+            .main-countdown-name {
+                font-size: 8vw;
+            }
+            #greeting, #greeting2 {
+                font-size: 5vw;
+            }
+            #shortest-countdowns {
+                font-size: 4vw;
+                bottom: 6vh;
+                right: 6vw;
+            }
+            .countdown-time {
+                font-size: 4vw;
+            }
+            .countdown-name {
+                font-size: 3vw;
+            }
+            #bee {
+                width: 12vw;
+            }
+            #weather-emote {
+                left: 15vw;
+                font-size: 4vw;
+            }
+        }
     </style>
 </head>
 <body>
     <div id="greeting"></div>
+    <div id="greeting2"></div>
     <div id="main-countdown"></div>
     <div id="shortest-countdowns"></div>
-    <img id="bee" src="santa.png" alt="Flying Bee">
+    <img id="bee" src="skier.png" alt="Ski person">
     <div id="weather-emote"></div>
     <script src="script.js"></script>
 </body>

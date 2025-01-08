@@ -26,6 +26,7 @@ const birthdays = [
     { name: 'Thibault', date: '03-12' }, // 
     { name : 'Khaled', date : '17-08'},
     { name : 'Brieuc', date : '26-03'},
+    { name : 'Aicha', date : '14-07'}
 ];
 
 function getNextBirthday(dateStr) {
@@ -147,9 +148,16 @@ function getFrenchDayNames() {
     return frenchDays;
 }
 
+function getNextThursday() {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const daysUntilThursday = (4 - dayOfWeek + 7) % 7;
+    const nextThursday = new Date(today);
+    nextThursday.setDate(today.getDate() + daysUntilThursday);
+    return nextThursday;
+}
+
 async function displayWeatherEmote() {
-
-
     const { hourlyData, dailyData } = await fetchWeather();
 
     const morningEmote = getWeatherEmote(hourlyData.hourly.weathercode[8]); // Example: 6 AM
@@ -162,6 +170,15 @@ async function displayWeatherEmote() {
 
     // Get French day names
     const frenchDays = getFrenchDayNames();
+
+    // Get the next Thursday
+    const nextThursday = getNextThursday();
+
+    // Fetch weather data for the next Thursday between 12 and 14h
+    const dateStr = nextThursday.toISOString().split('T')[0];
+    const thursdayWeatherResponse = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=48.91887379083734&longitude=2.3525760991500366&timezone=Europe/Berlin&hourly=weathercode&start_date=${dateStr}&end_date=${dateStr}`);
+    const thursdayWeatherData = await thursdayWeatherResponse.json();
+    const thursdayWeatherEmote = getWeatherThursday(thursdayWeatherData.hourly.weathercode[13]);
 
     // Update the weather emote element
     const weatherEmoteElement = document.getElementById('weather-emote');
@@ -186,10 +203,10 @@ async function displayWeatherEmote() {
         <div>Matin ${morningEmote}, Après-midi ${afternoonEmote}, Soir ${eveningEmote}</div>
     `;
 
-    // Update the greeting element
+    // Update the greeting element to display weather for the next Thursday
     const greetingElement2 = document.getElementById('greeting2');
     greetingElement2.innerHTML = `
-        <div>Météo running dès demain.</div>
+        <div>🏃: ${thursdayWeatherEmote}</div>
     `;
 }
 
@@ -237,6 +254,16 @@ function getWeatherEmote(weatherCode) {
         99: '⛈️', // Thunderstorm with heavy hail
     };
     return weatherEmotes[weatherCode] || '❓';
+}
+
+function getWeatherThursday(weatherCode12, weatherCode13) {
+    let thursdayWeatherEmote;
+    if ((weatherCode12 >= 0 && weatherCode12 <= 56) && (weatherCode13 >= 0 && weatherCode13 <= 56)) {
+        thursdayWeatherEmote = '✅';
+    } else {
+        thursdayWeatherEmote = '❌'; 
+    }
+    return thursdayWeatherEmote;
 }
 
 // Call the function to display weather emotes
