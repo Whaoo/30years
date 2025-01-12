@@ -16,10 +16,24 @@
             margin: 0;
             overflow: hidden;
             color: #ffffff;
-            background-image: url('wall2.jpg');
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-position: center;
+            position: relative;
+        }
+        .iframe-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: -1;
         }
         #main-countdown {
             font-family: 'Arial Black', sans-serif;
@@ -154,6 +168,10 @@
     </style>
 </head>
 <body>
+    <div class="iframe-container">
+        <iframe src="https://www.skaping.com/les-sybelles/ouillon" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>
+    </div>
+    <div class="overlay"></div>
     <div id="greeting"></div>
     <div id="greeting2"></div>
     <div id="main-countdown"></div>

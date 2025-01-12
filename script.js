@@ -110,7 +110,7 @@ function updateCountdowns() {
         mainCountdown.innerHTML = `
             <div class="main-countdown-time">${formatTime(mainTime)}</div>
             <div class="main-countdown-name">${groupedCountdowns[mainTime].join(' & ')}</div>
-        `;
+            `;
     }
 
     // Display the shortest countdowns
