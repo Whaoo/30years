@@ -268,3 +268,18 @@ function getWeatherThursday(weatherCode12, weatherCode13) {
 
 // Call the function to display weather emotes
 displayWeatherEmote();
+
+//function refreshIframe() {
+//    const iframe = document.querySelector('.iframe-container iframe');
+   // const currentSrc = iframe.src;
+    // Add a timestamp to force refresh
+    //iframe.src = currentSrc.split('?')[0] + '?t=' + new Date().getTime();
+//}
+
+// Refresh every 45 minutes (45 * 60 * 1000 milliseconds)
+//setInterval(refreshIframe, 45 * 60 * 1000);
+
+// Refresh entire page every 45 minutes
+setInterval(() => {
+    window.location.reload();
+}, 45 * 60 * 1000);
