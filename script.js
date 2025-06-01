@@ -266,18 +266,22 @@ function getWeatherThursday(weatherCode12, weatherCode13) {
     return thursdayWeatherEmote;
 }
 
+// --- Background image auto-refresh ---
+function refreshBackgroundImage() {
+    const bgDiv = document.querySelector('.background');
+    if (bgDiv) {
+        const baseUrl = 'https://www.spotazores.com/camaras/PIXSRQ02/VGAcurrent.jpg';
+        const urlWithTimestamp = `${baseUrl}?t=${Date.now()}`;
+        bgDiv.style.backgroundImage = `url('${urlWithTimestamp}')`;
+    }
+}
+// Initial load
+refreshBackgroundImage();
+// Refresh every hour (60 * 60 * 1000 ms)
+setInterval(refreshBackgroundImage, 60 * 60 * 1000);
+
 // Call the function to display weather emotes
 displayWeatherEmote();
-
-//function refreshIframe() {
-//    const iframe = document.querySelector('.iframe-container iframe');
-   // const currentSrc = iframe.src;
-    // Add a timestamp to force refresh
-    //iframe.src = currentSrc.split('?')[0] + '?t=' + new Date().getTime();
-//}
-
-// Refresh every 45 minutes (45 * 60 * 1000 milliseconds)
-//setInterval(refreshIframe, 45 * 60 * 1000);
 
 // Refresh entire page every 45 minutes
 setInterval(() => {

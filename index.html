@@ -18,12 +18,15 @@
             color: #ffffff;
             position: relative;
         }
-        .iframe-container {
+        .background {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('https://www.spotazores.com/camaras/PIXSRQ02/VGAcurrent.jpg');
+            background-size: cover;
+            background-position: center;
             z-index: -2;
         }
         .overlay {
@@ -106,8 +109,7 @@
         }
 
         @media (max-width: 768px) {
-            #main-cou
-    ntdown {
+            #main-countdown {
                 font-size: 12vw;
             }
             .main-countdown-name {
@@ -168,15 +170,13 @@
     </style>
 </head>
 <body>
-    <div class="iframe-container">
-        <iframe src="https://www.skaping.com/les-sybelles/ouillon" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>
-    </div>
+    <div class="background"></div>
     <div class="overlay"></div>
     <div id="greeting"></div>
     <div id="greeting2"></div>
     <div id="main-countdown"></div>
     <div id="shortest-countdowns"></div>
-    <img id="bee" src="skier.png" alt="Ski person">
+    <img id="bee" src="./old/images/bee.png" alt="bee">
     <div id="weather-emote"></div>
     <script src="script.js"></script>
 </body>
