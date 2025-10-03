@@ -3,7 +3,7 @@ const birthdays = [
     { name: 'Eddy', date: '12-04' }, // 12th April
     { name: 'Théophane', date: '16-03' }, // 16th March
     { name: 'Alice', date: '10-12' }, // 10th December
-    { name: 'Aziz', date: '05-10' }, // 5th October
+    { name: 'Adele', date: '07-08' },
     { name: 'Dorian', date: '01-07' }, // 1st July
     { name: 'Hugo', date: '07-08' }, // 7th August
     { name: 'Julian', date: '15-08' }, // 15th August
@@ -24,7 +24,7 @@ const birthdays = [
     { name: 'Jeremy', date: '25-01' }, // 
     { name: 'Sylvain', date: '25-11' }, // 
     { name: 'Thibault', date: '03-12' }, // 
-    { name : 'Khaled', date : '17-08'},
+    { name : 'Maelys', date : '29-12'},
     { name : 'Brieuc', date : '26-03'},
     { name : 'Aicha', date : '14-07'}
 ];
