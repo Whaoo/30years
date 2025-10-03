@@ -270,7 +270,7 @@ function getWeatherThursday(weatherCode12, weatherCode13) {
 function refreshBackgroundImage() {
     const bgDiv = document.querySelector('.background');
     if (bgDiv) {
-        const baseUrl = 'https://www.spotazores.com/camaras/PIXSRQ02/VGAcurrent.jpg';
+        const baseUrl = 'https://i.postimg.cc/zvqjtKPQ/1759475418238.png';
         const urlWithTimestamp = `${baseUrl}?t=${Date.now()}`;
         bgDiv.style.backgroundImage = `url('${urlWithTimestamp}')`;
     }
