@@ -22,7 +22,6 @@ const birthdays = [
     { name: 'Thomas', date: '30-04' }, // 
     { name: 'Laetitia', date: '17-06' }, // 
     { name: 'Jeremy', date: '25-01' }, // 
-    { name: 'Sylvain', date: '25-11' }, // 
     { name: 'Thibault', date: '03-12' }, // 
     { name : 'Maelys', date : '29-12'},
     { name : 'Brieuc', date : '26-03'},
