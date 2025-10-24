@@ -25,7 +25,8 @@ const birthdays = [
     { name: 'Thibault', date: '03-12' }, // 
     { name : 'Maelys', date : '29-12'},
     { name : 'Brieuc', date : '26-03'},
-    { name : 'Aicha', date : '14-07'}
+    { name : 'Aicha', date : '14-07'},
+    { name : 'Auderic', date : '11-12'}
 ];
 
 function getNextBirthday(dateStr) {
