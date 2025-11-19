@@ -77,7 +77,7 @@ function App() {
                     </div>
 
                     {/* Right Side: List & Weather */}
-                    <div className="md:w-80 bg-black/30 border-t md:border-t-0 md:border-l border-white/5 p-4 md:p-6 flex flex-col justify-between">
+                    <div className="md:w-80 bg-black/40 border-t md:border-t-0 md:border-l border-white/5 p-4 md:p-6 flex flex-col justify-between">
                         {/* Upcoming List - Hidden on small screens (Vivaldi tiles) */}
                         <div className="hidden md:block mb-6">
                             <h3 className="text-white/40 text-[10px] font-bold uppercase tracking-widest mb-4">
