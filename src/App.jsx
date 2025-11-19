@@ -15,10 +15,19 @@ function App() {
         setSortedBirthdays(birthdays);
 
         // Refresh birthdays every minute to keep order correct if day changes
-        const interval = setInterval(() => {
+        const birthdayInterval = setInterval(() => {
             setSortedBirthdays(getSortedBirthdays());
         }, 60000);
-        return () => clearInterval(interval);
+
+        // Refresh the entire page every hour to fetch new weather data and update time
+        const refreshInterval = setInterval(() => {
+            window.location.reload();
+        }, 3600000); // 1 hour
+
+        return () => {
+            clearInterval(birthdayInterval);
+            clearInterval(refreshInterval);
+        };
     }, []);
 
     if (sortedBirthdays.length === 0) return null;
@@ -37,7 +46,7 @@ function App() {
             />
 
             {/* Dark Overlay - Reduced opacity, removed blur for sharpness */}
-            <div className="absolute inset-0 z-0 bg-black/20" />
+            <div className="absolute inset-0 z-0 bg-black/10" />
 
             {/* Main Content */}
             <div className="relative z-10 flex items-center justify-center h-full p-4">
@@ -47,7 +56,7 @@ function App() {
                     transition={{ duration: 0.8, ease: "easeOut" }}
                     // Square aspect ratio on mobile (aspect-square), auto on desktop
                     // Smaller max-width on mobile
-                    className="w-full max-w-[320px] md:max-w-4xl aspect-square md:aspect-auto bg-black/30 backdrop-blur-xl border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row"
+                    className="w-full max-w-[320px] md:max-w-4xl aspect-square md:aspect-auto bg-black/20 backdrop-blur-x1 border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row"
                 >
                     {/* Left Side: Main Countdown */}
                     <div className="flex-1 relative overflow-hidden group py-4 md:py-12 px-4 md:px-6 flex flex-col justify-center">
@@ -68,7 +77,7 @@ function App() {
                     </div>
 
                     {/* Right Side: List & Weather */}
-                    <div className="md:w-80 bg-black/20 border-t md:border-t-0 md:border-l border-white/5 p-4 md:p-6 flex flex-col justify-between">
+                    <div className="md:w-80 bg-black/30 border-t md:border-t-0 md:border-l border-white/5 p-4 md:p-6 flex flex-col justify-between">
                         {/* Upcoming List - Hidden on small screens (Vivaldi tiles) */}
                         <div className="hidden md:block mb-6">
                             <h3 className="text-white/40 text-[10px] font-bold uppercase tracking-widest mb-4">
