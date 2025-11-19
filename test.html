@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Futuristic Birthday Nexus</title>
+
+    <!-- Fonts and Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Orbitron:wght@400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-highlight: rgba(255, 255, 255, 0.2);
+            --neon-blue: #00f3ff;
+            --neon-purple: #bc13fe;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f0c29;
+            background: linear-gradient(45deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            color: var(--text-main);
+            overflow-x: hidden;
+            padding: 2rem;
+        }
+
+        /* --- December Theme Elements (Hidden by default) --- */
+        .december-overlay {
+            display: none;
+            pointer-events: none;
+        }
+
+        body.is-december .december-overlay {
+            display: block;
+        }
+
+        /* Snowflake Animation */
+        .snowflake {
+            position: fixed;
+            top: -10px;
+            color: white;
+            animation: fall linear infinite;
+            opacity: 0.8;
+            z-index: 0;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh);
+            }
+        }
+
+        /* Decorative Icons */
+        .theme-icon {
+            position: absolute;
+            opacity: 0.15;
+            z-index: 0;
+            filter: drop-shadow(0 0 10px var(--neon-purple));
+        }
+
+        .santa-icon {
+            top: 5%;
+            right: 5%;
+            font-size: 8rem;
+            transform: rotate(-15deg);
+        }
+
+        .deer-icon {
+            bottom: 5%;
+            left: 5%;
+            font-size: 10rem;
+            transform: rotate(10deg);
+        }
+
+        /* --- Layout --- */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        /* --- Weather Widget (Glass) --- */
+        .weather-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1rem 2rem;
+            display: flex;
+            gap: 2rem;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .weather-day {
+            text-align: center;
+            position: relative;
+        }
+
+        .weather-day:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            right: -1rem;
+            top: 10%;
+            height: 80%;
+            width: 1px;
+            background: var(--glass-border);
+        }
+
+        .w-title {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .w-temp {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--neon-blue);
+        }
+
+        .w-icon {
+            font-size: 1.5rem;
+            margin: 5px 0;
+        }
+
+        /* --- Dashboard Grid --- */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        /* --- User Card (Glassmorphism) --- */
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            height: 350px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0, 243, 255, 0.15);
+            border-color: var(--neon-blue);
+        }
+
+        /* Background Image integration */
+        .card-bg {
+            height: 150px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+        }
+
+        .card-content {
+            padding: 1.5rem;
+            margin-top: -3rem;
+            /* Pull up over the faded image */
+            z-index: 2;
+            text-align: center;
+        }
+
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 2px solid var(--neon-purple);
+            margin: 0 auto 1rem;
+            background-size: cover;
+            background-position: center;
+            box-shadow: 0 0 15px var(--neon-purple);
+        }
+
+        .user-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .user-role {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .date-badge {
+            background: rgba(0, 243, 255, 0.1);
+            color: var(--neon-blue);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-family: 'Orbitron', sans-serif;
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            display: inline-block;
+        }
+
+        /* December specific card styling */
+        body.is-december .card:hover {
+            box-shadow: 0 10px 40px rgba(255, 0, 0, 0.15);
+            border-color: #ff4d4d;
+        }
+
+        body.is-december .avatar {
+            border-color: #ff4d4d;
+            box-shadow: 0 0 15px #ff4d4d;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- December Decorative Overlay -->
+    <div class="december-overlay" id="december-effects">
+        <i class="fa-solid fa-sleigh theme-icon santa-icon"></i>
+        <i class="fa-solid fa-dharmachakra theme-icon deer-icon"></i> <!-- Abstract decorative icon -->
+        <!-- Snowflakes injected via JS -->
+    </div>
+
+    <div class="container">
+        <header>
+            <div>
+                <h1>Team Nexus</h1>
+                <p style="color: var(--text-muted)">Birthday Protocol initialized.</p>
+            </div>
+
+            <!-- Weather Widget -->
+            <div class="weather-panel" id="weather-widget">
+                <!-- Injected via JS -->
+                <div class="weather-day">Loading...</div>
+            </div>
+        </header>
+
+        <main class="dashboard-grid" id="team-grid">
+            <!-- Cards Injected via JS -->
+        </main>
+    </div>
+
+    <script>
+        // --- 1. Configuration & Data ---
+
+        // Mock Team Data (In production, fetch this from a database)
+        const teamMembers = [
+            {
+                name: "Sarah Connor",
+                role: "Sys Admin",
+                date: "1990-12-05",
+                bg: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500&q=80",
+                avatar: "https://i.pravatar.cc/150?u=1"
+            },
+            {
+                name: "John Wick",
+                role: "Security",
+                date: "1985-11-25",
+                bg: "https://images.unsplash.com/photo-1535868463750-c78d9543614f?w=500&q=80",
+                avatar: "https://i.pravatar.cc/150?u=2"
+            },
+            {
+                name: "Ellen Ripley",
+                role: "Logistics",
+                date: "1988-06-08",
+                bg: "https://images.unsplash.com/photo-1516339901601-2e1b62dc0c45?w=500&q=80",
+                avatar: "https://i.pravatar.cc/150?u=3"
+            },
+            {
+                name: "Marty McFly",
+                role: "Driver",
+                date: "1995-12-25",
+                bg: "https://images.unsplash.com/photo-1504333638930-c8787321eee0?w=500&q=80",
+                avatar: "https://i.pravatar.cc/150?u=4"
+            },
+            {
+                name: "Deckard Deck",
+                role: "Investigator",
+                date: "1982-01-15",
+                bg: "https://images.unsplash.com/photo-1534293630900-5465c923672e?w=500&q=80",
+                avatar: "https://i.pravatar.cc/150?u=5"
+            }
+        ];
+
+        // --- 2. Logic: Birthday Handling ---
+
+        function getDaysUntilBirthday(dateString) {
+            const today = new Date();
+            const birthDate = new Date(dateString);
+            const currentYearBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+
+            if (today > currentYearBirthday) {
+                currentYearBirthday.setFullYear(today.getFullYear() + 1);
+            }
+
+            const oneDay = 24 * 60 * 60 * 1000;
+            return Math.round((currentYearBirthday - today) / oneDay);
+        }
+
+        function renderTeam() {
+            const grid = document.getElementById('team-grid');
+
+            // Sort members by upcoming birthday
+            const sortedMembers = teamMembers.sort((a, b) => {
+                return getDaysUntilBirthday(a.date) - getDaysUntilBirthday(b.date);
+            });
+
+            grid.innerHTML = sortedMembers.map(member => {
+                const daysLeft = getDaysUntilBirthday(member.date);
+                const dateObj = new Date(member.date);
+                const prettyDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+                // Highlight if birthday is today
+                const isToday = daysLeft === 365 || daysLeft === 0;
+                const statusText = isToday ? "🎂 TODAY!" : `In ${daysLeft} days`;
+
+                return `
+                <div class="card">
+                    <div class="card-bg" style="background-image: url('${member.bg}')"></div>
+                    <div class="card-content">
+                        <div class="avatar" style="background-image: url('${member.avatar}')"></div>
+                        <div class="user-name">${member.name}</div>
+                        <div class="user-role">${member.role}</div>
+                        <div class="date-badge">${prettyDate} • ${statusText}</div>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        // --- 3. Logic: Weather Service ---
+
+        async function initWeather() {
+            const widget = document.getElementById('weather-widget');
+
+            // SIMULATED API CALL 
+            // (Replace this block with a fetch to OpenWeatherMap or WeatherAPI.com in production)
+            const mockData = [
+                { day: "Today", temp: "12°C", icon: "fa-cloud-rain" },
+                { day: "Tomorrow", temp: "10°C", icon: "fa-cloud" },
+                { day: "Fri", temp: "14°C", icon: "fa-sun" }
+            ];
+
+            // To make dates dynamic for the mock:
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const today = new Date();
+
+            const forecast = [0, 1, 2].map(offset => {
+                const d = new Date(today);
+                d.setDate(today.getDate() + offset);
+                const dayName = offset === 0 ? "Today" : days[d.getDay()];
+
+                // Randomize weather for demo effect
+                const icons = ["fa-sun", "fa-cloud", "fa-bolt", "fa-snowflake"];
+                const randomIcon = icons[Math.floor(Math.random() * icons.length)];
+                const randomTemp = Math.floor(Math.random() * (20 - 5) + 5);
+
+                return { day: dayName, temp: `${randomTemp}°C`, icon: randomIcon };
+            });
+
+            widget.innerHTML = forecast.map(f => `
+            <div class="weather-day">
+                <div class="w-title">${f.day}</div>
+                <div class="w-icon"><i class="fa-solid ${f.icon}"></i></div>
+                <div class="w-temp">${f.temp}</div>
+            </div>
+        `).join('');
+        }
+
+        // --- 4. Logic: December Theme Manager ---
+
+        function checkTheme() {
+            const today = new Date();
+            const currentMonth = today.getMonth(); // 0-11 (11 is December)
+
+            // Change to 11 for production. 
+            // For TESTING purposes, you can change this number to current month to see the effect immediately.
+            const DEC_MONTH_INDEX = 11;
+
+            // Also checking if we want to force it for demo (e.g. if URL has ?theme=december)
+            const forceDemo = window.location.search.includes('december') || currentMonth === DEC_MONTH_INDEX;
+
+            if (forceDemo) {
+                document.body.classList.add('is-december');
+                createSnow();
+                updateIconsForDecember();
+            }
+        }
+
+        function createSnow() {
+            const overlay = document.getElementById('december-effects');
+            const numberOfSnowflakes = 50;
+
+            for (let i = 0; i < numberOfSnowflakes; i++) {
+                const snow = document.createElement('div');
+                snow.classList.add('snowflake');
+                snow.innerHTML = '❄';
+                snow.style.left = Math.random() * 100 + 'vw';
+                snow.style.animationDuration = Math.random() * 3 + 2 + 's'; // 2-5s
+                snow.style.fontSize = Math.random() * 10 + 10 + 'px';
+                snow.style.opacity = Math.random();
+                overlay.appendChild(snow);
+            }
+        }
+
+        function updateIconsForDecember() {
+            // Change weather icons to snow if it's december (Optional visual flair)
+            // This runs after initWeather
+            setTimeout(() => {
+                const wIcons = document.querySelectorAll('.w-icon i');
+                wIcons.forEach(icon => {
+                    // 50% chance to show snow in forecast during Dec
+                    if (Math.random() > 0.5) {
+                        icon.className = 'fa-solid fa-snowflake';
+                    }
+                });
+            }, 500);
+        }
+
+        // --- Initialization ---
+        window.addEventListener('DOMContentLoaded', () => {
+            renderTeam();
+            initWeather();
+            checkTheme();
+        });
+
+    </script>
+</body>
+
+</html>
