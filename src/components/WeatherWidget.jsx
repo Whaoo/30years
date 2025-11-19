@@ -42,12 +42,15 @@ const WeatherWidget = () => {
         return { dayName, emote: getWeatherEmote(code), maxTemp, minTemp };
     });
 
+    const today = new Date();
+    const dateStr = `${String(today.getDate()).padStart(2, '0')}.${String(today.getMonth() + 1).padStart(2, '0')}`;
+
     return (
         <div className="mt-auto pt-6 border-t border-white/10">
             {/* Current Weather & Short-term Forecast */}
             <div className="flex items-center justify-between text-white mb-4">
                 <div className="flex flex-col">
-                    <span className="text-xs text-white/60 font-medium uppercase tracking-wider">Paris</span>
+                    <span className="text-xs text-white/60 font-medium uppercase tracking-wider">Paris • {dateStr}</span>
                     <div className="flex items-center gap-2">
                         <span className="text-3xl font-bold tracking-tight">{currentTemp}°C</span>
                         <span className="text-3xl">{emote}</span>
