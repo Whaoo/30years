@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import giftBoxImage from '../assets/gift-box.png';
 
-function AdventDoor({ dayNumber, message, chocolate, isCurrentDay, isSantaHere, position, onOpen }) {
+function AdventDoor({ dayNumber, message, chocolate, isCurrentDay }) {
     const [isOpen, setIsOpen] = useState(false);
     const [hasBeenOpened, setHasBeenOpened] = useState(false);
+    const [showTooltip, setShowTooltip] = useState(false);
 
     // Load opened state from localStorage
     useEffect(() => {
@@ -16,98 +16,100 @@ function AdventDoor({ dayNumber, message, chocolate, isCurrentDay, isSantaHere, 
     }, [dayNumber]);
 
     const handleClick = () => {
-        if (!isCurrentDay || hasBeenOpened) return;
+        if (!isCurrentDay && !hasBeenOpened) return; // Locked
 
-        setIsOpen(true);
-        setHasBeenOpened(true);
-        localStorage.setItem(`advent-door-${dayNumber}`, 'true');
-        if (onOpen) onOpen(dayNumber);
+        if (!hasBeenOpened) {
+            setIsOpen(true);
+            setHasBeenOpened(true);
+            localStorage.setItem(`advent-door-${dayNumber}`, 'true');
+        }
+        setShowTooltip(!showTooltip);
     };
 
-    const canOpen = isCurrentDay && !hasBeenOpened;
+    // Determine bulb color/style
+    const isLocked = !isCurrentDay && !hasBeenOpened;
+
+    // Bulb Styles
+    const bulbGradient = isLocked
+        ? 'radial-gradient(circle at 30% 30%, #4a4a4a, #2d2d2d)' // Grey for locked
+        : hasBeenOpened
+            ? 'radial-gradient(circle at 30% 30%, #10B981, #059669)' // Green for opened
+            : 'radial-gradient(circle at 30% 30%, #EF4444, #B91C1C)'; // Red for available
 
     return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: dayNumber * 0.05, duration: 0.3 }}
-            style={{
-                position: 'absolute',
-                ...position,
-                width: '40px', // Smaller size for grid
-                height: '40px',
-                zIndex: 20
-            }}
-        >
-            <div
+        <div className="relative flex flex-col items-center justify-center">
+            {/* The Bulb */}
+            <motion.div
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={handleClick}
-                className={`relative w-full h-full cursor-pointer transition-all duration-300 ${canOpen ? 'hover:scale-110' : ''
+                className={`w-12 h-12 rounded-full shadow-lg flex items-center justify-center cursor-pointer relative z-10 ${isLocked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
                     }`}
-                style={{ perspective: '1000px' }}
+                style={{
+                    background: bulbGradient,
+                    boxShadow: isCurrentDay && !hasBeenOpened
+                        ? '0 0 15px rgba(239, 68, 68, 0.6), inset 2px 2px 5px rgba(255,255,255,0.3)'
+                        : '0 4px 6px rgba(0,0,0,0.3), inset 2px 2px 5px rgba(255,255,255,0.3)'
+                }}
             >
-                {/* Door Container */}
-                <motion.div
-                    className="relative w-full h-full"
-                    animate={{ rotateY: isOpen ? 180 : 0 }}
-                    transition={{ duration: 0.6, ease: 'easeInOut' }}
-                    style={{ transformStyle: 'preserve-3d' }}
-                >
-                    {/* Front of door (closed) */}
-                    <div
-                        className="absolute w-full h-full rounded-md shadow-sm flex items-center justify-center"
-                        style={{
-                            backfaceVisibility: 'hidden',
-                            background: hasBeenOpened
-                                ? 'rgba(0,0,0,0.5)'
-                                : canOpen
-                                    ? 'linear-gradient(135deg, #DC2626 0%, #EF4444 100%)'
-                                    : 'rgba(124, 45, 18, 0.8)',
-                            border: '1px solid rgba(255,255,255,0.3)',
-                            boxShadow: canOpen ? '0 0 10px rgba(255, 215, 0, 0.5)' : 'none'
-                        }}
-                    >
-                        {/* Day Number */}
-                        <div className="font-bold text-white text-sm shadow-black drop-shadow-md">
+                {/* Bulb Cap */}
+                <div className="absolute -top-1.5 w-3 h-2 bg-gray-400 rounded-sm shadow-sm" />
+
+                {/* Content: Number or Icon */}
+                <AnimatePresence mode="wait">
+                    {!hasBeenOpened ? (
+                        <motion.span
+                            key="number"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="text-white font-bold text-lg drop-shadow-md pt-1"
+                        >
                             {dayNumber}
-                        </div>
+                        </motion.span>
+                    ) : (
+                        <motion.span
+                            key="icon"
+                            initial={{ scale: 0, rotate: -180 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            className="text-2xl pt-1"
+                        >
+                            {chocolate}
+                        </motion.span>
+                    )}
+                </AnimatePresence>
 
-                        {/* Lock/Unlock indicator */}
-                        {!hasBeenOpened && (
-                            <div className="absolute bottom-0 right-0 text-[8px] opacity-70 p-0.5">
-                                {canOpen ? '🔓' : '🔒'}
-                            </div>
-                        )}
-                    </div>
+                {/* Lock Icon for locked days */}
+                {isLocked && (
+                    <div className="absolute -bottom-1 -right-1 text-[10px]">🔒</div>
+                )}
+            </motion.div>
 
-                    {/* Back of door (open) - Gift Box */}
-                    <div
-                        className="absolute w-full h-full rounded-md shadow-sm flex items-center justify-center"
+            {/* Message Tooltip */}
+            <AnimatePresence>
+                {(showTooltip || (hasBeenOpened && isCurrentDay)) && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.8 }}
+                        className="absolute z-50 w-48 bg-white/95 text-black p-3 rounded-xl shadow-xl text-center pointer-events-none"
                         style={{
-                            backfaceVisibility: 'hidden',
-                            transform: 'rotateY(180deg)',
-                            background: 'rgba(255,255,255,0.9)'
+                            bottom: '100%',
+                            marginBottom: '10px',
                         }}
                     >
-                        <motion.img
-                            src={giftBoxImage}
-                            alt="Gift"
-                            className="w-3/4 h-3/4 object-contain"
-                            initial={{ scale: 0 }}
-                            animate={{ scale: isOpen ? 1 : 0 }}
-                            transition={{ delay: 0.3, duration: 0.4, type: 'spring' }}
-                        />
-                    </div>
-                </motion.div>
-
-                {/* Message Popup on Hover (when opened) */}
-                {isOpen && (
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-32 bg-white/95 text-black text-[10px] p-2 rounded shadow-xl opacity-0 hover:opacity-100 transition-opacity duration-300 z-50 pointer-events-none">
-                        <p className="text-center font-bold mb-1">Day {dayNumber}</p>
-                        <p className="text-center leading-tight">{message}</p>
-                    </div>
+                        <div className="text-xs font-bold text-red-600 mb-1 uppercase tracking-wider">
+                            Day {dayNumber}
+                        </div>
+                        <p className="text-sm leading-tight font-medium">
+                            {message}
+                        </p>
+                        {/* Arrow */}
+                        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-3 h-3 bg-white/95" />
+                    </motion.div>
                 )}
-            </div>
-        </motion.div>
+            </AnimatePresence>
+        </div>
     );
 }
 

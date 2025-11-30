@@ -12,7 +12,7 @@ export const adventData = [
     },
     {
         day: 3,
-        message: "🎅 Ho ho ho! Santa is starting his journey around the calendar!",
+        message: "🎅 Ho ho ho! Santa is starting his journey!",
         chocolate: "🍬" // Candy chocolate
     },
     {
@@ -119,55 +119,15 @@ export const adventData = [
         day: 24,
         message: "🎄 Merry Christmas Eve! Santa arrives tomorrow! 🎅",
         chocolate: "🎅" // Santa chocolate
+    },
+    {
+        day: 25,
+        message: "🎅 MERRY CHRISTMAS! Have a wonderful day! 🎁",
+        chocolate: "👑" // Crown/Special
     }
 ];
 
-// Calculate door positions within the House container (Right Side)
-// Returns {top, left} CSS positioning relative to the House container
-export function getDoorPosition(dayNumber) {
-    // Grid layout: 4 columns x 6 rows
-    // Columns: 0, 1, 2, 3
-    // Rows: 0, 1, 2, 3, 4, 5
-
-    const col = (dayNumber - 1) % 4;
-    const row = Math.floor((dayNumber - 1) / 4);
-
-    // Adjust these percentages to fit within the "House" image's open area
-    // Assuming the house image has some padding/roof
-    const startX = 20; // % from left
-    const startY = 35; // % from top (below roof)
-    const gapX = 18; // % horizontal gap
-    const gapY = 10; // % vertical gap
-
-    return {
-        left: `${startX + col * gapX}%`,
-        top: `${startY + row * gapY}%`
-    };
-}
-
-// Calculate Santa's position on the Trail (Left Side)
-// Returns {top, left} CSS positioning relative to the Trail container
-export function getSantaTrailPosition(dayNumber) {
-    // Winding path from top-left to bottom-left
-    // S-curve shape
-
-    // Normalize day 1-25 to 0-1 progress
-    const progress = (dayNumber - 1) / 24;
-
-    // Vertical position increases linearly
-    const top = 10 + progress * 80; // 10% to 90%
-
-    // Horizontal position follows a sine wave for winding effect
-    // 3 full curves
-    const left = 50 + 30 * Math.sin(progress * Math.PI * 4); // Center 50%, swing +/- 30%
-
-    return {
-        top: `${top}%`,
-        left: `${left}%`
-    };
-}
-
-// Get current day in December (1-24, or 0 if not December 1-24)
+// Get current day in December (1-25, or 0 if not December 1-25)
 export function getCurrentDecemberDay() {
     const now = new Date();
     const month = now.getMonth(); // 0-11
@@ -177,7 +137,7 @@ export function getCurrentDecemberDay() {
     return 1;
 
     // Production code (uncomment when ready for December):
-    // if (month === 11 && day >= 1 && day <= 24) {
+    // if (month === 11 && day >= 1 && day <= 25) {
     //     return day;
     // }
     // return 0; // Not in advent period
