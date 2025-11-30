@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import giftBoxImage from '../assets/gift-box.png';
 
 function AdventDoor({ dayNumber, message, chocolate, isCurrentDay, isSantaHere, position, onOpen }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -33,8 +34,8 @@ function AdventDoor({ dayNumber, message, chocolate, isCurrentDay, isSantaHere, 
             style={{
                 position: 'absolute',
                 ...position,
-                width: '60px',
-                height: '60px',
+                width: '40px', // Smaller size for grid
+                height: '40px',
                 zIndex: 20
             }}
         >
@@ -53,104 +54,57 @@ function AdventDoor({ dayNumber, message, chocolate, isCurrentDay, isSantaHere, 
                 >
                     {/* Front of door (closed) */}
                     <div
-                        className="absolute w-full h-full rounded-lg shadow-lg"
+                        className="absolute w-full h-full rounded-md shadow-sm flex items-center justify-center"
                         style={{
                             backfaceVisibility: 'hidden',
                             background: hasBeenOpened
-                                ? 'linear-gradient(135deg, #666 0%, #888 100%)'
+                                ? 'rgba(0,0,0,0.5)'
                                 : canOpen
-                                    ? 'linear-gradient(135deg, #DC2626 0%, #EF4444 50%, #DC2626 100%)'
-                                    : 'linear-gradient(135deg, #7C2D12 0%, #92400E 100%)',
-                            border: isSantaHere ? '3px solid gold' : '2px solid rgba(255,255,255,0.3)',
-                            boxShadow: isSantaHere
-                                ? '0 0 20px rgba(255, 215, 0, 0.6), 0 4px 6px rgba(0,0,0,0.3)'
-                                : '0 4px 6px rgba(0,0,0,0.3)'
+                                    ? 'linear-gradient(135deg, #DC2626 0%, #EF4444 100%)'
+                                    : 'rgba(124, 45, 18, 0.8)',
+                            border: '1px solid rgba(255,255,255,0.3)',
+                            boxShadow: canOpen ? '0 0 10px rgba(255, 215, 0, 0.5)' : 'none'
                         }}
                     >
                         {/* Day Number */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div
-                                className="font-bold text-white select-none"
-                                style={{
-                                    fontSize: '24px',
-                                    textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
-                                }}
-                            >
-                                {dayNumber}
-                            </div>
+                        <div className="font-bold text-white text-sm shadow-black drop-shadow-md">
+                            {dayNumber}
                         </div>
-
-                        {/* Santa indicator */}
-                        {isSantaHere && (
-                            <motion.div
-                                className="absolute -top-2 -right-2 text-2xl"
-                                animate={{
-                                    scale: [1, 1.2, 1],
-                                    rotate: [0, 10, -10, 0]
-                                }}
-                                transition={{
-                                    duration: 2,
-                                    repeat: Infinity,
-                                    ease: 'easeInOut'
-                                }}
-                            >
-                                🎅
-                            </motion.div>
-                        )}
 
                         {/* Lock/Unlock indicator */}
-                        <div className="absolute bottom-1 right-1 text-xs opacity-70">
-                            {hasBeenOpened ? '✓' : canOpen ? '🔓' : '🔒'}
-                        </div>
+                        {!hasBeenOpened && (
+                            <div className="absolute bottom-0 right-0 text-[8px] opacity-70 p-0.5">
+                                {canOpen ? '🔓' : '🔒'}
+                            </div>
+                        )}
                     </div>
 
-                    {/* Back of door (open) - Message & Chocolate */}
+                    {/* Back of door (open) - Gift Box */}
                     <div
-                        className="absolute w-full h-full rounded-lg shadow-lg flex flex-col items-center justify-center p-2"
+                        className="absolute w-full h-full rounded-md shadow-sm flex items-center justify-center"
                         style={{
                             backfaceVisibility: 'hidden',
                             transform: 'rotateY(180deg)',
-                            background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
-                            border: '2px solid rgba(217, 119, 6, 0.3)'
+                            background: 'rgba(255,255,255,0.9)'
                         }}
                     >
-                        {/* Chocolate */}
-                        <motion.div
-                            className="text-3xl mb-1"
+                        <motion.img
+                            src={giftBoxImage}
+                            alt="Gift"
+                            className="w-3/4 h-3/4 object-contain"
                             initial={{ scale: 0 }}
                             animate={{ scale: isOpen ? 1 : 0 }}
                             transition={{ delay: 0.3, duration: 0.4, type: 'spring' }}
-                        >
-                            {chocolate}
-                        </motion.div>
-
-                        {/* Message - hidden, shown on hover */}
-                        <div className="absolute inset-0 bg-black/90 rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-center justify-center p-2">
-                            <p className="text-white text-[8px] text-center leading-tight">
-                                {message}
-                            </p>
-                        </div>
+                        />
                     </div>
                 </motion.div>
 
-                {/* Pulsing effect for current day */}
-                {canOpen && (
-                    <motion.div
-                        className="absolute inset-0 rounded-lg pointer-events-none"
-                        style={{
-                            border: '2px solid rgba(255, 215, 0, 0.5)',
-                            boxShadow: '0 0 15px rgba(255, 215, 0, 0.3)'
-                        }}
-                        animate={{
-                            opacity: [0.5, 1, 0.5],
-                            scale: [1, 1.05, 1]
-                        }}
-                        transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            ease: 'easeInOut'
-                        }}
-                    />
+                {/* Message Popup on Hover (when opened) */}
+                {isOpen && (
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-32 bg-white/95 text-black text-[10px] p-2 rounded shadow-xl opacity-0 hover:opacity-100 transition-opacity duration-300 z-50 pointer-events-none">
+                        <p className="text-center font-bold mb-1">Day {dayNumber}</p>
+                        <p className="text-center leading-tight">{message}</p>
+                    </div>
                 )}
             </div>
         </motion.div>

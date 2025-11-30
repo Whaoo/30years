@@ -122,60 +122,49 @@ export const adventData = [
     }
 ];
 
-// Calculate door positions around the card perimeter
-// Returns {top, left, right, bottom} CSS positioning
-export function getDoorPosition(dayNumber, cardRef) {
-    // Total 24 positions distributed clockwise:
-    // Top edge: doors 1-6 (left to right)
-    // Right edge: doors 7-12 (top to bottom)
-    // Bottom edge: doors 13-18 (right to left)
-    // Left edge: doors 19-24 (bottom to top)
+// Calculate door positions within the House container (Right Side)
+// Returns {top, left} CSS positioning relative to the House container
+export function getDoorPosition(dayNumber) {
+    // Grid layout: 4 columns x 6 rows
+    // Columns: 0, 1, 2, 3
+    // Rows: 0, 1, 2, 3, 4, 5
 
-    const doorSize = 60; // Base door size in pixels
-    const offset = 10; // Distance from card edge
+    const col = (dayNumber - 1) % 4;
+    const row = Math.floor((dayNumber - 1) / 4);
 
-    // Determine which edge and position
-    if (dayNumber >= 1 && dayNumber <= 6) {
-        // Top edge
-        const position = dayNumber - 1;
-        const percentage = (position / 5) * 100;
-        return {
-            position: 'top',
-            top: `-${doorSize + offset}px`,
-            left: `${percentage}%`,
-            transform: 'translateX(-50%)'
-        };
-    } else if (dayNumber >= 7 && dayNumber <= 12) {
-        // Right edge
-        const position = dayNumber - 7;
-        const percentage = (position / 5) * 100;
-        return {
-            position: 'right',
-            right: `-${doorSize + offset}px`,
-            top: `${percentage}%`,
-            transform: 'translateY(-50%)'
-        };
-    } else if (dayNumber >= 13 && dayNumber <= 18) {
-        // Bottom edge
-        const position = dayNumber - 13;
-        const percentage = 100 - (position / 5) * 100; // Right to left
-        return {
-            position: 'bottom',
-            bottom: `-${doorSize + offset}px`,
-            left: `${percentage}%`,
-            transform: 'translateX(-50%)'
-        };
-    } else {
-        // Left edge (19-24)
-        const position = dayNumber - 19;
-        const percentage = 100 - (position / 5) * 100; // Bottom to top
-        return {
-            position: 'left',
-            left: `-${doorSize + offset}px`,
-            top: `${percentage}%`,
-            transform: 'translateY(-50%)'
-        };
-    }
+    // Adjust these percentages to fit within the "House" image's open area
+    // Assuming the house image has some padding/roof
+    const startX = 20; // % from left
+    const startY = 35; // % from top (below roof)
+    const gapX = 18; // % horizontal gap
+    const gapY = 10; // % vertical gap
+
+    return {
+        left: `${startX + col * gapX}%`,
+        top: `${startY + row * gapY}%`
+    };
+}
+
+// Calculate Santa's position on the Trail (Left Side)
+// Returns {top, left} CSS positioning relative to the Trail container
+export function getSantaTrailPosition(dayNumber) {
+    // Winding path from top-left to bottom-left
+    // S-curve shape
+
+    // Normalize day 1-25 to 0-1 progress
+    const progress = (dayNumber - 1) / 24;
+
+    // Vertical position increases linearly
+    const top = 10 + progress * 80; // 10% to 90%
+
+    // Horizontal position follows a sine wave for winding effect
+    // 3 full curves
+    const left = 50 + 30 * Math.sin(progress * Math.PI * 4); // Center 50%, swing +/- 30%
+
+    return {
+        top: `${top}%`,
+        left: `${left}%`
+    };
 }
 
 // Get current day in December (1-24, or 0 if not December 1-24)

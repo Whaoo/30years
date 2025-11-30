@@ -6,33 +6,35 @@ function SantaTracker({ position, dayNumber }) {
 
     return (
         <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 200, damping: 15 }}
             style={{
                 position: 'absolute',
                 ...position,
-                width: '80px',
-                height: '50px',
+                width: '100px',
+                height: '60px',
                 zIndex: 25,
-                pointerEvents: 'none'
+                pointerEvents: 'none',
+                transform: 'translate(-50%, -50%)' // Center on the coordinate
             }}
         >
             {/* Santa's Sleigh with Reindeer */}
             <div className="relative w-full h-full flex items-center justify-center">
                 {/* Reindeer (leading) */}
                 <motion.div
-                    className="absolute text-2xl"
+                    className="absolute text-3xl"
                     style={{
-                        left: '-20px',
+                        left: '-30px',
                         top: '50%',
                         transform: 'translateY(-50%)'
                     }}
                     animate={{
-                        y: [0, -3, 0]
+                        y: [0, -5, 0],
+                        x: [0, 2, 0]
                     }}
                     transition={{
-                        duration: 1,
+                        duration: 1.5,
                         repeat: Infinity,
                         ease: 'easeInOut'
                     }}
@@ -42,15 +44,15 @@ function SantaTracker({ position, dayNumber }) {
 
                 {/* Santa in Sleigh */}
                 <motion.div
-                    className="text-3xl"
+                    className="text-4xl"
                     animate={{
-                        y: [0, -5, 0]
+                        y: [0, -3, 0]
                     }}
                     transition={{
-                        duration: 1,
+                        duration: 2,
                         repeat: Infinity,
                         ease: 'easeInOut',
-                        delay: 0.1
+                        delay: 0.2
                     }}
                 >
                     🛷
@@ -58,20 +60,21 @@ function SantaTracker({ position, dayNumber }) {
 
                 {/* Sparkle trail */}
                 <motion.div
-                    className="absolute text-xl"
+                    className="absolute text-2xl"
                     style={{
-                        right: '-15px',
+                        right: '-20px',
                         top: '50%',
                         transform: 'translateY(-50%)'
                     }}
                     animate={{
                         opacity: [0.3, 1, 0.3],
-                        scale: [0.8, 1.2, 0.8]
+                        scale: [0.8, 1.2, 0.8],
+                        rotate: [0, 180, 360]
                     }}
                     transition={{
-                        duration: 1.5,
+                        duration: 2,
                         repeat: Infinity,
-                        ease: 'easeInOut'
+                        ease: 'linear'
                     }}
                 >
                     ✨
@@ -82,13 +85,13 @@ function SantaTracker({ position, dayNumber }) {
             <div
                 className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap"
                 style={{
-                    background: 'rgba(0, 0, 0, 0.7)',
-                    color: 'gold',
+                    background: 'rgba(220, 38, 38, 0.9)',
+                    color: 'white',
                     padding: '2px 8px',
                     borderRadius: '12px',
-                    fontSize: '10px',
+                    fontSize: '12px',
                     fontWeight: 'bold',
-                    border: '1px solid gold',
+                    border: '1px solid white',
                     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
                 }}
             >

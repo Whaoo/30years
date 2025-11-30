@@ -5,6 +5,7 @@ import WeatherWidget from './components/WeatherWidget';
 import SantaWidget from './components/SantaWidget';
 import AdventCalendar from './components/AdventCalendar';
 import { getSortedBirthdays } from './utils/birthdayLogic';
+import { getCurrentDecemberDay } from './utils/adventMessages';
 import winterBackground from './assets/winter-background.png';
 
 function App() {
@@ -105,8 +106,8 @@ function App() {
                 </motion.div>
             </div>
 
-            {/* Santa Widget - Bottom Left */}
-            <SantaWidget />
+            {/* Santa Widget - Bottom Left - Only show if NOT in December (Advent period) */}
+            {getCurrentDecemberDay() === 0 && <SantaWidget />}
 
             {/* Advent Calendar - December only */}
             <AdventCalendar />
