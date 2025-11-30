@@ -6,6 +6,9 @@ import { adventData, getCurrentDecemberDay } from '../utils/adventMessages';
 function AdventCalendar() {
     const [currentDay, setCurrentDay] = useState(0);
 
+    // Shared open tooltip state: only one door's tooltip is visible at a time
+    const [openDay, setOpenDay] = useState(0);
+
     useEffect(() => {
         setCurrentDay(getCurrentDecemberDay());
     }, []);
@@ -18,20 +21,22 @@ function AdventCalendar() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="bg-black/30 backdrop-blur-md rounded-3xl p-6 text-white shadow-2xl w-full border border-white/10 flex flex-col items-center"
+            className="bg-black/30 backdrop-blur-md rounded-3xl p-6 text-white shadow-2xl w-full h-full border border-white/10 flex flex-col items-center justify-center"
         >
-            <h2 className="text-xs font-bold tracking-[0.2em] text-gray-400 mb-6 uppercase">
+            <h2 className="text-xs font-bold tracking-[0.2em] text-white-400 mb-6 uppercase">
                 Calendrier de l'Avent
             </h2>
 
-            <div className="grid grid-cols-5 gap-3 w-full place-items-center">
+            <div className="grid grid-cols-5 gap-4 w-full place-items-center">
                 {adventData.map((data) => (
                     <AdventDoor
                         key={data.day}
                         dayNumber={data.day}
                         message={data.message}
                         chocolate={data.chocolate}
-                        isCurrentDay={data.day === currentDay}
+                        isCurrentDay={data.day <= currentDay}
+                        openDay={openDay}
+                        setOpenDay={setOpenDay}
                     />
                 ))}
             </div>

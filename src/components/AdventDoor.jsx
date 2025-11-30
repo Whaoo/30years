@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-function AdventDoor({ dayNumber, message, chocolate, isCurrentDay }) {
+function AdventDoor({ dayNumber, message, chocolate, isCurrentDay, openDay, setOpenDay }) {
     const [isOpen, setIsOpen] = useState(false);
     const [hasBeenOpened, setHasBeenOpened] = useState(false);
-    const [showTooltip, setShowTooltip] = useState(false);
 
     // Load opened state from localStorage
     useEffect(() => {
@@ -22,8 +21,12 @@ function AdventDoor({ dayNumber, message, chocolate, isCurrentDay }) {
             setIsOpen(true);
             setHasBeenOpened(true);
             localStorage.setItem(`advent-door-${dayNumber}`, 'true');
+            // Show tooltip for this door by setting it global 'openDay'
+            if (setOpenDay) setOpenDay(dayNumber);
+        } else {
+            // Toggle tooltip: if it's already open, close it, otherwise open it
+            if (setOpenDay) setOpenDay(prev => (prev === dayNumber ? 0 : dayNumber));
         }
-        setShowTooltip(!showTooltip);
     };
 
     // Determine bulb color/style
@@ -37,13 +40,13 @@ function AdventDoor({ dayNumber, message, chocolate, isCurrentDay }) {
             : 'radial-gradient(circle at 30% 30%, #EF4444, #B91C1C)'; // Red for available
 
     return (
-        <div className="relative flex flex-col items-center justify-center">
+        <div className="relative flex flex-col items-center justify-center select-none">
             {/* The Bulb */}
             <motion.div
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: isLocked ? 1 : 1.1 }}
+                whileTap={{ scale: isLocked ? 1 : 0.95 }}
                 onClick={handleClick}
-                className={`w-12 h-12 rounded-full shadow-lg flex items-center justify-center cursor-pointer relative z-10 ${isLocked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+                className={`w-14 h-14 md:w-16 md:h-16 rounded-full shadow-lg flex items-center justify-center relative z-10 ${isLocked ? 'opacity-60 cursor-not-allowed pointer-events-none' : 'cursor-pointer'
                     }`}
                 style={{
                     background: bulbGradient,
@@ -53,7 +56,7 @@ function AdventDoor({ dayNumber, message, chocolate, isCurrentDay }) {
                 }}
             >
                 {/* Bulb Cap */}
-                <div className="absolute -top-1.5 w-3 h-2 bg-gray-400 rounded-sm shadow-sm" />
+                <div className="absolute -top-2 w-4 h-3 bg-gray-400 rounded-sm shadow-sm" />
 
                 {/* Content: Number or Icon */}
                 <AnimatePresence mode="wait">
@@ -63,7 +66,7 @@ function AdventDoor({ dayNumber, message, chocolate, isCurrentDay }) {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="text-white font-bold text-lg drop-shadow-md pt-1"
+                            className="text-white font-bold text-xl md:text-2xl drop-shadow-md pt-1"
                         >
                             {dayNumber}
                         </motion.span>
@@ -72,7 +75,7 @@ function AdventDoor({ dayNumber, message, chocolate, isCurrentDay }) {
                             key="icon"
                             initial={{ scale: 0, rotate: -180 }}
                             animate={{ scale: 1, rotate: 0 }}
-                            className="text-2xl pt-1"
+                            className="text-3xl md:text-4xl pt-1"
                         >
                             {chocolate}
                         </motion.span>
@@ -85,14 +88,14 @@ function AdventDoor({ dayNumber, message, chocolate, isCurrentDay }) {
                 )}
             </motion.div>
 
-            {/* Message Tooltip */}
+            {/* Message Tooltip - driven by the shared openDay prop */}
             <AnimatePresence>
-                {(showTooltip || (hasBeenOpened && isCurrentDay)) && (
+                {openDay === dayNumber && (
                     <motion.div
                         initial={{ opacity: 0, y: 10, scale: 0.8 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.8 }}
-                        className="absolute z-50 w-48 bg-white/95 text-black p-3 rounded-xl shadow-xl text-center pointer-events-none"
+                        className="absolute z-20 w-48 bg-white/95 text-black p-3 rounded-xl shadow-xl text-center pointer-events-none"
                         style={{
                             bottom: '100%',
                             marginBottom: '10px',

@@ -2,19 +2,20 @@
 export const adventData = [
     {
         day: 1,
-        message: "🎄 Welcome to December! Let the festive countdown begin!",
-        chocolate: "🍫" // Classic chocolate bar
+        message: "🎄 Bienvenue en décembre ! Le compte à rebour est lancé !",
+        chocolate: "🎄" // Classic chocolate bar
     },
     {
         day: 2,
-        message: "✨ Every birthday is a gift. Cherish the moments!",
-        chocolate: "🧁" // Cupcake chocolate
+        message: "✨ Les étoiles filantes ne sont pas visible depuis Paris.",
+        chocolate: "✨" // Cupcake chocolate
     },
     {
         day: 3,
-        message: "🎅 Ho ho ho! Santa is starting his journey!",
-        chocolate: "🍬" // Candy chocolate
-    },
+        message: "🎁 C'est l'anniversaire de Thibault - Pensez à le croissanter si possible.",
+        chocolate: "🎁" // Gift box chocolate
+    }
+    ,
     {
         day: 4,
         message: "⭐ Make a wish! The stars are brighter in December.",
@@ -22,12 +23,12 @@ export const adventData = [
     },
     {
         day: 5,
-        message: "🎁 The best gift is being together with loved ones.",
-        chocolate: "🎁" // Gift box chocolate
+        message: "🎅 Ho ho ho! C'est parti pour une nouvelle tournée!",
+        chocolate: "🍬" // Candy chocolate
     },
     {
         day: 6,
-        message: "❄️ Each snowflake is unique, just like every birthday!",
+        message: "❄️ Each snowflake is unique - and i'm not talking about Snowpark queries!",
         chocolate: "❄️" // Snowflake chocolate
     },
     {
@@ -77,8 +78,8 @@ export const adventData = [
     },
     {
         day: 16,
-        message: "🎂 Another year older, another year wiser!",
-        chocolate: "🎂" // Cake chocolate
+        message: "🍵 Another year older, another year wiser!",
+        chocolate: "🍵" // Tea hot chocolate
     },
     {
         day: 17,
@@ -134,11 +135,11 @@ export function getCurrentDecemberDay() {
     const day = now.getDate(); // 1-31
 
     // For testing: return a specific day (ENABLE FOR TESTING)
-    return 1;
+    // return 4;
 
     // Production code (uncomment when ready for December):
-    // if (month === 11 && day >= 1 && day <= 25) {
-    //     return day;
-    // }
-    // return 0; // Not in advent period
+    if (month === 11 && day >= 1 && day <= 25) {
+        return day;
+     }
+    return 0; // Not in advent period
 }
