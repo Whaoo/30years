@@ -85,7 +85,7 @@ const SantaWidget = ({ currentDay = 0 }) => {
 
                 {/* Icon with hover effect */}
                 <div className="text-5xl md:text-7xl filter drop-shadow-2xl hover:scale-110 transition-transform duration-300 hover:rotate-12 select-none">
-                    🦌🛷🎅
+                    🛷
                 </div>
             </div>
         </motion.div>
