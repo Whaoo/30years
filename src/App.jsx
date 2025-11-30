@@ -3,12 +3,15 @@ import { motion } from 'framer-motion';
 import Countdown from './components/Countdown';
 import WeatherWidget from './components/WeatherWidget';
 import SantaWidget from './components/SantaWidget';
+import AdventCalendar from './components/AdventCalendar';
 import { getSortedBirthdays } from './utils/birthdayLogic';
+import winterBackground from './assets/winter-background.png';
 
 function App() {
     const [sortedBirthdays, setSortedBirthdays] = useState([]);
     // const bgImage = 'https://i.postimg.cc/zvqjtKPQ/1759475418238.png';
-    const bgImage = 'https://images.pexels.com/photos/640809/pexels-photo-640809.jpeg?cs=srgb&dl=pexels-eberhardgross-640809.jpg&fm=jpg';
+    // const bgImage = 'https://images.pexels.com/photos/640809/pexels-photo-640809.jpeg?cs=srgb&dl=pexels-eberhardgross-640809.jpg&fm=jpg';
+    const bgImage = winterBackground; // December winter background
 
     useEffect(() => {
         const birthdays = getSortedBirthdays();
@@ -105,7 +108,8 @@ function App() {
             {/* Santa Widget - Bottom Left */}
             <SantaWidget />
 
-
+            {/* Advent Calendar - December only */}
+            <AdventCalendar />
         </div>
     );
 }
