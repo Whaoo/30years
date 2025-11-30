@@ -65,7 +65,7 @@ const Countdown = ({ targetDate, name, isMain }) => {
                     transition={{ type: "spring", stiffness: 100 }}
                     className="relative"
                 >
-                    <div className={`font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70 drop-shadow-2xl tracking-tighter leading-none ${isToday ? 'text-4xl md:text-7xl' : 'text-6xl md:text-9xl'}`}>
+                    <div className={`font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70 drop-shadow-2xl tracking-tighter leading-none ${isToday ? 'text-4xl md:text-6xl' : 'text-5xl md:text-7xl'}`}>
                         {getFormattedTime()}
                     </div>
                 </motion.div>
@@ -74,7 +74,7 @@ const Countdown = ({ targetDate, name, isMain }) => {
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.3 }}
-                    className="mt-6 md:mt-10"
+                    className="mt-3"
                 >
                     <div className="text-2xl md:text-4xl font-bold text-white drop-shadow-md bg-white/10 backdrop-blur-md px-8 py-2 rounded-full border border-white/20">
                         {name}

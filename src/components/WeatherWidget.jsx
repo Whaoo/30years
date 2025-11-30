@@ -94,18 +94,7 @@ const WeatherWidget = () => {
                 </div>
             </div>
 
-            {/* 3-Day Forecast - Hidden on small screens */}
-            <div className="hidden md:grid grid-cols-3 gap-2">
-                {forecast.map((day, idx) => (
-                    <div key={idx} className="bg-white/5 rounded-lg p-2 flex flex-col items-center text-center">
-                        <span className="text-[10px] uppercase text-white/50 font-bold mb-1">{day.dayName}</span>
-                        <span className="text-xl mb-1">{day.emote}</span>
-                        <div className="text-xs text-white/80 font-medium">
-                            {day.maxTemp}° <span className="text-white/40">{day.minTemp}°</span>
-                        </div>
-                    </div>
-                ))}
-            </div>
+
         </div>
     );
 };

@@ -3,26 +3,26 @@ import { motion } from 'framer-motion';
 import Countdown from './components/Countdown';
 import WeatherWidget from './components/WeatherWidget';
 import SantaWidget from './components/SantaWidget';
+import AdventCalendar from './components/AdventCalendar';
 import { getSortedBirthdays } from './utils/birthdayLogic';
+import { getCurrentDecemberDay } from './utils/adventMessages';
+import winterBackground from './assets/winter-background.png';
 
 function App() {
     const [sortedBirthdays, setSortedBirthdays] = useState([]);
-    // const bgImage = 'https://i.postimg.cc/zvqjtKPQ/1759475418238.png';
-    const bgImage = 'https://images.pexels.com/photos/640809/pexels-photo-640809.jpeg?cs=srgb&dl=pexels-eberhardgross-640809.jpg&fm=jpg';
+    const bgImage = winterBackground;
 
     useEffect(() => {
         const birthdays = getSortedBirthdays();
         setSortedBirthdays(birthdays);
 
-        // Refresh birthdays every minute to keep order correct if day changes
         const birthdayInterval = setInterval(() => {
             setSortedBirthdays(getSortedBirthdays());
         }, 60000);
 
-        // Refresh the entire page every hour to fetch new weather data and update time
         const refreshInterval = setInterval(() => {
             window.location.reload();
-        }, 3600000); // 1 hour
+        }, 3600000);
 
         return () => {
             clearInterval(birthdayInterval);
@@ -33,57 +33,48 @@ function App() {
     if (sortedBirthdays.length === 0) return null;
 
     const mainBirthday = sortedBirthdays[0];
-    // Reduced to 3 to avoid scrollbar on smaller screens
-    const nextBirthdays = sortedBirthdays.slice(1, 4);
+    // Reduced to 1 to match height
+    const nextBirthdays = sortedBirthdays.slice(1, 2);
 
     return (
         <div className="relative w-screen h-screen overflow-hidden bg-black font-sans selection:bg-pink-500/30">
-            {/* Background Image - Using img tag for better quality control */}
+            {/* Background Image */}
             <img
                 src={bgImage}
                 alt="Background"
                 className="absolute inset-0 z-0 w-full h-full object-cover"
             />
 
-            {/* Dark Overlay - Reduced opacity, removed blur for sharpness */}
+            {/* Dark Overlay */}
             <div className="absolute inset-0 z-0 bg-black/10" />
 
-            {/* Main Content */}
-            <div className="relative z-10 flex items-center justify-center h-full p-4">
+            {/* Main Content Container */}
+            <div className="relative z-10 flex flex-col lg:flex-row items-center justify-center min-h-screen p-4 gap-8">
+
+                {/* Left Card: Main Dashboard */}
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
+                    initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
-                    // Square aspect ratio on mobile (aspect-square), auto on desktop
-                    // Smaller max-width on mobile
-                    className="w-full max-w-[320px] md:max-w-4xl aspect-square md:aspect-auto bg-black/20 backdrop-blur-x1 border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row"
+                    transition={{ duration: 0.5 }}
+                    className="bg-black/30 backdrop-blur-md rounded-3xl p-6 text-white shadow-2xl w-full max-w-md border border-white/10 flex flex-col justify-between lg:h-[500px]"
                 >
-                    {/* Left Side: Main Countdown */}
-                    <div className="flex-1 relative overflow-hidden group py-4 md:py-12 px-4 md:px-6 flex flex-col justify-center">
-                        {/* Subtle Gradient Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/5 opacity-30" />
-
-                        <div className="relative z-10 w-full h-full flex flex-col justify-center items-center">
-                            <div className="text-white/50 text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] mb-4 md:mb-8">
-                                Prochain Anniversaire
-                            </div>
-
+                    <div className="flex flex-col items-center justify-center flex-grow">
+                        <h2 className="text-xs font-bold tracking-[0.2em] text-white-400 mb-6 uppercase">Prochain Anniversaire</h2>
+                        <div className="text-center w-full">
                             <Countdown
                                 targetDate={mainBirthday.nextBirthday}
                                 name={mainBirthday.name}
                                 isMain={true}
                             />
+                            {/* Duplicate name removed */}
                         </div>
                     </div>
 
-                    {/* Right Side: List & Weather */}
-                    <div className="md:w-80 bg-black/40 border-t md:border-t-0 md:border-l border-white/5 p-4 md:p-6 flex flex-col justify-between">
-                        {/* Upcoming List - Hidden on small screens (Vivaldi tiles) */}
-                        <div className="hidden md:block mb-6">
-                            <h3 className="text-white/40 text-[10px] font-bold uppercase tracking-widest mb-4">
-                                À Venir
-                            </h3>
-                            <div className="space-y-1">
+                    <div className="space-y-6 mt-auto">
+                        {/* Upcoming Birthdays List - Hidden on mobile */}
+                        <div className="hidden md:block bg-black/20 rounded-2xl p-4 border border-white/5">
+                            <h3 className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">À Venir</h3>
+                            <div className="space-y-2">
                                 {nextBirthdays.map((birthday, index) => (
                                     <Countdown
                                         key={index}
@@ -94,18 +85,21 @@ function App() {
                             </div>
                         </div>
 
-                        {/* Weather Widget - Always visible */}
-                        <div className="w-full">
-                            <WeatherWidget />
-                        </div>
+                        {/* Weather Widget */}
+                        <WeatherWidget />
                     </div>
                 </motion.div>
+
+                {/* Right Card: Advent Calendar (Only in December, Hidden on Mobile) */}
+                {getCurrentDecemberDay() !== 0 && (
+                    <div className="hidden lg:block w-full max-w-md lg:h-[500px]">
+                        <AdventCalendar />
+                    </div>
+                )}
             </div>
 
-            {/* Santa Widget - Bottom Left */}
-            <SantaWidget />
-
-
+            {/* Santa Widget - Always visible at bottom, position based on current day */}
+            <SantaWidget currentDay={getCurrentDecemberDay()} />
         </div>
     );
 }
