@@ -18,47 +18,47 @@ export const adventData = [
     ,
     {
         day: 4,
-        message: "⭐ Make a wish! The stars are brighter in December.",
+        message: "⭐ Le père Noël s'appelle Kanakaloka à Hawaii - https://www.youtube.com/watch?v=aAkMkVFwAoo",
         chocolate: "⭐" // Star-shaped chocolate
     },
     {
         day: 5,
-        message: "🎅 Ho ho ho! C'est parti pour une nouvelle tournée!",
+        message: "🎅 Le Rubik's cube était le jouet le plus vendu en 1980 - https://www.youtube.com/watch?v=v5ryZdpEHqM",
         chocolate: "🍬" // Candy chocolate
     },
     {
         day: 6,
-        message: "❄️ Each snowflake is unique - and i'm not talking about Snowpark queries!",
+        message: "❄️ Each snowflake is unique - and i'm not talking about Snowpark queries! - https://www.youtube.com/watch?v=E8gmARGvPlI",
         chocolate: "❄️" // Snowflake chocolate
     },
     {
         day: 7,
-        message: "🔔 Jingle all the way! Keep spreading joy and laughter.",
+        message: "🔔 La première guirelande électrique a été inventée par Edward Hibberd Johnson en 1882 - https://www.youtube.com/watch?v=sE3uRRFVsmc",
         chocolate: "🔔" // Bell-shaped chocolate
     },
     {
         day: 8,
-        message: "🌟 You're a shining star! Never forget how special you are.",
+        message: "🌟 'Christmass'est aussi une île - https://www.youtube.com/watch?v=V-PD5iz7qdE",
         chocolate: "🌟" // Glowing star chocolate
     },
     {
         day: 9,
-        message: "🎊 Celebrate every moment, big or small!",
+        message: "🎊 Celebrate every moment, big or small! - https://www.youtube.com/watch?v=d82Xzey-4B4",
         chocolate: "🎊" // Party chocolate
     },
     {
         day: 10,
-        message: "🕯️ Light up the world with your smile today!",
+        message: "🕯️ Light up the world with your smile today! - https://www.youtube.com/watch?v=vWw9AEe0i38",
         chocolate: "🕯️" // Candle chocolate
     },
     {
         day: 11,
-        message: "🎵 Life is a song. Sing it with joy!",
+        message: "🎵 Diner de roi à la cantine",
         chocolate: "🎵" // Music note chocolate
     },
     {
         day: 12,
-        message: "🌲 Like a pine tree, stand tall and stay evergreen!",
+        message: "🌲 Grinch a un coeur trop etit pour aimer Noël - https://www.youtube.com/watch?v=nlR0MkrRklg",
         chocolate: "🌲" // Christmas tree chocolate
     },
     {
@@ -124,7 +124,7 @@ export const adventData = [
     {
         day: 25,
         message: "🎅 MERRY CHRISTMAS! Have a wonderful day! 🎁",
-        chocolate: "👑" // Crown/Special
+        chocolate: "🎄" // Crown/Special
     }
 ];
 
@@ -135,11 +135,11 @@ export function getCurrentDecemberDay() {
     const day = now.getDate(); // 1-31
 
     // For testing: return a specific day (ENABLE FOR TESTING)
-    // return 4;
+    // return 25;
 
     // Production code (uncomment when ready for December):
     if (month === 11 && day >= 1 && day <= 25) {
         return day;
-     }
+    }
     return 0; // Not in advent period
 }
