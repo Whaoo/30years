@@ -27,19 +27,36 @@ function AdventCalendar() {
                 Calendrier de l'Avent
             </h2>
 
-            <div className="grid grid-cols-5 gap-4 w-full place-items-center">
-                {adventData.map((data) => (
-                    <AdventDoor
-                        key={data.day}
-                        dayNumber={data.day}
-                        message={data.message}
-                        chocolate={data.chocolate}
-                        isCurrentDay={data.day <= currentDay}
-                        openDay={openDay}
-                        setOpenDay={setOpenDay}
-                    />
-                ))}
-            </div>
+            {currentDay === 25 ? (
+                <div className="flex items-center justify-center w-full h-full">
+                    {adventData.filter(d => d.day === 25).map(data => (
+                        <AdventDoor
+                            key={data.day}
+                            dayNumber={data.day}
+                            message={data.message}
+                            chocolate={data.chocolate}
+                            isCurrentDay={true}
+                            openDay={openDay}
+                            setOpenDay={setOpenDay}
+                            size="large"
+                        />
+                    ))}
+                </div>
+            ) : (
+                <div className="grid grid-cols-5 gap-4 w-full place-items-center">
+                    {adventData.filter(data => data.day !== 25).map((data) => (
+                        <AdventDoor
+                            key={data.day}
+                            dayNumber={data.day}
+                            message={data.message}
+                            chocolate={data.chocolate}
+                            isCurrentDay={data.day <= currentDay}
+                            openDay={openDay}
+                            setOpenDay={setOpenDay}
+                        />
+                    ))}
+                </div>
+            )}
         </motion.div>
     );
 }
