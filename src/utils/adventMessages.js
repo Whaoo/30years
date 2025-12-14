@@ -58,12 +58,12 @@ export const adventData = [
     },
     {
         day: 12,
-        message: "🌲 Grinch a un coeur trop etit pour aimer Noël - https://www.youtube.com/watch?v=nlR0MkrRklg",
+        message: "🌲 Grinch a un coeur trop petit pour aimer Noël - https://www.youtube.com/watch?v=nlR0MkrRklg",
         chocolate: "🌲" // Christmas tree chocolate
     },
     {
         day: 13,
-        message: "💝 Love and kindness are the sweetest gifts of all.",
+        message: "💝 Chocolat chaud sous la couette pour ce temps gris.",
         chocolate: "💝" // Heart chocolate
     },
     {
@@ -73,47 +73,47 @@ export const adventData = [
     },
     {
         day: 15,
-        message: "🌈 After every storm comes a rainbow. Keep hoping!",
-        chocolate: "🌈" // Rainbow chocolate
+        message: "😏 Les LEAKS!",
+        chocolate: "😏" // Rainbow chocolate
     },
     {
         day: 16,
-        message: "🍵 Another year older, another year wiser!",
+        message: "🍵 The tea!",
         chocolate: "🍵" // Tea hot chocolate
     },
     {
         day: 17,
-        message: "🦌 Rudolph's nose shines bright, just like your spirit!",
+        message: "🦌",
         chocolate: "🦌" // Reindeer chocolate
     },
     {
         day: 18,
-        message: "🎀 You're a gift to this world. Unwrap your potential!",
+        message: "🎀",
         chocolate: "🎀" // Ribbon chocolate
     },
     {
         day: 19,
-        message: "🏔️ Reach for the peaks! Great things await you.",
+        message: "🏔️",
         chocolate: "🏔️" // Mountain chocolate
     },
     {
         day: 20,
-        message: "🎺 Announce your dreams to the world!",
+        message: "🎺",
         chocolate: "🎺" // Trumpet chocolate
     },
     {
         day: 21,
-        message: "🌙 Dream big! The longest night brings the brightest stars.",
+        message: "🌙",
         chocolate: "🌙" // Moon chocolate
     },
     {
         day: 22,
-        message: "🎪 Three more days! The magic is building!",
+        message: "🍭",
         chocolate: "🍭" // Lollipop chocolate
     },
     {
         day: 23,
-        message: "✨ Almost there! Tomorrow is Christmas Eve!",
+        message: "✨ ALORS PEUT-ETRE! - ",
         chocolate: "✨" // Sparkle chocolate
     },
     {
