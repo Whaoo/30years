@@ -83,7 +83,7 @@ export const adventData = [
     },
     {
         day: 17,
-        message: "🦌",
+        message: "🦌Brieuc nous a fait l'honneur de venir sur site",
         chocolate: "🦌" // Reindeer chocolate
     },
     {
@@ -93,7 +93,7 @@ export const adventData = [
     },
     {
         day: 19,
-        message: "🏔️",
+        message: "🏔️ La maman de Sophie et BB sont nés le même jour",
         chocolate: "🏔️" // Mountain chocolate
     },
     {
