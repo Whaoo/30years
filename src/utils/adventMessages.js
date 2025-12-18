@@ -88,7 +88,7 @@ export const adventData = [
     },
     {
         day: 18,
-        message: "🎀",
+        message: "🎀 Minute culture: en ce jour, 1958 a été lancé le premier satellite de télécommunications - SCORE",
         chocolate: "🎀" // Ribbon chocolate
     },
     {
