@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import Countdown from './components/Countdown';
 import WeatherWidget from './components/WeatherWidget';
 import { getSortedBirthdays } from './utils/birthdayLogic';
-import skiBackground from './assets/ski-january-background.png';
+import skiBackground from './assets/Fleurs de cerisiers.jpg';
 
 function App() {
     const [sortedBirthdays, setSortedBirthdays] = useState([]);
