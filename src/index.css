@@ -11,3 +11,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
   overflow: hidden; /* Prevent scrolling if content fits */
 }
+
+::selection {
+  background: color-mix(in srgb, var(--accent, #ec4899) 40%, transparent);
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 20%; }
+  50% { background-position: 100% 80%; }
+  100% { background-position: 0% 20%; }
+}

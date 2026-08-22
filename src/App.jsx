@@ -1,13 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Countdown from './components/Countdown';
 import WeatherWidget from './components/WeatherWidget';
+import Background from './components/Background';
+import WeatherParticles from './components/WeatherParticles';
 import { getSortedBirthdays } from './utils/birthdayLogic';
-import skiBackground from './assets/ab8755cb-ed59-4dc5-90a5-0df43ea067b6 (1).jpeg';
+import { resolveTheme, getWeatherMood } from './utils/theme';
+import { useWeather } from './hooks/useWeather';
 
 function App() {
     const [sortedBirthdays, setSortedBirthdays] = useState([]);
-    const bgImage = skiBackground;
+    const { weather } = useWeather();
+
+    const theme = useMemo(() => {
+        let weatherCode = null;
+        if (weather) {
+            const hour = new Date().getHours();
+            weatherCode = weather.hourlyData.hourly.weathercode[hour];
+        }
+        return resolveTheme(new Date(), weatherCode);
+    }, [weather]);
 
     useEffect(() => {
         const birthdays = getSortedBirthdays();
@@ -27,6 +39,10 @@ function App() {
         };
     }, []);
 
+    useEffect(() => {
+        document.documentElement.style.setProperty('--accent', theme.accent);
+    }, [theme.accent]);
+
     if (sortedBirthdays.length === 0) return null;
 
     const mainBirthday = sortedBirthdays[0];
@@ -34,20 +50,15 @@ function App() {
     const nextBirthdays = sortedBirthdays.slice(1, 3);
 
     return (
-        <div className="relative w-screen h-screen overflow-hidden bg-black font-sans selection:bg-pink-500/30">
-            {/* Background Image */}
-            <img
-                src={bgImage}
-                alt="Background"
-                className="absolute inset-0 z-0 w-full h-full object-cover"
-            />
-
-            {/* Dark Overlay */}
-            <div className="absolute inset-0 z-0 bg-black/10" />
+        <div
+            className="relative w-screen h-screen overflow-hidden bg-black font-sans selection:bg-pink-500/30"
+            style={{ '--accent': theme.accent }}
+        >
+            <Background theme={theme} />
+            <WeatherParticles type={theme.particles} />
 
             {/* Main Content Container */}
             <div className="relative z-10 flex flex-col lg:flex-row items-center justify-center min-h-screen p-4 gap-6">
-
                 {/* LEFT CARD: Birthdays */}
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
@@ -97,6 +108,16 @@ function App() {
                     <WeatherWidget extended={true} />
                 </motion.div>
             </div>
+
+            {/* Theme indicator */}
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1, duration: 0.8 }}
+                className="absolute bottom-3 left-3 z-10 rounded-full bg-black/25 backdrop-blur-sm px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-white/70 border border-white/10"
+            >
+                {theme.label}
+            </motion.div>
         </div>
     );
 }

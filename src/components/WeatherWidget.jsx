@@ -1,21 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { fetchWeather, getWeatherEmote, getWeatherDescription } from '../utils/weather';
+import React from 'react';
+import { getWeatherEmote, getWeatherDescription } from '../utils/weather';
+import { useWeather } from '../hooks/useWeather';
 import { Loader2 } from 'lucide-react';
 
 const WeatherWidget = ({ compact = false, extended = false }) => {
-    const [weather, setWeather] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        async function loadWeather() {
-            const data = await fetchWeather();
-            if (data) {
-                setWeather(data);
-            }
-            setLoading(false);
-        }
-        loadWeather();
-    }, []);
+    const { weather, loading } = useWeather();
 
     if (loading) {
         return <div className="flex justify-center items-center p-4 h-full"><Loader2 className="animate-spin text-white/50" /></div>;
