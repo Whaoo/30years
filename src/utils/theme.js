@@ -1,8 +1,4 @@
-import winterBackground from '../assets/winter-background.png';
-import skiBackground from '../assets/ski-january-background.png';
-import springBackground from '../assets/Fleurs de cerisiers.jpg';
-import summerBackground from '../assets/ab8755cb-ed59-4dc5-90a5-0df43ea067b6 (1).jpeg';
-
+// Thème visuel : saison (décor illustré) + moment de la journée + météo réelle.
 const SNOW_CODES = [71, 73, 75, 77, 85, 86];
 const RAIN_CODES = [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82];
 const STORM_CODES = [95, 96, 99];
@@ -33,91 +29,107 @@ export function getWeatherMood(weatherCode) {
     return 'cloudy';
 }
 
-const SEASON_THEMES = {
+const SEASONS = {
+    autumn: {
+        label: 'Automne',
+        sky: 'linear-gradient(180deg, #2a1b3d 0%, #6e2f4c 40%, #b9532f 80%, #d9803a 100%)',
+        sun: '#ffd08a',
+        sunGlow: 'rgba(255, 170, 90, 0.55)',
+        hill1: '#4a2230',
+        hill2: '#2f1624',
+        accent: '#ffc15e',
+        particle: '#ff9a3c',
+        particleShape: '50% 0 50% 0',
+        particleAnim: 'fall'
+    },
     winter: {
         label: 'Hiver',
-        accent: '#7dd3fc',
-        image: (date) => (date.getMonth() === 0 ? skiBackground : winterBackground),
-        gradients: {
-            day: ['linear-gradient(180deg, #93c5fd 0%, #e0f2fe 55%, #f8fafc 100%)'],
-            dawn: ['linear-gradient(180deg, #7c9ccf 0%, #cbd5e1 60%, #f1f5f9 100%)'],
-            dusk: ['linear-gradient(180deg, #312e81 0%, #6d28d9 50%, #be185d 100%)'],
-            night: ['linear-gradient(180deg, #020617 0%, #0f172a 55%, #1e293b 100%)'],
-        },
+        sky: 'linear-gradient(180deg, #070d24 0%, #14306a 50%, #3f6fa8 100%)',
+        sun: '#eaf4ff',
+        sunGlow: 'rgba(180, 215, 255, 0.45)',
+        hill1: '#dfeaf6',
+        hill2: '#a9c6e4',
+        accent: '#ffd36e',
+        particle: '#ffffff',
+        particleShape: '50%',
+        particleAnim: 'fall'
     },
     spring: {
         label: 'Printemps',
-        accent: '#f9a8d4',
-        image: () => springBackground,
-        gradients: {
-            day: ['linear-gradient(180deg, #bfdbfe 0%, #fce7f3 60%, #fef3c7 100%)'],
-            dawn: ['linear-gradient(180deg, #fecdd3 0%, #fef3c7 60%, #fff7ed 100%)'],
-            dusk: ['linear-gradient(180deg, #4c1d95 0%, #9d174d 55%, #fb7185 100%)'],
-            night: ['linear-gradient(180deg, #0f172a 0%, #1e1b4b 55%, #4c1d95 100%)'],
-        },
+        sky: 'linear-gradient(180deg, #173a52 0%, #2f7d84 45%, #a96f93 100%)',
+        sun: '#fff2c9',
+        sunGlow: 'rgba(255, 230, 170, 0.5)',
+        hill1: '#2f7a58',
+        hill2: '#1f5a45',
+        accent: '#ffc2dc',
+        particle: '#ffd1e6',
+        particleShape: '50% 50% 0 50%',
+        particleAnim: 'fall'
     },
     summer: {
         label: 'Été',
-        accent: '#fde047',
-        image: () => summerBackground,
-        gradients: {
-            day: ['linear-gradient(180deg, #38bdf8 0%, #fde68a 70%, #fca5a5 100%)'],
-            dawn: ['linear-gradient(180deg, #fdba74 0%, #fef08a 55%, #ffedd5 100%)'],
-            dusk: ['linear-gradient(180deg, #7c2d12 0%, #c2410c 45%, #f59e0b 100%)'],
-            night: ['linear-gradient(180deg, #020617 0%, #172554 55%, #312e81 100%)'],
-        },
-    },
-    autumn: {
-        label: 'Automne',
-        accent: '#fb923c',
-        image: () => null,
-        gradients: {
-            day: ['linear-gradient(160deg, #f97316 0%, #fbbf24 35%, #78716c 70%, #44403c 100%)', 'gradientShift'],
-            dawn: ['linear-gradient(160deg, #fb923c 0%, #fcd34d 40%, #92400e 100%)', 'gradientShift'],
-            dusk: ['linear-gradient(160deg, #7c2d12 0%, #b45309 40%, #1c1917 100%)', 'gradientShift'],
-            night: ['linear-gradient(160deg, #0c0a09 0%, #292524 50%, #7c2d12 100%)', 'gradientShift'],
-        },
-    },
+        sky: 'linear-gradient(180deg, #0e4a85 0%, #1f84b5 48%, #c98d3d 100%)',
+        sun: '#fff0a8',
+        sunGlow: 'rgba(255, 225, 120, 0.6)',
+        hill1: '#c48d38',
+        hill2: '#9d6a22',
+        accent: '#ffe27a',
+        particle: 'rgba(255, 240, 170, 0.9)',
+        particleShape: '50%',
+        particleAnim: 'rise'
+    }
+};
+
+const TIME_LABELS = { dawn: 'matin', day: 'journée', dusk: 'soir', night: 'nuit' };
+
+const TIME_OVERLAYS = {
+    day: null,
+    dawn: 'rgba(253, 186, 116, 0.12)',
+    dusk: 'rgba(76, 29, 149, 0.2)',
+    night: 'rgba(2, 6, 23, 0.4)'
 };
 
 const MOOD_OVERLAYS = {
     clear: null,
-    cloudy: 'rgba(51, 65, 85, 0.22)',
-    fog: 'rgba(148, 163, 184, 0.28)',
-    rain: 'rgba(15, 23, 42, 0.32)',
-    storm: 'rgba(30, 27, 75, 0.48)',
-    snow: 'rgba(30, 58, 138, 0.14)',
-};
-
-const TIME_OVERLAYS = {
-    day: null,
-    dawn: 'rgba(253, 186, 116, 0.14)',
-    dusk: 'rgba(76, 29, 149, 0.22)',
-    night: 'rgba(2, 6, 23, 0.42)',
+    cloudy: 'rgba(51, 65, 85, 0.2)',
+    fog: 'rgba(148, 163, 184, 0.24)',
+    rain: 'rgba(15, 23, 42, 0.28)',
+    storm: 'rgba(30, 27, 75, 0.42)',
+    snow: 'rgba(30, 58, 138, 0.12)'
 };
 
 export function resolveTheme(date = new Date(), weatherCode = null) {
     const season = getSeason(date);
     const timeOfDay = getTimeOfDay(date.getHours());
     let mood = getWeatherMood(weatherCode);
+    if (mood === 'snow' && season !== 'winter') mood = 'rain';
 
-    if (mood === 'snow' && season !== 'winter') {
-        mood = 'rain';
-    }
-
-    const config = SEASON_THEMES[season];
-    const gradient = config.gradients[timeOfDay];
+    const base = SEASONS[season];
+    const night = timeOfDay === 'night';
 
     return {
-        key: `${season}-${timeOfDay}-${mood}`,
+        ...base,
         season,
         timeOfDay,
+        timeLabel: TIME_LABELS[timeOfDay],
         mood,
-        label: `${config.label} • ${timeOfDay}`,
-        accent: config.accent,
-        image: config.image(date),
-        gradient,
+        // La nuit, le soleil devient une lune
+        sun: night ? '#eef3ff' : base.sun,
+        sunGlow: night ? 'rgba(200, 220, 255, 0.35)' : base.sunGlow,
         overlays: [TIME_OVERLAYS[timeOfDay], MOOD_OVERLAYS[mood]].filter(Boolean),
-        particles: mood === 'rain' || mood === 'storm' ? 'rain' : mood === 'snow' ? 'snow' : null,
+        weatherParticles: mood === 'rain' || mood === 'storm' ? 'rain' : mood === 'snow' ? 'snow' : null
+    };
+}
+
+// Variables CSS posées sur la racine de l'app
+export function themeStyle(theme) {
+    return {
+        '--sky': theme.sky,
+        '--sun': theme.sun,
+        '--sun-glow': theme.sunGlow,
+        '--hill1': theme.hill1,
+        '--hill2': theme.hill2,
+        '--accent': theme.accent,
+        '--particle': theme.particle
     };
 }

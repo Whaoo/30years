@@ -7,7 +7,8 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Inter', 'sans-serif'],
+                sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
+                display: ['"Bricolage Grotesque"', '"DM Sans"', 'sans-serif'],
             },
         },
     },

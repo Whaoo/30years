@@ -1,123 +1,230 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import Countdown from './components/Countdown';
-import WeatherWidget from './components/WeatherWidget';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Background from './components/Background';
 import WeatherParticles from './components/WeatherParticles';
-import { getSortedBirthdays } from './utils/birthdayLogic';
-import { resolveTheme, getWeatherMood } from './utils/theme';
+import Header from './components/Header';
+import Countdown from './components/Countdown';
+import UpcomingList from './components/UpcomingList';
+import StatTiles, { AdventProgress } from './components/StatTiles';
+import AdventCalendar from './components/AdventCalendar';
+import Gags from './components/Gags';
+import Confetti from './components/Confetti';
+import Dial from './components/Dial';
+import { MONTHS, birthdays, getSortedBirthdays } from './utils/birthdayLogic';
+import { adventState } from './utils/advent';
+import { resolveTheme, themeStyle } from './utils/theme';
 import { useWeather } from './hooks/useWeather';
+import { useNow } from './hooks/useNow';
+import { useDialMode } from './hooks/useDialMode';
+import { usePenguinPlay } from './hooks/usePenguinPlay';
+
+const HOUR = 3600000;
+
+function greeting(now, isToday) {
+    if (isToday) return 'C’est le grand jour !';
+    const h = now.getHours();
+    if (h < 12) return 'Bonjour !';
+    if (h < 18) return 'Salut !';
+    return 'Bonsoir !';
+}
+
+function plural(n, word) {
+    return `${n} ${word}${n > 1 ? 's' : ''}`;
+}
 
 function App() {
-    const [sortedBirthdays, setSortedBirthdays] = useState([]);
+    const now = useNow();
     const { weather } = useWeather();
+    const isDial = useDialMode();
 
-    const theme = useMemo(() => {
-        let weatherCode = null;
-        if (weather) {
-            const hour = new Date().getHours();
-            weatherCode = weather.hourlyData.hourly.weathercode[hour];
-        }
-        return resolveTheme(new Date(), weatherCode);
-    }, [weather]);
+    const weatherCode = weather?.hourlyData?.hourly?.weathercode?.[new Date().getHours()] ?? null;
+    const theme = useMemo(() => resolveTheme(now, weatherCode), [now, weatherCode]);
+    const sorted = useMemo(() => getSortedBirthdays(now), [now]);
+    const advent = adventState(now);
 
-    useEffect(() => {
-        const birthdays = getSortedBirthdays();
-        setSortedBirthdays(birthdays);
+    const [view, setView] = useState(null);
+    const [disco, setDisco] = useState(false);
+    const [shake, setShake] = useState(false);
+    const [toast, setToast] = useState('');
+    const [confetti, setConfetti] = useState(0);
+    const [gag, setGag] = useState(null);
 
-        const birthdayInterval = setInterval(() => {
-            setSortedBirthdays(getSortedBirthdays());
-        }, 60000);
+    const toastTimer = useRef();
+    const confettiTimer = useRef();
+    const gagTimer = useRef();
+    const gagCount = useRef(0);
+    const gagBusy = useRef(false);
+    const logoClicks = useRef(0);
+    const lockTries = useRef(0);
 
-        const refreshInterval = setInterval(() => {
-            window.location.reload();
-        }, 3600000);
-
-        return () => {
-            clearInterval(birthdayInterval);
-            clearInterval(refreshInterval);
-        };
+    const flash = useCallback((text) => {
+        clearTimeout(toastTimer.current);
+        setToast(text);
+        toastTimer.current = setTimeout(() => setToast(''), 2800);
     }, []);
 
+    const boom = useCallback(() => {
+        clearTimeout(confettiTimer.current);
+        setConfetti((k) => k + 1);
+        confettiTimer.current = setTimeout(() => setConfetti(0), 3400);
+    }, []);
+
+    const play = usePenguinPlay(boom);
+    const { wave, say } = play;
+
+    const first = sorted[0];
+    const group = sorted.filter((p) => p.days === first.days);
+    const isToday = first.days === 0;
+    const firstId = first.id;
+
+    // Rechargement toutes les heures (écran affiché en continu) pour récupérer les mises à jour
     useEffect(() => {
-        document.documentElement.style.setProperty('--accent', theme.accent);
-    }, [theme.accent]);
+        const id = setInterval(() => window.location.reload(), HOUR);
+        return () => clearInterval(id);
+    }, []);
 
-    if (sortedBirthdays.length === 0) return null;
+    useEffect(() => () => {
+        clearTimeout(toastTimer.current);
+        clearTimeout(confettiTimer.current);
+        clearTimeout(gagTimer.current);
+    }, []);
 
-    const mainBirthday = sortedBirthdays[0];
-    // Show 2 upcoming birthdays
-    const nextBirthdays = sortedBirthdays.slice(1, 3);
+    // Le pingouin du prochain anniversaire salue à l'arrivée
+    const greetRef = useRef({ id: firstId, text: greeting(now, isToday), party: isToday });
+    useEffect(() => {
+        const { id, text, party } = greetRef.current;
+        const t = setTimeout(() => {
+            wave(id);
+            say(id, text, 'happy', 3000);
+            if (party) boom();
+        }, 700);
+        return () => clearTimeout(t);
+    }, [wave, say, boom]);
+
+    // Le jour J, le pingouin star refait coucou régulièrement
+    useEffect(() => {
+        if (!isToday) return undefined;
+        const id = setInterval(() => wave(firstId), 20000);
+        return () => clearInterval(id);
+    }, [isToday, firstId, wave]);
+
+    // Molette : pas de scroll, mais des gags
+    const onWheel = useCallback((e) => {
+        if (gagBusy.current) return;
+        gagBusy.current = true;
+        gagCount.current += 1;
+        const n = gagCount.current;
+        let kind = n % 2 === 1 ? 'slide' : 'peek';
+        if (e.deltaY < 0) kind = 'drop';
+        setGag({ kind, n });
+        gagTimer.current = setTimeout(() => {
+            gagBusy.current = false;
+            setGag(null);
+        }, 2900);
+        if (n === 7) {
+            setDisco(true);
+            setShake(true);
+            flash('Sept scrolls pour rien ? Mode aurore débloqué.');
+            setTimeout(() => setShake(false), 700);
+        }
+    }, [flash]);
+
+    const onLogo = useCallback(() => {
+        logoClicks.current += 1;
+        if (logoClicks.current < 5) return;
+        logoClicks.current = 0;
+        const on = !disco;
+        setDisco(on);
+        flash(on ? 'Mode aurore activé.' : 'Retour à la normale.');
+    }, [disco, flash]);
+
+    if (isDial) return <Dial theme={theme} sorted={sorted} advent={advent} />;
+
+    // En décembre, le calendrier de l'Avent est affiché par défaut
+    const isAvent = advent.isDecember && (view ?? 'avent') === 'avent';
+
+    const onHome = () => setView('home');
+    const onAvent = () => {
+        if (advent.isDecember) {
+            setView('avent');
+            return;
+        }
+        lockTries.current += 1;
+        const d = advent.daysToStart;
+        flash(lockTries.current >= 3
+            ? `Le pingouin gardien t’a à l’œil. Toujours J-${d}.`
+            : `Patience : ouverture le 1er décembre, dans ${plural(d, 'jour')}.`);
+    };
+
+    const onWish = () => {
+        boom();
+        group.forEach((p) => {
+            wave(p.id);
+            say(p.id, 'Merci, on fête ça !', 'happy');
+        });
+    };
+
+    const listItems = isAvent ? sorted.slice(0, 4) : sorted.slice(group.length, group.length + 4);
+    const shownCount = isAvent ? 4 : group.length + 4;
+    const restCount = Math.max(0, sorted.length - shownCount);
+    const lastMonth = sorted[sorted.length - 1].nextBirthday.getMonth();
+    const horizon = lastMonth === now.getMonth() ? 'dans l’année' : `d’ici ${MONTHS[lastMonth]}`;
+    const restLabel = restCount > 0
+        ? `Et ${restCount} ${restCount > 1 ? 'autres' : 'autre'} ${horizon}.`
+        : null;
+
+    const monthCount = birthdays.filter((b) => Number(b.date.split('-')[1]) === now.getMonth() + 1).length;
+    const tiles = [
+        { value: String(monthCount), label: `${monthCount > 1 ? 'anniversaires' : 'anniversaire'} en ${MONTHS[now.getMonth()]}` },
+        advent.isDecember
+            ? { value: `${advent.openCount}/25`, label: 'portes ouvertes' }
+            : { value: `J-${advent.daysToStart}`, label: 'avant le calendrier de l’Avent' }
+    ];
 
     return (
-        <div
-            className="relative w-screen h-screen overflow-hidden bg-black font-sans selection:bg-pink-500/30"
-            style={{ '--accent': theme.accent }}
-        >
-            <Background theme={theme} />
-            <WeatherParticles type={theme.particles} />
+        <div className="app" style={themeStyle(theme)} onWheel={onWheel}>
+            <Background theme={theme} disco={disco} />
+            <WeatherParticles type={theme.weatherParticles} />
 
-            {/* Main Content Container */}
-            <div className="relative z-10 flex flex-col lg:flex-row items-center justify-center min-h-screen p-4 gap-6">
-                {/* LEFT CARD: Birthdays */}
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5 }}
-                    className="bg-black/30 backdrop-blur-md rounded-3xl p-6 text-white shadow-2xl w-full max-w-md border border-white/10 flex flex-col lg:h-[420px] overflow-hidden"
-                >
-                    {/* Main Birthday */}
-                    <div className="flex flex-col items-center justify-center flex-grow">
-                        <h2 className="text-xs font-bold tracking-[0.2em] text-white/80 mb-4 uppercase">Prochain Anniversaire</h2>
-                        <div className="text-center w-full">
-                            <Countdown
-                                targetDate={mainBirthday.nextBirthday}
-                                name={mainBirthday.name}
-                                isMain={true}
-                            />
-                        </div>
-                    </div>
+            <div className={`layout${shake ? ' is-shaking' : ''}`}>
+                <Header
+                    theme={theme}
+                    weather={weather}
+                    isAvent={isAvent}
+                    isDecember={advent.isDecember}
+                    daysToStart={advent.daysToStart}
+                    onHome={onHome}
+                    onAvent={onAvent}
+                    onLogo={onLogo}
+                />
 
-                    {/* Upcoming Birthdays - Desktop only (inside left card) */}
-                    <div className="hidden lg:block mt-auto bg-black/20 rounded-2xl p-4 border border-white/5 flex-shrink-0">
-                        <h3 className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">À Venir</h3>
-                        <div className="space-y-1">
-                            {nextBirthdays.map((birthday, index) => (
-                                <Countdown
-                                    key={index}
-                                    targetDate={birthday.nextBirthday}
-                                    name={birthday.name}
-                                />
-                            ))}
-                        </div>
-                    </div>
+                <main className={`main${isAvent ? ' main--avent' : ''}`}>
+                    {isAvent
+                        ? <AdventCalendar now={now} />
+                        : <Countdown group={group} now={now} play={play} onWish={onWish} />}
+                    <aside className="side">
+                        <UpcomingList
+                            title={isAvent ? 'Anniversaires' : 'Ensuite'}
+                            items={listItems}
+                            highlightFirst={isAvent}
+                            restLabel={restLabel}
+                            play={play}
+                        />
+                        {isAvent ? <AdventProgress openCount={advent.openCount} /> : <StatTiles tiles={tiles} />}
+                    </aside>
+                </main>
 
-                    {/* Weather Widget - Mobile/Tablet only (inside left card) */}
-                    <div className="lg:hidden mt-6">
-                        <WeatherWidget compact={true} />
-                    </div>
-                </motion.div>
-
-                {/* RIGHT CARD: Extended Weather - Desktop only */}
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, delay: 0.15 }}
-                    className="hidden lg:flex bg-black/30 backdrop-blur-md rounded-3xl p-6 text-white shadow-2xl w-full max-w-sm border border-white/10 flex-col lg:h-[420px]"
-                >
-                    <WeatherWidget extended={true} />
-                </motion.div>
+                <footer className="footer-hint hide-short">
+                    <p className="glass">Psst : les pingouins ont des secrets. Et il n’y a rien plus bas… quoique.</p>
+                </footer>
             </div>
 
-            {/* Theme indicator */}
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1, duration: 0.8 }}
-                className="absolute bottom-3 left-3 z-10 rounded-full bg-black/25 backdrop-blur-sm px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-white/70 border border-white/10"
-            >
-                {theme.label}
-            </motion.div>
+            {toast && (
+                <div className="toast-wrap" role="status">
+                    <span className="toast">{toast}</span>
+                </div>
+            )}
+            {confetti > 0 && <Confetti key={confetti} />}
+            <Gags gag={gag} people={sorted} />
         </div>
     );
 }
