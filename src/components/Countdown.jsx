@@ -1,5 +1,17 @@
 import PenguinButton from './PenguinButton';
-import { capitalize, formatDay, joinNames } from '../utils/birthdayLogic';
+import { MONTHS, WEEKDAYS, capitalize, formatDay, joinNames } from '../utils/birthdayLogic';
+
+// Texte du bouton tant que ce n'est pas le jour J
+function waitLabel(days, date) {
+    if (days === 1) return 'Plus qu’une nuit avant les bougies';
+    if (days < 7) return `Les confettis attendent ${WEEKDAYS[date.getDay()]}`;
+    return `On garde les bougies pour le ${date.getDate()} ${MONTHS[date.getMonth()]}`;
+}
+
+function waitHint(days, date) {
+    if (days === 1) return 'Encore un peu de patience : on fête ça demain !';
+    return `Encore un peu de patience : on fête ça le ${formatDay(date)}.`;
+}
 
 // Carte principale : prochain anniversaire (ou plusieurs s'ils tombent le même jour)
 export default function Countdown({ group, now, play, onWish }) {
@@ -41,15 +53,15 @@ export default function Countdown({ group, now, play, onWish }) {
                     <span className={bigClass}>{big}</span>
                     <span className="hero__unit">{unit}</span>
                 </div>
-                {/* Les vœux ne s'envoient que le jour J */}
+                {/* Les vœux ne s'envoient que le jour J : avant, un petit mot d'attente */}
                 <button
                     type="button"
                     className="btn btn--primary"
                     onClick={onWish}
                     disabled={days !== 0}
-                    title={days !== 0 ? `Disponible le ${formatDay(first.nextBirthday)}` : undefined}
+                    title={days !== 0 ? waitHint(days, first.nextBirthday) : undefined}
                 >
-                    {days === 0 ? 'Souhaiter un joyeux anniversaire' : 'Vœux possibles le jour J'}
+                    {days === 0 ? 'Souhaiter un joyeux anniversaire' : waitLabel(days, first.nextBirthday)}
                 </button>
             </div>
             <div className="hero__pengs">
