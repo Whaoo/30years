@@ -41,8 +41,15 @@ export default function Countdown({ group, now, play, onWish }) {
                     <span className={bigClass}>{big}</span>
                     <span className="hero__unit">{unit}</span>
                 </div>
-                <button type="button" className="btn btn--primary" onClick={onWish}>
-                    Souhaiter un joyeux anniversaire
+                {/* Les vœux ne s'envoient que le jour J */}
+                <button
+                    type="button"
+                    className="btn btn--primary"
+                    onClick={onWish}
+                    disabled={days !== 0}
+                    title={days !== 0 ? `Disponible le ${formatDay(first.nextBirthday)}` : undefined}
+                >
+                    {days === 0 ? 'Souhaiter un joyeux anniversaire' : 'Vœux possibles le jour J'}
                 </button>
             </div>
             <div className="hero__pengs">

@@ -198,6 +198,7 @@ function App() {
     };
 
     const onWish = () => {
+        if (!isToday) return; // seulement le jour de l'anniversaire
         boom();
         group.forEach((p) => {
             wave(p.id);
