@@ -22,7 +22,7 @@ function makeParticles(shape, anim, count, compact) {
 export default function Background({ theme, disco = false, compact = false }) {
     const { particleShape, particleAnim } = theme;
     const particles = useMemo(
-        () => makeParticles(particleShape, particleAnim, compact ? 9 : 22, compact),
+        () => makeParticles(particleShape, particleAnim, compact ? 8 : 16, compact),
         [particleShape, particleAnim, compact]
     );
 

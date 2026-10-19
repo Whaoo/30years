@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import Penguin from './Penguin';
 import Icon from './Icons';
 import { ADVENT_TEASERS, DOOR_ORDER, adventState } from '../utils/advent';
+import { formatScore, getGame } from '../games';
 
 const GUARD_LINES = [
     'Joyeux Avent !',
@@ -11,7 +12,7 @@ const GUARD_LINES = [
     'Cinq clics : te voilà ami officiel.'
 ];
 
-export default function AdventCalendar({ now }) {
+export default function AdventCalendar({ now, bests = {}, onPlay }) {
     const { openCount, todayDoor } = adventState(now);
     const [selected, setSelected] = useState(null);
     const [guard, setGuard] = useState(null);
@@ -26,6 +27,7 @@ export default function AdventCalendar({ now }) {
     const teaser = ADVENT_TEASERS[current - 1];
     const unlocked = current <= openCount;
     const wait = current - openCount;
+    const game = teaser.game ? getGame(teaser.game) : null;
 
     const cheer = () => {
         setWaving(true);
@@ -69,6 +71,18 @@ export default function AdventCalendar({ now }) {
                         ? teaser.text
                         : 'Cette porte est verrouillée. Le pingouin garde la clé et ne se laisse pas amadouer.'}
                 </p>
+                {unlocked && game && onPlay && (
+                    <div className="advent__play">
+                        <button type="button" className="btn btn--primary btn--icon" onClick={() => onPlay(game.id)}>
+                            <Icon name="play" size={18} />
+                            Jouer
+                        </button>
+                        <span className="advent__best">
+                            <Icon name="trophy" size={16} />
+                            Record : {formatScore(game, bests[game.id])}
+                        </span>
+                    </div>
+                )}
                 <div className="guard-zone">
                     <div className="bubble" key={bubble}>{bubble}</div>
                     <button
@@ -106,6 +120,7 @@ export default function AdventCalendar({ now }) {
                     const cls = [
                         'door',
                         open ? 'door--open' : '',
+                        ADVENT_TEASERS[n - 1].game ? 'door--game' : '',
                         n >= 24 ? 'door--special' : '',
                         n === todayDoor ? 'door--today' : ''
                     ].filter(Boolean).join(' ');

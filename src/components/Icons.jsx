@@ -45,6 +45,78 @@ const PATHS = {
             <path d="M6 16.33A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.97" />
             <path d="m13 12-3 5h4l-3 5" />
         </>
+    ),
+    play: <path d="M7 4.5v15l12.5-7.5Z" />,
+    close: <path d="M6 6l12 12M18 6 6 18" />,
+    trophy: (
+        <>
+            <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0Z" />
+            <path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3" />
+        </>
+    ),
+    snowball: (
+        <>
+            <circle cx="12" cy="12" r="8" />
+            <path d="M9 10h.01M14 9h.01M12 14h.01M15.5 13.5h.01" />
+        </>
+    ),
+    fish: (
+        <>
+            <path d="M6.5 12c3-5 9-6 13 0-4 6-10 5-13 0Z" />
+            <path d="M6.5 12 2.5 8.5v7Z" />
+            <path d="M16 11h.01" />
+        </>
+    ),
+    jump: (
+        <>
+            <path d="M3 20h18" />
+            <path d="M5 16c2.5-7 8-9.5 12.5-7.5" />
+            <path d="m15 5.5 3 3-4 1.5" />
+        </>
+    ),
+    cards: (
+        <>
+            <rect x="3" y="6" width="11" height="14" rx="2" />
+            <path d="M10 4h9a2 2 0 0 1 2 2v12" />
+        </>
+    ),
+    cube: (
+        <>
+            <path d="M12 3 4 7.5v9L12 21l8-4.5v-9Z" />
+            <path d="M4 7.5 12 12l8-4.5M12 12v9" />
+        </>
+    ),
+    umbrella: (
+        <>
+            <path d="M3 12a9 9 0 0 1 18 0Z" />
+            <path d="M12 12v6a2 2 0 0 1-4 0" />
+        </>
+    ),
+    curling: (
+        <>
+            <path d="M4 15.5c0-2.5 3.6-4.5 8-4.5s8 2 8 4.5S16.4 20 12 20s-8-2-8-4.5Z" />
+            <path d="M9 11V8a2 2 0 0 1 2-2h5" />
+        </>
+    ),
+    sled: (
+        <>
+            <path d="M3 17h15a3 3 0 0 0 3-3" />
+            <path d="M6 17v-4h10v4" />
+            <path d="M9 13V9h4v4" />
+        </>
+    ),
+    slide: (
+        <>
+            <rect x="3" y="3" width="18" height="18" rx="3" />
+            <path d="M7 12h10m-3-3 3 3-3 3" />
+        </>
+    ),
+    tower: (
+        <>
+            <rect x="7" y="15" width="10" height="6" rx="3" />
+            <rect x="8" y="9" width="8" height="6" rx="3" />
+            <circle cx="12" cy="6" r="3" />
+        </>
     )
 };
 

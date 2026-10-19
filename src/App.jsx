@@ -4,7 +4,11 @@ import WeatherParticles from './components/WeatherParticles';
 import Header from './components/Header';
 import Countdown from './components/Countdown';
 import UpcomingList from './components/UpcomingList';
-import StatTiles, { AdventProgress } from './components/StatTiles';
+import StatTiles from './components/StatTiles';
+import GamesTile from './components/GamesTile';
+import GameModal from './components/GameModal';
+import { GAMES, getGame, isUnlocked } from './games';
+import { loadBests, saveScore } from './games/scores';
 import AdventCalendar from './components/AdventCalendar';
 import Gags from './components/Gags';
 import Confetti from './components/Confetti';
@@ -47,7 +51,17 @@ function App() {
     const [toast, setToast] = useState('');
     const [confetti, setConfetti] = useState(0);
     const [gag, setGag] = useState(null);
+    const [bests, setBests] = useState(() => loadBests(GAMES.map((g) => g.id)));
+    // ?jeu=snowball ouvre directement un jeu (s'il est débloqué), pratique pour tester
+    const [gameId, setGameId] = useState(() => {
+        const id = new URLSearchParams(window.location.search).get('jeu');
+        const g = getGame(id);
+        return g && isUnlocked(g, advent) ? g.id : null;
+    });
 
+    const gameOpen = useRef(false);
+    gameOpen.current = !!gameId;
+    const reloadPending = useRef(false);
     const toastTimer = useRef();
     const confettiTimer = useRef();
     const gagTimer = useRef();
@@ -76,10 +90,28 @@ function App() {
     const isToday = first.days === 0;
     const firstId = first.id;
 
-    // Rechargement toutes les heures (écran affiché en continu) pour récupérer les mises à jour
+    // Rechargement toutes les heures (écran affiché en continu) pour récupérer les mises à jour,
+    // repoussé à la fin de la partie si un mini-jeu est ouvert
     useEffect(() => {
-        const id = setInterval(() => window.location.reload(), HOUR);
+        const id = setInterval(() => {
+            if (gameOpen.current) reloadPending.current = true;
+            else window.location.reload();
+        }, HOUR);
         return () => clearInterval(id);
+    }, []);
+
+    const closeGame = useCallback(() => {
+        setGameId(null);
+        if (reloadPending.current) window.location.reload();
+    }, []);
+
+    const onGameScore = useCallback((id, score) => {
+        const g = getGame(id);
+        // Un score nul n'est jamais un record (partie ratée d'entrée)
+        if (!g?.lowerIsBetter && score <= 0) return false;
+        const record = saveScore(id, score, g?.lowerIsBetter);
+        if (record) setBests((b) => ({ ...b, [id]: score }));
+        return record;
     }, []);
 
     useEffect(() => () => {
@@ -109,7 +141,7 @@ function App() {
 
     // Molette : pas de scroll, mais des gags
     const onWheel = useCallback((e) => {
-        if (gagBusy.current) return;
+        if (gagBusy.current || gameOpen.current) return;
         gagBusy.current = true;
         gagCount.current += 1;
         const n = gagCount.current;
@@ -155,6 +187,16 @@ function App() {
             : `Patience : ouverture le 1er décembre, dans ${plural(d, 'jour')}.`);
     };
 
+    const openGame = (id) => {
+        const g = getGame(id);
+        if (!g) return;
+        if (!isUnlocked(g, advent)) {
+            flash(`${g.title} : disponible le ${g.door} décembre.`);
+            return;
+        }
+        setGameId(id);
+    };
+
     const onWish = () => {
         boom();
         group.forEach((p) => {
@@ -163,8 +205,9 @@ function App() {
         });
     };
 
-    const listItems = isAvent ? sorted.slice(0, 4) : sorted.slice(group.length, group.length + 4);
-    const shownCount = isAvent ? 4 : group.length + 4;
+    // En décembre, la tuile des 10 mini-jeux prend de la place : 3 anniversaires au lieu de 4
+    const listItems = isAvent ? sorted.slice(0, 3) : sorted.slice(group.length, group.length + 4);
+    const shownCount = isAvent ? 3 : group.length + 4;
     const restCount = Math.max(0, sorted.length - shownCount);
     const lastMonth = sorted[sorted.length - 1].nextBirthday.getMonth();
     const horizon = lastMonth === now.getMonth() ? 'dans l’année' : `d’ici ${MONTHS[lastMonth]}`;
@@ -181,9 +224,9 @@ function App() {
     ];
 
     return (
-        <div className="app" style={themeStyle(theme)} onWheel={onWheel}>
+        <div className={`app${gameId ? ' is-gaming' : ''}`} style={themeStyle(theme)} onWheel={onWheel}>
             <Background theme={theme} disco={disco} />
-            <WeatherParticles type={theme.weatherParticles} />
+            {!gameId && <WeatherParticles type={theme.weatherParticles} />}
 
             <div className={`layout${shake ? ' is-shaking' : ''}`}>
                 <Header
@@ -199,7 +242,7 @@ function App() {
 
                 <main className={`main${isAvent ? ' main--avent' : ''}`}>
                     {isAvent
-                        ? <AdventCalendar now={now} />
+                        ? <AdventCalendar now={now} bests={bests} onPlay={openGame} />
                         : <Countdown group={group} now={now} play={play} onWish={onWish} />}
                     <aside className="side">
                         <UpcomingList
@@ -209,7 +252,9 @@ function App() {
                             restLabel={restLabel}
                             play={play}
                         />
-                        {isAvent ? <AdventProgress openCount={advent.openCount} /> : <StatTiles tiles={tiles} />}
+                        {isAvent
+                            ? <GamesTile openCount={advent.openCount} bests={bests} onPlay={openGame} />
+                            : <StatTiles tiles={tiles} />}
                     </aside>
                 </main>
 
@@ -225,6 +270,14 @@ function App() {
             )}
             {confetti > 0 && <Confetti key={confetti} />}
             <Gags gag={gag} people={sorted} />
+            {gameId && (
+                <GameModal
+                    game={getGame(gameId)}
+                    best={bests[gameId]}
+                    onScore={onGameScore}
+                    onClose={closeGame}
+                />
+            )}
         </div>
     );
 }
