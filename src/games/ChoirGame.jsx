@@ -156,8 +156,8 @@ function createChoir(api) {
         ctx.fillRect(40, FEET + 50, W - 80, 4);
     }
 
-    // En local uniquement : accès à l'état depuis la console (tests)
-    if (import.meta.env.DEV) window.chorale = { s, press };
+    // En mode test uniquement (npm run dev, préversion dev) : accès à l'état depuis la console
+    if (__TEST_MODE__) window.chorale = { s, press };
 
     return {
         update(dt) {

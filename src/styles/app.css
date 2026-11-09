@@ -632,3 +632,75 @@ html, body, #root { height: 100%; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition: none !important; }
 }
+
+/* ---------- Mode test (npm run dev et préversion dev uniquement, absent de la production) ---------- */
+.testbar {
+  position: fixed; left: 16px; bottom: 16px; z-index: 15;
+  display: inline-flex; align-items: center; gap: 7px;
+  min-height: 40px; padding: 0 14px; border: 0; border-radius: 999px;
+  font-size: 13px; font-weight: 800;
+  background: #9fd8ff; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  cursor: pointer; transition: transform 0.2s;
+}
+.app .testbar { color: #14172b; }
+.testbar:hover { transform: translateY(-2px); }
+.testbar__date { font-weight: 600; opacity: 0.75; }
+.testpanel {
+  position: fixed; left: 16px; bottom: 66px; z-index: 15;
+  width: min(460px, calc(100vw - 32px)); max-height: calc(100dvh - 90px); overflow-y: auto;
+  display: flex; flex-direction: column; gap: 16px;
+  padding: 18px; border-radius: 22px;
+  color: #fff; background: #0f1430; border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+  transform-origin: bottom left; animation: pop 0.2s ease-out;
+}
+.testpanel__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.testpanel__title { font-family: 'Bricolage Grotesque', 'DM Sans', sans-serif; font-weight: 800; font-size: 20px; line-height: 1.1; }
+.testpanel__sub { margin-top: 3px; font-size: 12px; color: rgba(255, 255, 255, 0.7); }
+.testpanel__close {
+  flex: none; display: grid; place-items: center; width: 34px; height: 34px;
+  border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.1); cursor: pointer;
+}
+.app .testpanel__close { color: #fff; }
+.testpanel__section { display: flex; flex-direction: column; gap: 8px; }
+.testpanel__label { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 255, 255, 0.6); }
+.testpanel__now { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; }
+.testpanel__tag { padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; color: #14172b; background: rgba(255, 255, 255, 0.75); }
+.testpanel__tag.is-sim { background: #9fd8ff; }
+.testpanel__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tchip {
+  padding: 7px 12px; border-radius: 999px; font-size: 13px; font-weight: 700;
+  background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer; transition: background 0.2s;
+}
+.app .tchip { color: #fff; }
+.tchip:hover { background: rgba(255, 255, 255, 0.2); }
+.app .tchip--accent { color: #14172b; background: #ffd36e; border-color: transparent; }
+.app .tchip--danger { color: #14172b; background: #ff9b9b; border-color: transparent; }
+.testpanel__form { display: flex; gap: 6px; }
+.testpanel__form input {
+  flex: 1; min-width: 0; padding: 7px 12px; border-radius: 12px;
+  font: inherit; font-size: 14px; color: #fff; color-scheme: dark;
+  background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.testpanel__games { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.tgame {
+  display: flex; align-items: center; gap: 8px; min-width: 0; padding: 8px 10px;
+  border-radius: 14px; text-align: left; cursor: pointer;
+  background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.14);
+  transition: background 0.2s;
+}
+.app .tgame { color: #fff; }
+.tgame:hover { background: rgba(255, 255, 255, 0.18); }
+.tgame svg { flex: none; }
+.tgame__text { display: flex; flex-direction: column; min-width: 0; }
+.tgame__name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tgame__rule { font-size: 11px; color: rgba(255, 255, 255, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.testpanel__foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; color: rgba(255, 255, 255, 0.6); }
+.testbar:focus-visible, .tchip:focus-visible, .tgame:focus-visible, .testpanel__close:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+/* Téléphone : le pied de page occupe le bas, le bouton passe en haut à droite */
+@media (max-width: 760px) {
+  .testbar { left: auto; right: 16px; bottom: auto; top: 18px; }
+  .testpanel { bottom: auto; top: 68px; max-height: calc(100dvh - 84px); transform-origin: top right; }
+  .testpanel__games { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

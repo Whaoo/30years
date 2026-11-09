@@ -139,8 +139,8 @@ function createCrowd(api) {
         return null;
     }
 
-    // En local uniquement : accès à l'état depuis la console (tests)
-    if (import.meta.env.DEV) window.foule = { s, startRound };
+    // En mode test uniquement (npm run dev, préversion dev) : accès à l'état depuis la console
+    if (__TEST_MODE__) window.foule = { s, startRound };
 
     return {
         canPause() {

@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 
 // Date courante, rafraîchie régulièrement.
 // Pour tester une autre date : ?date=2026-12-09 (ou ?date=2026-12-09T20:30)
-// Uniquement en local (npm run dev) : sur le site en ligne, ?date= est ignoré,
-// pour qu'on ne puisse pas débloquer les portes et les jeux en avance.
+// Uniquement en mode test (npm run dev et préversion de la branche dev, voir vite.config.js) :
+// sur le site de production, ?date= est ignoré, pour qu'on ne puisse pas débloquer les portes et les jeux en avance.
 function parseOverride() {
-    if (!import.meta.env.DEV || typeof window === 'undefined') return null;
+    if (!__TEST_MODE__ || typeof window === 'undefined') return null;
     const raw = new URLSearchParams(window.location.search).get('date');
     if (!raw) return null;
     const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?$/);
@@ -15,6 +15,9 @@ function parseOverride() {
 
 const override = parseOverride();
 const offset = override ? override.getTime() - Date.now() : 0;
+
+// Vrai si une date simulée est active (affiché dans le panneau de test)
+export const DATE_SIMULATED = !!override;
 
 export function useNow(intervalMs = 30000) {
     const [now, setNow] = useState(() => new Date(Date.now() + offset));

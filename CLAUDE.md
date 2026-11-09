@@ -13,7 +13,11 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
 
 - Vite 5 + React 18 + Tailwind 3 (gardé pour le reset) ; le style est dans `src/styles/app.css` (variables CSS du thème).
 - `npm run dev` : serveur local (http://localhost:5173). `npm run build` : version de production dans `dist/`.
-- En local uniquement, `?date=2026-12-10T15:00` simule une date (ignoré en production, voir `src/hooks/useNow.js`).
+- **Mode test** (`__TEST_MODE__`, défini dans `vite.config.js`) : actif avec `npm run dev` et sur les préversions Cloudflare
+  (toute branche sauf `main`, détectée par `CF_PAGES_BRANCH`). Il ajoute un bouton « Test » en bas à gauche
+  (`src/components/TestPanel.jsx` : tous les jeux sans attendre leur porte, dates prêtes, effacer les records),
+  `?date=2026-12-10T15:00` pour simuler une date et `?jeu=<id>` qui ouvre n'importe quel jeu.
+  Sur `main`, rien de tout ça n'est compilé : la production reste verrouillée.
 
 ## Branches et mise en ligne (Cloudflare Pages, offre gratuite, site statique)
 
@@ -41,7 +45,7 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
 - Performance : pas de `backdrop-filter`, animations en `transform`/`opacity`, décor masqué pendant un jeu (`.app.is-gaming`),
   sprites des jeux dessinés une fois dans un canvas hors écran. Viser 60 images/s.
 - Le bouton « Souhaiter un joyeux anniversaire » n'est actif que le jour J.
-- Tester les jeux : en local uniquement, la console expose `window.flocon` (aventure, ex. `flocon.startWave(10)` pour le boss),
+- Tester les jeux : en mode test, la console expose `window.flocon` (aventure, ex. `flocon.startWave(10)` pour le boss),
   `window.fort`, `window.traineau`, `window.foule`, `window.chorale` et `window.bougies`.
 - Calendrier : les portes sans jeu ont un texte vide (`null` dans `src/utils/advent.js`) en attendant les vrais textes.
 - Ne pas committer `preview-local/` ni `design demos/`.

@@ -371,8 +371,8 @@ function createFort(api) {
         }
     }
 
-    // En local uniquement : accès à l'état depuis la console (tests)
-    if (import.meta.env.DEV) window.fort = { s, loadLevel, launch };
+    // En mode test uniquement (npm run dev, préversion dev) : accès à l'état depuis la console
+    if (__TEST_MODE__) window.fort = { s, loadLevel, launch };
 
     return {
         canPause() {

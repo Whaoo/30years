@@ -1856,8 +1856,8 @@ function createAdventure(api) {
         }
     }
 
-    // En local uniquement (npm run dev) : accès à l'état depuis la console pour tester une vague précise
-    if (import.meta.env.DEV) window.flocon = { s, world, startWave, spawnMonster, spawnGift, spawnBonus, hitMonster, waveClear };
+    // En mode test uniquement (npm run dev, préversion dev) : accès à l'état depuis la console pour tester une vague précise
+    if (__TEST_MODE__) window.flocon = { s, world, startWave, spawnMonster, spawnGift, spawnBonus, hitMonster, waveClear };
 
     return {
         update(dt) {

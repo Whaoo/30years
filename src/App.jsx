@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Background from './components/Background';
 import WeatherParticles from './components/WeatherParticles';
 import Header from './components/Header';
@@ -8,7 +8,7 @@ import StatTiles from './components/StatTiles';
 import GamesTile from './components/GamesTile';
 import GameModal from './components/GameModal';
 import { ADVENTURE, ALL_GAMES, CANDLES, QUIZ, getGame, isUnlocked } from './games';
-import { loadBests, saveScore } from './games/scores';
+import { clearBests, loadBests, saveScore } from './games/scores';
 import AdventCalendar from './components/AdventCalendar';
 import Gags from './components/Gags';
 import Confetti from './components/Confetti';
@@ -22,6 +22,10 @@ import { useDialMode } from './hooks/useDialMode';
 import { usePenguinPlay } from './hooks/usePenguinPlay';
 
 const HOUR = 3600000;
+
+/* global __TEST_MODE__ */
+// Panneau « Test » : seulement en mode test (npm run dev, préversion dev). Sur main il n'est pas inclus dans le site.
+const TestPanel = __TEST_MODE__ ? lazy(() => import('./components/TestPanel')) : null;
 
 // Adresses directes, pratiques pour tester : /aventure, /bougies, /quiz
 const PATH_GAMES = { '/aventure': ADVENTURE.id, '/bougies': CANDLES.id, '/quiz': QUIZ.id };
@@ -58,13 +62,14 @@ function App() {
     const [confetti, setConfetti] = useState(0);
     const [gag, setGag] = useState(null);
     const [bests, setBests] = useState(() => loadBests(ALL_GAMES.map((g) => g.id)));
-    // ?jeu=snowball ouvre directement un jeu (s'il est débloqué), /aventure ouvre le jeu d'aventure
+    // ?jeu=snowball ouvre directement un jeu (s'il est débloqué, ou toujours en mode test), /aventure ouvre le jeu d'aventure
     const [gameId, setGameId] = useState(() => {
         const fromPath = pathGame();
         if (fromPath) return fromPath;
         const id = new URLSearchParams(window.location.search).get('jeu');
         const g = getGame(id);
-        return g && isUnlocked(g, advent, now, { isBirthday: sorted[0].days === 0 }) ? g.id : null;
+        if (!g) return null;
+        return __TEST_MODE__ || isUnlocked(g, advent, now, { isBirthday: sorted[0].days === 0 }) ? g.id : null;
     });
 
     const gameOpen = useRef(false);
@@ -283,6 +288,21 @@ function App() {
             )}
             {confetti > 0 && <Confetti key={confetti} />}
             <Gags gag={gag} people={sorted} />
+            {TestPanel && !gameId && (
+                <Suspense fallback={null}>
+                    <TestPanel
+                        now={now}
+                        sorted={sorted}
+                        onPlay={setGameId}
+                        onClearBests={() => {
+                            const ids = ALL_GAMES.map((g) => g.id);
+                            clearBests(ids);
+                            setBests(loadBests(ids));
+                            flash('Records effacés.');
+                        }}
+                    />
+                </Suspense>
+            )}
             {gameId && (
                 <GameModal
                     game={getGame(gameId)}

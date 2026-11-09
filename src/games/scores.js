@@ -34,3 +34,14 @@ export function loadBests(ids) {
     });
     return out;
 }
+
+// Efface tous les records de ce navigateur (panneau de test)
+export function clearBests(ids) {
+    ids.forEach((id) => {
+        try {
+            window.localStorage.removeItem(key(id));
+        } catch {
+            /* stockage indisponible : rien à effacer */
+        }
+    });
+}

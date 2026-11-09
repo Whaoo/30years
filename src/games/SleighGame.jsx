@@ -203,8 +203,8 @@ function createSleigh(api) {
         ctx.restore();
     }
 
-    // En local uniquement : accès à l'état depuis la console (tests)
-    if (import.meta.env.DEV) window.traineau = { s, drop };
+    // En mode test uniquement (npm run dev, préversion dev) : accès à l'état depuis la console
+    if (__TEST_MODE__) window.traineau = { s, drop };
 
     return {
         canPause() {
