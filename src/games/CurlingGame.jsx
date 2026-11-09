@@ -45,14 +45,31 @@ function createCurling(api) {
         t: 0,
         overT: 0,
         record: false,
-        message: ''
+        message: '',
+        practice: false,
+        practiceDone: false
     };
+
+    // Force idéale pour s'arrêter au centre sans balayer (repère affiché sur la jauge pendant l'essai)
+    const IDEAL = (Math.sqrt(2 * 125 * (HOUSE.x - START.x)) - 220) / 300;
 
     const score = () => s.stones.reduce((sum, st) => sum + (st.out ? 0 : pointsFor(st)), 0);
     const angle = () => clamp(Math.atan2(s.aimY - START.y, HOUSE.x - START.x), -0.2, 0.2);
 
+    // La toute première partie commence par une pierre d'essai commentée, qui ne compte pas
     function start() {
-        Object.assign(s, { phase: 'aim', stones: [], left: STONES, current: null, holding: false, power: 0, popups: [], record: false, message: '' });
+        Object.assign(s, {
+            phase: 'aim', stones: [], left: STONES, current: null, holding: false, power: 0, popups: [], record: false,
+            message: '', practice: !s.practiceDone
+        });
+    }
+
+    function coachText() {
+        if (s.phase === 'aim' && !s.holding) return '1. Vise à la souris (ou ↑ ↓), puis maintiens le clic pour doser la force';
+        if (s.phase === 'aim' && s.holding) return '2. Relâche quand la jauge touche le repère : la pierre s’arrêtera près du centre';
+        if (s.phase === 'moving' && !s.sweeping) return '3. Pendant la glisse, maintiens le clic pour balayer : la pierre ira plus loin';
+        if (s.phase === 'moving') return 'Tu balaies ! Relâche pour laisser la pierre ralentir';
+        return '';
     }
 
     function beginHold() {
@@ -72,7 +89,7 @@ function createCurling(api) {
             const stone = { x: START.x, y: START.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, out: false, fade: 1 };
             s.stones.push(stone);
             s.current = stone;
-            s.left -= 1;
+            if (!s.practice) s.left -= 1;
             s.phase = 'moving';
             s.message = '';
         }
@@ -81,6 +98,19 @@ function createCurling(api) {
 
     function finishThrow() {
         const st = s.current;
+        if (s.practice) {
+            const pts = st && !st.out && st.x >= HOG ? pointsFor(st) : 0;
+            addPopup(s.popups, HOUSE.x, HOUSE.y - 96, `Essai : ${pts} point${pts > 1 ? 's' : ''}, ça ne compte pas`, '#9fd8ff');
+            s.stones = [];
+            s.current = null;
+            s.sweeping = false;
+            s.practice = false;
+            s.practiceDone = true;
+            s.message = 'À toi : 5 pierres qui comptent !';
+            s.messageT = 2.5;
+            s.phase = 'aim';
+            return;
+        }
         if (st && !st.out && st.x < HOG) {
             st.out = true;
             addPopup(s.popups, st.x, st.y - 24, 'Trop court !', '#ff9ad5');
@@ -121,9 +151,14 @@ function createCurling(api) {
     }
 
     return {
+        canPause() {
+            return s.phase === 'aim' || s.phase === 'moving';
+        },
+
         update(dt) {
             s.t += dt;
             updatePopups(s.popups, dt);
+            if (s.messageT > 0) s.messageT -= dt;
             if (s.phase === 'over') s.overT += dt;
             if (s.phase === 'aim') {
                 if (s.aimKeys) s.aimY = clamp(s.aimY + s.aimKeys * 160 * dt, SHEET.top, SHEET.bottom);
@@ -236,16 +271,37 @@ function createCurling(api) {
                 roundRect(ctx, 38, 366 - ph, 16, ph, 5);
                 ctx.fillStyle = s.power > 0.75 ? '#e94b4b' : '#ffd36e';
                 ctx.fill();
+                if (s.practice) {
+                    const iy = 366 - 66 * IDEAL;
+                    ctx.strokeStyle = '#6ee7b7';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(30, iy);
+                    ctx.lineTo(62, iy);
+                    ctx.stroke();
+                    text(ctx, 'repère', 66, iy + 4, { size: 11, weight: 700, color: '#6ee7b7' });
+                }
+            }
+
+            const coach = s.practice ? coachText() : (s.messageT > 0 ? s.message : '');
+            if (coach && s.phase !== 'ready' && s.phase !== 'over') {
+                ctx.font = `700 14px ${DISPLAY}`;
+                const cw = ctx.measureText(coach).width + 32;
+                roundRect(ctx, (W - cw) / 2, 392, cw, 34, 17);
+                ctx.fillStyle = s.practice ? 'rgba(16, 80, 70, 0.92)' : 'rgba(10, 14, 34, 0.85)';
+                ctx.fill();
+                text(ctx, coach, W / 2, 414, { size: 14, weight: 700, font: DISPLAY, align: 'center' });
             }
 
             drawPopups(ctx, s.popups);
             hudPill(ctx, 16, 14, 'Score', score());
-            hudPill(ctx, W - 16, 14, 'Pierres', `${s.left} / ${STONES}`, 'right');
+            hudPill(ctx, W - 16, 14, 'Pierres', s.practice ? 'Essai' : `${s.left} / ${STONES}`, 'right');
 
             if (s.phase === 'ready') {
                 drawOverlay(ctx, W, H, 'Curling des pingouins', [
                     'Vise à la souris, maintiens le clic pour doser la force,',
                     'relâche pour lancer. Reclique en route pour balayer.',
+                    s.practiceDone ? '5 pierres, 10 points en plein cœur.' : 'On commence par une pierre d’essai guidée.',
                     { text: 'Clique ou Entrée pour commencer', color: '#ffd36e', weight: 700 }
                 ]);
             } else if (s.phase === 'over') {
@@ -317,6 +373,7 @@ function drawStone(ctx, x, y, scale = 1) {
 export default function CurlingGame({ onScore }) {
     return (
         <GameCanvas
+            pausable
             create={createCurling}
             onScore={onScore}
             label="Curling des pingouins"

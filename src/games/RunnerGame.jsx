@@ -138,6 +138,10 @@ function createRunner(api) {
     }
 
     return {
+        canPause() {
+            return s.phase === 'play';
+        },
+
         update(dt) {
             s.t += dt;
             updateFlakes(s.flakes, dt, W, H, -s.speed * 0.05);
@@ -290,6 +294,7 @@ function createRunner(api) {
 export default function RunnerGame({ onScore }) {
     return (
         <GameCanvas
+            pausable
             create={createRunner}
             onScore={onScore}
             label="Saut sur la banquise"

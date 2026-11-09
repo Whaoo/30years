@@ -126,6 +126,10 @@ function createSled(api) {
     }
 
     return {
+        canPause() {
+            return s.phase === 'play';
+        },
+
         update(dt) {
             s.t += dt;
             updatePopups(s.popups, dt);
@@ -313,6 +317,7 @@ function createSled(api) {
 export default function SledGame({ onScore }) {
     return (
         <GameCanvas
+            pausable
             create={createSled}
             onScore={onScore}
             label="Descente en luge"

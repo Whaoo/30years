@@ -162,6 +162,10 @@ function createSnowball(api) {
     }
 
     return {
+        canPause() {
+            return s.phase === 'play';
+        },
+
         update(dt) {
             updateFlakes(s.flakes, dt, W, H, 8);
             updatePopups(s.popups, dt);
@@ -316,5 +320,5 @@ function createSnowball(api) {
 }
 
 export default function SnowballGame({ onScore }) {
-    return <GameCanvas create={createSnowball} onScore={onScore} label="Bataille de boules de neige" />;
+    return <GameCanvas pausable create={createSnowball} onScore={onScore} label="Bataille de boules de neige" />;
 }

@@ -140,6 +140,10 @@ function createFishing(api) {
     }
 
     return {
+        canPause() {
+            return s.phase === 'play';
+        },
+
         update(dt) {
             s.t += dt;
             updatePopups(s.popups, dt);
@@ -370,6 +374,7 @@ function createFishing(api) {
 export default function FishingGame({ onScore }) {
     return (
         <GameCanvas
+            pausable
             create={createFishing}
             onScore={onScore}
             label="Pêche sur la banquise"

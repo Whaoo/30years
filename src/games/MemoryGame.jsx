@@ -3,7 +3,14 @@ import Penguin from '../components/Penguin';
 import { getSortedBirthdays } from '../utils/birthdayLogic';
 
 // Memory des pingouins : 8 paires tirées au hasard parmi l'équipe.
+// Score en points : on perd des points à chaque coup en trop et à chaque seconde,
+// et deux paires trouvées d'affilée rapportent un bonus de série (la mémoire paie, pas seulement la chance).
 const PAIRS = 8;
+const SERIES_BONUS = 60;
+
+function memoryPoints(moves, secs, bonus) {
+    return Math.max(100, 1600 - 40 * Math.max(0, moves - PAIRS) - 6 * secs + bonus);
+}
 
 function shuffle(list) {
     const a = [...list];
@@ -36,6 +43,8 @@ export default function MemoryGame({ onScore }) {
     const [flipped, setFlipped] = useState([]);
     const [matched, setMatched] = useState(() => new Set());
     const [moves, setMoves] = useState(0);
+    const [bonus, setBonus] = useState(0);
+    const [streak, setStreak] = useState(0);
     const [startedAt, setStartedAt] = useState(null);
     const [now, setNow] = useState(Date.now());
     const [done, setDone] = useState(null);
@@ -68,12 +77,19 @@ export default function MemoryGame({ onScore }) {
             found.add(cards[a].pid);
             setMatched(found);
             setFlipped([]);
+            const gained = streak >= 1 ? SERIES_BONUS : 0;
+            const newBonus = bonus + gained;
+            setBonus(newBonus);
+            setStreak(streak + 1);
             if (found.size === PAIRS) {
                 const end = Date.now();
-                const record = onScore ? onScore(total) : false;
-                setDone({ moves: total, end, record, secs: Math.round((end - begin) / 1000) });
+                const secs = Math.round((end - begin) / 1000);
+                const points = memoryPoints(total, secs, newBonus);
+                const record = onScore ? onScore(points) : false;
+                setDone({ moves: total, end, record, secs, points, bonus: newBonus });
             }
         } else {
+            setStreak(0);
             busy.current = true;
             timer.current = setTimeout(() => {
                 setFlipped([]);
@@ -89,6 +105,8 @@ export default function MemoryGame({ onScore }) {
         setFlipped([]);
         setMatched(new Set());
         setMoves(0);
+        setBonus(0);
+        setStreak(0);
         setStartedAt(null);
         setDone(null);
     };
@@ -99,6 +117,7 @@ export default function MemoryGame({ onScore }) {
                 <span>Coups : {moves}</span>
                 <span>Paires : {matched.size}/{PAIRS}</span>
                 <span>Temps : {seconds} s</span>
+                <span>{streak >= 2 ? `Série x${streak} ! ` : ''}Bonus : {bonus}</span>
             </div>
             <div className="memory__grid">
                 {cards.map((c, i) => {
@@ -134,7 +153,8 @@ export default function MemoryGame({ onScore }) {
                 <div className="memory__done" role="status">
                     <div className="memory__done-card">
                         <p className="memory__done-title">Bravo !</p>
-                        <p>{done.moves} coups en {done.secs} s</p>
+                        <p className="memory__done-score">{done.points} points</p>
+                        <p>{done.moves} coups en {done.secs} s{done.bonus > 0 ? ` · bonus de série +${done.bonus}` : ''}</p>
                         {done.record && <p className="memory__record">Nouveau record !</p>}
                         <button type="button" className="btn btn--primary" onClick={restart}>Rejouer</button>
                     </div>

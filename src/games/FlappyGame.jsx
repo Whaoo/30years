@@ -28,16 +28,25 @@ function createFlappy(api) {
         stars: Array.from({ length: 45 }, () => ({ x: rand(0, W), y: rand(0, 260), r: rand(0.6, 1.6) }))
     };
 
-    const gapSize = () => Math.max(128, 170 - s.score * 2);
+    // Les 5 premiers passages sont larges et proches les uns des autres en hauteur, pour se mettre en main
+    const WARMUP = 5;
+    const gapSize = () => (s.score < WARMUP ? 215 - s.score * 9 : Math.max(128, 170 - (s.score - WARMUP) * 2));
 
     function addColumn(x) {
         const gap = gapSize();
-        const center = rand(70 + gap / 2, GROUND - 40 - gap / 2);
+        let lo = 70 + gap / 2;
+        let hi = GROUND - 40 - gap / 2;
+        if (s.score < WARMUP && s.lastCenter != null) {
+            lo = Math.max(lo, s.lastCenter - 80);
+            hi = Math.min(hi, s.lastCenter + 80);
+        }
+        const center = rand(lo, hi);
+        s.lastCenter = center;
         s.cols.push({ x, top: center - gap / 2, bottom: center + gap / 2, passed: false, seed: rand(0, 100) });
     }
 
     function start() {
-        Object.assign(s, { phase: 'play', y: 210, vy: -200, cols: [], score: 0, speed: 190, record: false });
+        Object.assign(s, { phase: 'play', y: 210, vy: -200, cols: [], score: 0, speed: 175, record: false, lastCenter: 230 });
         addColumn(W + 80);
         addColumn(W + 80 + SPACING);
     }
@@ -138,6 +147,10 @@ function createFlappy(api) {
     }
 
     return {
+        canPause() {
+            return s.phase === 'play';
+        },
+
         update(dt) {
             s.t += dt;
             s.flap = Math.max(0, s.flap - dt);
@@ -155,7 +168,7 @@ function createFlappy(api) {
                 return;
             }
 
-            s.speed = Math.min(300, 190 + s.score * 3);
+            s.speed = Math.min(300, 175 + s.score * 3.2);
             s.vy = Math.min(520, s.vy + 1300 * dt);
             s.y += s.vy * dt;
 
@@ -252,5 +265,5 @@ function createFlappy(api) {
 }
 
 export default function FlappyGame({ onScore }) {
-    return <GameCanvas create={createFlappy} onScore={onScore} label="Pingouin volant" />;
+    return <GameCanvas pausable create={createFlappy} onScore={onScore} label="Pingouin volant" />;
 }

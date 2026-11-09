@@ -71,6 +71,18 @@ function minMoves(level) {
 const MINIMUMS = LEVELS.map(minMoves);
 const MIN_TOTAL = MINIMUMS.reduce((a, b) => a + b, 0);
 
+// Chaque partie retourne les niveaux au hasard (miroir horizontal et/ou vertical) :
+// même difficulté, même minimum, mais impossible de rejouer une solution apprise par cœur.
+function mirror(level, flipX, flipY) {
+    const rows = flipY ? [...level].reverse() : [...level];
+    return flipX ? rows.map((r) => r.split('').reverse().join('')) : rows;
+}
+
+// Points d'un niveau : 100 si on fait le minimum, -15 par coup en trop, plus un bonus de rapidité
+function levelPoints(moves, min, secs) {
+    return Math.max(20, 100 - 15 * (moves - min)) + Math.max(0, Math.round(40 - 2 * secs));
+}
+
 function createSlidePuzzle(api) {
     const W = api.width;
     const H = api.height;
@@ -81,6 +93,10 @@ function createSlidePuzzle(api) {
         anim: null,
         moves: 0,
         total: 0,
+        points: 0,
+        levelT: 0,
+        lastPoints: 0,
+        levels: LEVELS,
         wonT: 0,
         overT: 0,
         record: false,
@@ -90,18 +106,20 @@ function createSlidePuzzle(api) {
         flakes: makeFlakes(25, W, H)
     };
 
-    const level = () => LEVELS[s.level];
+    const level = () => s.levels[s.level];
 
     function loadLevel(i) {
         s.level = i;
-        s.pos = find(LEVELS[i], 'P');
+        s.pos = find(s.levels[i], 'P');
         s.anim = null;
         s.moves = 0;
+        s.levelT = 0;
         s.wonT = 0;
     }
 
     function start() {
-        Object.assign(s, { phase: 'play', total: 0, record: false });
+        const levels = LEVELS.map((lv) => mirror(lv, Math.random() < 0.5, Math.random() < 0.5));
+        Object.assign(s, { phase: 'play', total: 0, points: 0, time: 0, record: false, levels });
         loadLevel(0);
     }
 
@@ -128,6 +146,8 @@ function createSlidePuzzle(api) {
         if (level()[s.pos.y][s.pos.x] === 'F') {
             s.phase = 'won';
             s.wonT = 0;
+            s.lastPoints = levelPoints(s.moves, MINIMUMS[s.level], s.levelT);
+            s.points += s.lastPoints;
         }
     }
 
@@ -171,6 +191,10 @@ function createSlidePuzzle(api) {
             updateFlakes(s.flakes, dt, W, H, 4);
             s.splash = Math.max(0, s.splash - dt);
             if (s.phase === 'over') s.overT += dt;
+            if (s.phase === 'play') {
+                s.levelT += dt;
+                s.time += dt;
+            }
             if (s.anim) {
                 s.anim.t += dt;
                 if (s.anim.t >= s.anim.dur) finishAnim();
@@ -184,7 +208,7 @@ function createSlidePuzzle(api) {
                     } else {
                         s.phase = 'over';
                         s.overT = 0;
-                        s.record = api.reportScore(s.total);
+                        s.record = api.reportScore(s.points);
                     }
                 }
             }
@@ -247,9 +271,9 @@ function createSlidePuzzle(api) {
 
             const panel = [
                 ['Niveau', `${s.level + 1} / ${LEVELS.length}`],
-                ['Coups', String(s.moves)],
-                ['Minimum', String(MINIMUMS[s.level])],
-                ['Total', String(s.total)]
+                ['Coups (minimum)', `${s.moves} (${MINIMUMS[s.level]})`],
+                ['Chrono', `${Math.floor(s.levelT)} s`],
+                ['Points', String(s.points)]
             ];
             panel.forEach(([label, value], i) => {
                 const y = 44 + i * 92;
@@ -266,7 +290,7 @@ function createSlidePuzzle(api) {
                 ctx.fill();
                 text(ctx, 'Niveau réussi !', BX + 234, BY + 176, { size: 26, weight: 800, font: DISPLAY, align: 'center' });
                 const perfect = s.moves <= MINIMUMS[s.level];
-                text(ctx, perfect ? `${s.moves} coups : parfait !` : `${s.moves} coups (minimum ${MINIMUMS[s.level]})`, BX + 234, BY + 206, {
+                text(ctx, `${perfect ? 'Parfait ! ' : ''}${s.moves} coups · +${s.lastPoints} points`, BX + 234, BY + 206, {
                     size: 16, weight: 600, align: 'center', color: perfect ? '#ffd36e' : 'rgba(255,255,255,0.85)'
                 });
             }
@@ -275,11 +299,13 @@ function createSlidePuzzle(api) {
                 drawOverlay(ctx, W, H, 'Banquise glissante', [
                     'Le pingouin glisse jusqu’au prochain obstacle.',
                     'La neige l’arrête, l’eau le renvoie au départ.',
+                    'Moins de coups et plus vite = plus de points.',
                     { text: 'Flèches ou clic pour jouer · R pour recommencer', color: '#ffd36e', weight: 700 }
                 ]);
             } else if (s.phase === 'over') {
                 drawOverlay(ctx, W, H, 'Banquise traversée !', [
-                    { text: `${s.total} coups au total (minimum ${MIN_TOTAL})`, size: 22, weight: 800 },
+                    { text: `${s.points} points`, size: 24, weight: 800 },
+                    `${s.total} coups (minimum ${MIN_TOTAL}) en ${Math.round(s.time)} s`,
                     s.record ? { text: 'Nouveau record !', color: '#ffd36e', weight: 700 } : 'Bien glissé.',
                     { text: s.overT > 0.8 ? 'Clique ou Entrée pour rejouer' : ' ', color: 'rgba(255,255,255,0.75)' }
                 ]);

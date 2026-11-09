@@ -108,6 +108,10 @@ function createTower(api) {
     }
 
     return {
+        canPause() {
+            return s.phase === 'play';
+        },
+
         update(dt) {
             s.t += dt;
             s.cheer = Math.max(0, s.cheer - dt);
@@ -239,5 +243,5 @@ function createTower(api) {
 }
 
 export default function TowerGame({ onScore }) {
-    return <GameCanvas create={createTower} onScore={onScore} label="Tour de bonhommes de neige" />;
+    return <GameCanvas pausable create={createTower} onScore={onScore} label="Tour de bonhommes de neige" />;
 }
