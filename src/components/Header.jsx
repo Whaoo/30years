@@ -29,10 +29,12 @@ export default function Header({ theme, weather, isAvent, isDecember, daysToStar
                 <WeatherWidget weather={weather} night={theme.timeOfDay === 'night'} />
             </div>
             <div className="header__right">
-                <button type="button" className="adv-btn" onClick={onAdventure} aria-label="Jouer à L’aventure de Flocon">
-                    <Icon name="gift" size={18} />
-                    <span>Aventure</span>
-                </button>
+                {onAdventure && (
+                    <button type="button" className="adv-btn" onClick={onAdventure} aria-label="Jouer à L’aventure de Flocon">
+                        <Icon name="gift" size={18} />
+                        <span>Aventure</span>
+                    </button>
+                )}
                 <nav className="segs glass" aria-label="Choix de la vue">
                     <button type="button" className="seg" aria-pressed={!isAvent} onClick={onHome}>
                         Anniversaires

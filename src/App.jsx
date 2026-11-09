@@ -61,7 +61,7 @@ function App() {
         if (isAdventurePath()) return ADVENTURE.id;
         const id = new URLSearchParams(window.location.search).get('jeu');
         const g = getGame(id);
-        return g && isUnlocked(g, advent) ? g.id : null;
+        return g && isUnlocked(g, advent, now) ? g.id : null;
     });
 
     const gameOpen = useRef(false);
@@ -197,7 +197,7 @@ function App() {
     const openGame = (id) => {
         const g = getGame(id);
         if (!g) return;
-        if (!isUnlocked(g, advent)) {
+        if (!isUnlocked(g, advent, now)) {
             flash(`${g.title} : disponible le ${g.door} décembre.`);
             return;
         }
@@ -246,7 +246,7 @@ function App() {
                     onHome={onHome}
                     onAvent={onAvent}
                     onLogo={onLogo}
-                    onAdventure={() => openGame(ADVENTURE.id)}
+                    onAdventure={isUnlocked(ADVENTURE, advent, now) ? () => openGame(ADVENTURE.id) : null}
                 />
 
                 <main className={`main${isAvent ? ' main--avent' : ''}`}>

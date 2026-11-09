@@ -108,13 +108,15 @@ export const GAMES = [
     }
 ];
 
-// Le grand jeu, toujours accessible (bouton « Aventure » de l'en-tête, ou l'adresse /aventure)
+// Le grand jeu : il apparaît le 10 décembre 2026 (porte 10 du calendrier et bouton « Aventure »
+// dans l'en-tête), puis reste disponible. L'adresse /aventure l'ouvre à tout moment, pour tester.
 export const ADVENTURE = {
     id: 'aventure',
     title: 'L’aventure de Flocon',
     short: 'Aventure',
     eyebrow: 'Nouveau · jeu d’aventure',
-    always: true,
+    door: 10,
+    from: new Date(2026, 11, 10),
     icon: 'gift',
     unit: 'pts',
     help: 'ZQSD ou flèches pour bouger, clic pour lancer une boule de neige (maintenir 1 s : boule glacée), Espace pour la canne à sucre, P pour la pause. Le feu de camp soigne.',
@@ -127,9 +129,9 @@ export function getGame(id) {
     return ALL_GAMES.find((g) => g.id === id) || null;
 }
 
-export function isUnlocked(game, advent) {
+export function isUnlocked(game, advent, now = new Date()) {
     if (!game) return false;
-    if (game.always) return true;
+    if (game.from) return now >= game.from;
     return advent.isDecember && advent.openCount >= game.door;
 }
 

@@ -1,0 +1,42 @@
+# 30years : le site des anniversaires de l'équipe
+
+Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est dans le code (commentaires en français).
+
+## L'essentiel
+
+- C'est **d'abord un site d'anniversaires** pour les collègues : prochain anniversaire, compte à rebours, liste des suivants. Les jeux sont un bonus, jamais au premier plan.
+- Une seule page plein écran, **jamais de scroll** (la molette sert uniquement aux gags des pingouins).
+- Textes de l'interface en **français**, ton doux et complice, jamais robotique.
+- Les pingouins sont des **personnages originaux** du projet. Ne pas dessiner ni imiter de personnages connus (Pingu, etc.).
+
+## Stack et commandes
+
+- Vite 5 + React 18 + Tailwind 3 (gardé pour le reset) ; le style est dans `src/styles/app.css` (variables CSS du thème).
+- `npm run dev` : serveur local (http://localhost:5173). `npm run build` : version de production dans `dist/`.
+- En local uniquement, `?date=2026-12-10T15:00` simule une date (ignoré en production, voir `src/hooks/useNow.js`).
+
+## Branches et mise en ligne (Cloudflare Pages, offre gratuite, site statique)
+
+- `main` = production, publiée sur https://30years.pages.dev
+- `dev` = travail en cours, publiée en prévisualisation sur https://dev.30years.pages.dev
+- Travailler sur `dev`. Pour publier : `git checkout main && git merge dev && git push && git checkout dev`.
+- Aucun serveur : tout tourne dans le navigateur. Les records sont dans le `localStorage` (`30years:best:<id>`).
+
+## Organisation du code
+
+- `src/utils/birthdayLogic.js` : la liste des anniversaires (`{ name, date: 'JJ-MM' }`, pas d'année, pas d'âge affiché).
+- `src/utils/advent.js` : les 25 portes du calendrier de l'Avent (affiché par défaut en décembre, verrouillé sinon).
+- `src/utils/theme.js` : saisons × moment de la journée × météo (Open-Meteo).
+- `src/games/index.js` : le registre des jeux. Les 10 mini-jeux se débloquent porte par porte en décembre.
+  `ADVENTURE` (« L'aventure de Flocon », `src/games/adventure/`) apparaît le 10/12/2026 (porte 10 + bouton de l'en-tête),
+  et l'adresse `/aventure` l'ouvre à tout moment pour tester.
+- `src/games/GameCanvas.jsx` : moteur commun des jeux canvas (boucle, mise à l'échelle, clavier, souris, tactile).
+- Vue Speed Dial de Vivaldi : `?dial`, `/dial`, ou fenêtre de 480 px de côté ou moins (`src/components/Dial.jsx`).
+
+## Règles à respecter
+
+- Performance : pas de `backdrop-filter`, animations en `transform`/`opacity`, décor masqué pendant un jeu (`.app.is-gaming`),
+  sprites des jeux dessinés une fois dans un canvas hors écran. Viser 60 images/s.
+- Le bouton « Souhaiter un joyeux anniversaire » n'est actif que le jour J.
+- Tester le jeu d'aventure : en local, la console expose `window.flocon` (ex. `flocon.startWave(10)` pour le boss).
+- Ne pas committer `preview-local/` ni `design demos/`.

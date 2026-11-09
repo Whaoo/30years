@@ -329,6 +329,12 @@ export function getSprites() {
         icicleUp: makeSprite({ box: [120, 34, 160, 110], anchor: [200, 136], k: 0.5, shapes: icicle(false) }),
         icicleDown: makeSprite({ box: [120, 34, 160, 110], anchor: [200, 136], k: 0.5, shapes: icicle(true) }),
         golem: makeSprite({ box: [104, -8, 192, 162], anchor: [200, 152], k: 0.72, shapes: GOLEM }),
+        golemMini: makeSprite({
+            box: [104, -8, 192, 162],
+            anchor: [200, 152],
+            k: 0.32,
+            shapes: [...GOLEM, { d: 'M200 86L212 100L200 114L188 100Z', f: '#ff5fa2' }]
+        }),
         giftRed: makeSprite({ box: giftBox, anchor: giftAnchor, k: 0.46, shapes: gift('#e94b4b', '#ff6b6b', '#ffd36e', '#f2b84b') }),
         giftBlue: makeSprite({
             box: giftBox,

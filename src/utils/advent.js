@@ -13,7 +13,7 @@ export const ADVENT_TEASERS = [
     { kind: 'Jeu', title: 'Pingouin volant', text: 'Nouveau mini-jeu : un parapluie, des stalactites, une seule touche. Combien en passeras-tu ?', game: 'flappy' },
     { kind: 'Blague', title: 'Blague du jour', text: 'Une blague de pingouin, certifiée de très bas niveau.' },
     { kind: 'Jeu', title: 'Curling des pingouins', text: 'Nouveau mini-jeu : vise, dose, balaie. Cinq pierres pour viser le cœur de la cible.', game: 'curling' },
-    { kind: 'Quiz', title: 'Devine l’enfant', text: 'Sept photos d’enfance, sept collègues. Bon courage.' },
+    { kind: 'Jeu', title: 'L’aventure de Flocon', text: 'Le grand jeu de Noël : explore la banquise, récupère les cadeaux et affronte le Golem de givre. Il reste ensuite dans l’en-tête.', game: 'aventure' },
     { kind: 'Jeu', title: 'Saut sur la banquise', text: 'Nouveau mini-jeu : saute les blocs de glace, glisse sous les mouettes. Jusqu’où iras-tu ?', game: 'runner' },
     { kind: 'Recette', title: 'Chocolat chaud ultime', text: 'Un secret de recette circule dans l’équipe. Indice : cannelle.' },
     { kind: 'Défi', title: 'Échange de talents', text: 'Apprends un truc de dix minutes à quelqu’un d’autre.' },

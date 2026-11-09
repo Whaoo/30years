@@ -28,13 +28,14 @@ const DEFS = {
     elf: { hp: 20, r: 17, speed: 160, dmg: 0, pts: 10 },
     fir: { hp: 40, r: 26, speed: 0, dmg: 0, pts: 20, solid: true },
     icicle: { hp: 12, r: 17, speed: 190, dmg: 8, pts: 10, flying: true },
-    boss: { hp: 400, r: 56, speed: 55, dmg: 20, pts: 300, solid: true }
+    boss: { hp: 400, r: 56, speed: 55, dmg: 20, pts: 300, solid: true },
+    mini: { hp: 24, r: 18, speed: 105, dmg: 10, pts: 15 }
 };
 
 const GIFTS = {
     red: { value: 1, pts: 10, sprite: 'giftRed', mini: '#e94b4b', label: 'rouge' },
     blue: { value: 3, pts: 30, sprite: 'giftBlue', mini: '#3b82f6', label: 'bleu' },
-    gold: { value: 10, pts: 100, sprite: 'giftGold', mini: '#ffd36e', label: 'doré' },
+    gold: { value: 5, pts: 60, sprite: 'giftGold', mini: '#ffd36e', label: 'doré' },
     trap: { value: 0, pts: 0, sprite: 'giftTrap', mini: '#7c5cff', label: 'piégé' }
 };
 
@@ -156,6 +157,7 @@ function createAdventure(api) {
         if (m.type === 'bauble') return m.red ? sp.baubleRed : sp.bauble;
         if (m.type === 'icicle') return Math.floor(m.t * 12) % 2 ? sp.icicleDown : sp.icicleUp;
         if (m.type === 'boss') return sp.golem;
+        if (m.type === 'mini') return sp.golemMini;
         return sp[m.type];
     }
 
@@ -197,13 +199,18 @@ function createAdventure(api) {
             m.state = 'approach';
             m.stateT = rand(1.2, 2.2);
             m.alt = 46;
+        } else if (type === 'mini') {
+            m.speed = def.speed;
+            m.state = 'chase';
+            m.stateT = 0;
+            m.dashCd = rand(0.8, 1.6);
         } else if (type === 'boss') {
             m.speed = def.speed;
             m.state = 'walk';
             m.stateT = 0;
             m.slamT = 3.5;
             m.rainT = 3;
-            m.summonT = 6;
+            m.summonT = 7;
             m.stage = 1;
             m.exposed = false;
             m.spawnT = 0.9;
@@ -294,10 +301,13 @@ function createAdventure(api) {
 
     function startBoss() {
         s.target = 0;
+        s.items = [];
         banner('Vague finale', 'Le Golem de givre arrive !');
         const pos = freeSpot(60, 560, { noLake: true, noFire: true }) || { x: 1500, y: 560 };
         s.boss = spawnMonster('boss', pos);
+        summonMinis(s.boss, 2);
         toast('Son cœur rose brille après chaque frappe : c’est là qu’il faut viser.', '#ff5fa2');
+        toast('Ses mini-golems foncent sur toi : garde la canne à sucre pour eux.', '#3b82f6');
         const cocoa = freeSpot(16, 200, {});
         if (cocoa) spawnBonus('cocoa', cocoa.x, cocoa.y);
     }
@@ -497,7 +507,7 @@ function createAdventure(api) {
         p.cheerT = 0.45;
         popup(g.x, g.y - 44, `+${plural(def.value, 'cadeau')}`, g.kind === 'gold' ? '#e0a020' : '#2f9e6e', g.kind === 'gold' ? 24 : 18);
         burst(g.x, g.y - 16, g.kind === 'gold' ? 34 : 14, ['#ff5fa2', '#ffd36e', '#3b82f6', '#6ee7b7'], { speed: 200, life: 0.8, g: 200, up: 80 });
-        if (s.gifts >= s.target) waveClear();
+        if (s.wave < LAST_WAVE && s.gifts >= s.target) waveClear();
     }
 
     // ---------- Mise à jour ----------
@@ -693,7 +703,7 @@ function createAdventure(api) {
             const stage = ratio > 0.66 ? 1 : ratio > 0.33 ? 2 : 3;
             if (stage > m.stage) {
                 m.stage = stage;
-                toast(stage === 2 ? 'Le golem s’énerve : pluie de glaçons !' : 'Le golem appelle des renforts !', '#ff5fa2');
+                toast(stage === 2 ? 'Le golem s’énerve : pluie de glaçons !' : 'Le golem appelle encore plus de renforts !', '#ff5fa2');
                 const pos = freeSpot(16, 180, {});
                 if (pos) spawnBonus('cocoa', pos.x, pos.y);
             }
@@ -739,22 +749,57 @@ function createAdventure(api) {
                     }
                 }
             }
-            if (stage === 3) {
-                m.summonT -= dt;
-                if (m.summonT <= 0) {
-                    m.summonT = 8;
-                    for (let i = 0; i < 3; i++) {
-                        const a = (i / 3) * TAU + Math.random();
-                        const b = spawnMonster('bauble', { x: m.x + Math.cos(a) * 100, y: m.y + Math.sin(a) * 80 });
-                        if (b) {
-                            b.red = true;
-                            clampToBounds(b);
-                        }
-                    }
+            // Renforts : des mini-golems qui foncent au contact, plus nombreux à chaque phase
+            m.summonT -= dt;
+            if (m.summonT <= 0) {
+                m.summonT = [0, 9, 8, 6.5][stage];
+                const cap = stage === 3 ? 6 : 4;
+                summonMinis(m, Math.min(stage === 3 ? 3 : 2, cap - alive('mini')));
+            }
+        },
+        mini(m, dt) {
+            const p = s.player;
+            const d = Math.hypot(p.x - m.x, p.y - m.y);
+            m.face = p.x >= m.x ? 1 : -1;
+            if (m.state === 'chase') {
+                moveToward(m, p.x, p.y, m.speed, dt);
+                m.dashCd -= dt;
+                if (d < 180 && m.dashCd <= 0) {
+                    m.state = 'windup';
+                    m.stateT = 0.35;
+                }
+            } else if (m.state === 'windup') {
+                m.stateT -= dt;
+                if (m.stateT <= 0) {
+                    const dd = d || 1;
+                    m.dx = (p.x - m.x) / dd;
+                    m.dy = (p.y - m.y) / dd;
+                    m.state = 'dash';
+                    m.stateT = 0.42;
+                }
+            } else {
+                m.x += m.dx * 400 * dt;
+                m.y += m.dy * 400 * dt;
+                m.vx = m.dx * 400;
+                if (Math.random() < dt * 30) s.parts.push({ x: m.x + rand(-8, 8), y: m.y, vx: 0, vy: -20, g: 0, t: 0, life: 0.35, r: 3, color: '#cfeaff' });
+                m.stateT -= dt;
+                if (m.stateT <= 0) {
+                    m.state = 'chase';
+                    m.dashCd = rand(1.4, 2.2);
                 }
             }
         }
     };
+
+    function summonMinis(boss, n) {
+        for (let i = 0; i < n; i++) {
+            const a = Math.random() * TAU;
+            const pt = { x: boss.x + Math.cos(a) * 110, y: boss.y + Math.sin(a) * 85 };
+            clampToBounds(pt, 20);
+            if (hitsObstacle(pt.x, pt.y, 30, obstacles)) continue;
+            spawnMonster('mini', pt);
+        }
+    }
 
     function updatePlayer(dt) {
         const p = s.player;
@@ -919,7 +964,7 @@ function createAdventure(api) {
             spawnGift(pickGiftKind());
             s.giftT = 0.9;
         }
-        if (!s.goldDone && s.wave >= 2 && s.gifts >= s.target * 0.4) {
+        if (!s.goldDone && s.wave >= 2 && s.gifts >= s.target * 0.5) {
             if (spawnGift('gold')) {
                 s.goldDone = true;
                 toast('Un paquet doré est apparu : suis l’étoile sur la mini-carte !', '#f2b84b');
@@ -1283,6 +1328,16 @@ function createAdventure(api) {
             y -= m.alt + Math.sin(m.t * 3) * 3;
             if (m.state === 'windup') x += Math.sin(m.t * 70) * 2.2;
             if (m.state === 'dive') rot = clamp(m.vx / 520, -1, 1) * -0.5;
+        } else if (m.type === 'mini') {
+            sx *= m.face;
+            if (m.state === 'windup') {
+                x += Math.sin(m.t * 60) * 2;
+                sy *= 1.08;
+            } else if (m.state === 'dash') {
+                rot = m.dx * 0.25;
+            } else if (!busy) {
+                y -= Math.abs(Math.sin(m.t * 10)) * 3;
+            }
         } else if (m.type === 'boss') {
             if (m.state === 'windup') {
                 sy *= 1.06;
