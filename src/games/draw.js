@@ -204,10 +204,9 @@ export function hudPill(ctx, x, y, label, value, align = 'left') {
 }
 
 // Panneau central (écran d'accueil, fin de partie, pause)
-export function drawOverlay(ctx, W, H, title, lines = []) {
+export function drawOverlay(ctx, W, H, title, lines = [], pw = 500) {
     ctx.fillStyle = 'rgba(7, 13, 36, 0.5)';
     ctx.fillRect(0, 0, W, H);
-    const pw = 500;
     const ph = 96 + lines.length * 30;
     const px = (W - pw) / 2;
     const py = (H - ph) / 2;

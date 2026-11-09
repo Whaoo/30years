@@ -108,12 +108,29 @@ export const GAMES = [
     }
 ];
 
+// Le grand jeu, toujours accessible (bouton « Aventure » de l'en-tête, ou l'adresse /aventure)
+export const ADVENTURE = {
+    id: 'aventure',
+    title: 'L’aventure de Flocon',
+    short: 'Aventure',
+    eyebrow: 'Nouveau · jeu d’aventure',
+    always: true,
+    icon: 'gift',
+    unit: 'pts',
+    help: 'ZQSD ou flèches pour bouger, clic pour lancer une boule de neige (maintenir 1 s : boule glacée), Espace pour la canne à sucre, P pour la pause. Le feu de camp soigne.',
+    component: lazy(() => import('./adventure/AdventureGame'))
+};
+
+export const ALL_GAMES = [...GAMES, ADVENTURE];
+
 export function getGame(id) {
-    return GAMES.find((g) => g.id === id) || null;
+    return ALL_GAMES.find((g) => g.id === id) || null;
 }
 
 export function isUnlocked(game, advent) {
-    return !!game && advent.isDecember && advent.openCount >= game.door;
+    if (!game) return false;
+    if (game.always) return true;
+    return advent.isDecember && advent.openCount >= game.door;
 }
 
 export function formatScore(game, score) {

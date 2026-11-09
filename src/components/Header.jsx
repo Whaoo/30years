@@ -14,7 +14,7 @@ function LogoMark() {
     );
 }
 
-export default function Header({ theme, weather, isAvent, isDecember, daysToStart, onHome, onAvent, onLogo }) {
+export default function Header({ theme, weather, isAvent, isDecember, daysToStart, onHome, onAvent, onLogo, onAdventure }) {
     return (
         <header className="header">
             <div className="header__left">
@@ -28,27 +28,33 @@ export default function Header({ theme, weather, isAvent, isDecember, daysToStar
                 </span>
                 <WeatherWidget weather={weather} night={theme.timeOfDay === 'night'} />
             </div>
-            <nav className="segs glass" aria-label="Choix de la vue">
-                <button type="button" className="seg" aria-pressed={!isAvent} onClick={onHome}>
-                    Anniversaires
+            <div className="header__right">
+                <button type="button" className="adv-btn" onClick={onAdventure} aria-label="Jouer à L’aventure de Flocon">
+                    <Icon name="gift" size={18} />
+                    <span>Aventure</span>
                 </button>
-                <button
-                    type="button"
-                    className="seg"
-                    aria-pressed={isAvent}
-                    aria-disabled={!isDecember}
-                    onClick={onAvent}
-                >
-                    <span className="seg__long">Calendrier de l&apos;Avent</span>
-                    <span className="seg__short">Avent</span>
-                    {!isDecember && (
-                        <span className="seg__lock">
-                            <Icon name="lock" size={13} />
-                            <span>J-{daysToStart}</span>
-                        </span>
-                    )}
-                </button>
-            </nav>
+                <nav className="segs glass" aria-label="Choix de la vue">
+                    <button type="button" className="seg" aria-pressed={!isAvent} onClick={onHome}>
+                        Anniversaires
+                    </button>
+                    <button
+                        type="button"
+                        className="seg"
+                        aria-pressed={isAvent}
+                        aria-disabled={!isDecember}
+                        onClick={onAvent}
+                    >
+                        <span className="seg__long">Calendrier de l&apos;Avent</span>
+                        <span className="seg__short">Avent</span>
+                        {!isDecember && (
+                            <span className="seg__lock">
+                                <Icon name="lock" size={13} />
+                                <span>J-{daysToStart}</span>
+                            </span>
+                        )}
+                    </button>
+                </nav>
+            </div>
         </header>
     );
 }

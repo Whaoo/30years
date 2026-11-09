@@ -7,7 +7,7 @@ import UpcomingList from './components/UpcomingList';
 import StatTiles from './components/StatTiles';
 import GamesTile from './components/GamesTile';
 import GameModal from './components/GameModal';
-import { GAMES, getGame, isUnlocked } from './games';
+import { ADVENTURE, ALL_GAMES, getGame, isUnlocked } from './games';
 import { loadBests, saveScore } from './games/scores';
 import AdventCalendar from './components/AdventCalendar';
 import Gags from './components/Gags';
@@ -22,6 +22,10 @@ import { useDialMode } from './hooks/useDialMode';
 import { usePenguinPlay } from './hooks/usePenguinPlay';
 
 const HOUR = 3600000;
+
+function isAdventurePath() {
+    return window.location.pathname.replace(/\/+$/, '') === '/aventure';
+}
 
 function greeting(now, isToday) {
     if (isToday) return 'C’est le grand jour !';
@@ -51,9 +55,10 @@ function App() {
     const [toast, setToast] = useState('');
     const [confetti, setConfetti] = useState(0);
     const [gag, setGag] = useState(null);
-    const [bests, setBests] = useState(() => loadBests(GAMES.map((g) => g.id)));
-    // ?jeu=snowball ouvre directement un jeu (s'il est débloqué), pratique pour tester
+    const [bests, setBests] = useState(() => loadBests(ALL_GAMES.map((g) => g.id)));
+    // ?jeu=snowball ouvre directement un jeu (s'il est débloqué), /aventure ouvre le jeu d'aventure
     const [gameId, setGameId] = useState(() => {
+        if (isAdventurePath()) return ADVENTURE.id;
         const id = new URLSearchParams(window.location.search).get('jeu');
         const g = getGame(id);
         return g && isUnlocked(g, advent) ? g.id : null;
@@ -102,6 +107,8 @@ function App() {
 
     const closeGame = useCallback(() => {
         setGameId(null);
+        // Arrivé par l'adresse /aventure : on revient à l'accueil sans recharger la page
+        if (isAdventurePath()) window.history.replaceState(null, '', '/');
         if (reloadPending.current) window.location.reload();
     }, []);
 
@@ -239,6 +246,7 @@ function App() {
                     onHome={onHome}
                     onAvent={onAvent}
                     onLogo={onLogo}
+                    onAdventure={() => openGame(ADVENTURE.id)}
                 />
 
                 <main className={`main${isAvent ? ' main--avent' : ''}`}>

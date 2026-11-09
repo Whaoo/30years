@@ -98,6 +98,10 @@ export default function GameCanvas({ create, onScore, width = 800, height = 450,
             paused = document.hidden;
             last = performance.now();
         };
+        // Fenêtre qui perd le focus : on relâche les touches (sinon le personnage continue d'avancer)
+        const onBlur = () => {
+            if (game.blur) game.blur();
+        };
 
         canvas.addEventListener('pointerdown', onDown);
         canvas.addEventListener('pointermove', onMove);
@@ -106,6 +110,7 @@ export default function GameCanvas({ create, onScore, width = 800, height = 450,
         window.addEventListener('keydown', onKeyDown);
         window.addEventListener('keyup', onKeyUp);
         document.addEventListener('visibilitychange', onVisibility);
+        window.addEventListener('blur', onBlur);
         canvas.focus({ preventScroll: true });
 
         return () => {
@@ -119,6 +124,7 @@ export default function GameCanvas({ create, onScore, width = 800, height = 450,
             window.removeEventListener('keydown', onKeyDown);
             window.removeEventListener('keyup', onKeyUp);
             document.removeEventListener('visibilitychange', onVisibility);
+            window.removeEventListener('blur', onBlur);
             if (game.destroy) game.destroy();
             gameRef.current = null;
         };

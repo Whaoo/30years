@@ -117,6 +117,13 @@ const PATHS = {
             <rect x="8" y="9" width="8" height="6" rx="3" />
             <circle cx="12" cy="6" r="3" />
         </>
+    ),
+    gift: (
+        <>
+            <rect x="4" y="10" width="16" height="10" rx="1.5" />
+            <rect x="3" y="7" width="18" height="3" rx="1" />
+            <path d="M12 7v13M12 7c-1.5-3-5-3-5-1s3 1 5 1ZM12 7c1.5-3 5-3 5-1s-3 1-5 1Z" />
+        </>
     )
 };
 

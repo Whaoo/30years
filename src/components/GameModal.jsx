@@ -28,7 +28,7 @@ export default function GameModal({ game, best, onScore, onClose }) {
             <div className="game-panel glass">
                 <header className="game-head">
                     <div className="game-head__title">
-                        <span className="eyebrow">Mini-jeu · porte {game.door}</span>
+                        <span className="eyebrow">{game.eyebrow || `Mini-jeu · porte ${game.door}`}</span>
                         <h2 id="game-title" className="game-title">{game.title}</h2>
                     </div>
                     <span className="game-best">
