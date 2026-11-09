@@ -14,7 +14,7 @@ function waitHint(days, date) {
 }
 
 // Carte principale : prochain anniversaire (ou plusieurs s'ils tombent le même jour)
-export default function Countdown({ group, now, play, onWish }) {
+export default function Countdown({ group, now, play, onWish, onCandles }) {
     const first = group[0];
     const { days } = first;
     const many = group.length > 1;
@@ -54,15 +54,22 @@ export default function Countdown({ group, now, play, onWish }) {
                     <span className="hero__unit">{unit}</span>
                 </div>
                 {/* Les vœux ne s'envoient que le jour J : avant, un petit mot d'attente */}
-                <button
-                    type="button"
-                    className="btn btn--primary"
-                    onClick={onWish}
-                    disabled={days !== 0}
-                    title={days !== 0 ? waitHint(days, first.nextBirthday) : undefined}
-                >
-                    {days === 0 ? 'Souhaiter un joyeux anniversaire' : waitLabel(days, first.nextBirthday)}
-                </button>
+                <div className="hero__actions">
+                    <button
+                        type="button"
+                        className="btn btn--primary"
+                        onClick={onWish}
+                        disabled={days !== 0}
+                        title={days !== 0 ? waitHint(days, first.nextBirthday) : undefined}
+                    >
+                        {days === 0 ? 'Souhaiter un joyeux anniversaire' : waitLabel(days, first.nextBirthday)}
+                    </button>
+                    {days === 0 && onCandles && (
+                        <button type="button" className="btn btn--ghost" onClick={onCandles}>
+                            Souffle les bougies
+                        </button>
+                    )}
+                </div>
             </div>
             <div className="hero__pengs">
                 {penguins.map((p) => (

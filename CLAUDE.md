@@ -27,9 +27,12 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
 - `src/utils/birthdayLogic.js` : la liste des anniversaires (`{ name, date: 'JJ-MM' }`, pas d'année, pas d'âge affiché).
 - `src/utils/advent.js` : les 25 portes du calendrier de l'Avent (affiché par défaut en décembre, verrouillé sinon).
 - `src/utils/theme.js` : saisons × moment de la journée × météo (Open-Meteo).
-- `src/games/index.js` : le registre des jeux. Les 10 mini-jeux se débloquent porte par porte en décembre.
-  `ADVENTURE` (« L'aventure de Flocon », `src/games/adventure/`) apparaît le 10/12/2026 (porte 10 + bouton de l'en-tête),
-  et l'adresse `/aventure` l'ouvre à tout moment pour tester.
+- `src/games/index.js` : le registre des jeux.
+  - `GAMES` : les 14 mini-jeux de l'Avent, débloqués porte par porte en décembre (portes 1-4, 7-9, 11-12, 14-18).
+  - `ADVENTURE` (« L'aventure de Flocon », `src/games/adventure/`) apparaît le 10/12/2026 (porte 10 + bouton de l'en-tête).
+  - `QUIZ` (« Qui fête quand ? », `always`) : ouvert toute l'année depuis la liste des anniversaires.
+  - `CANDLES` (« Souffle les bougies », `birthdayOnly`) : bouton du compte à rebours, uniquement le jour J.
+  - Les adresses `/aventure`, `/quiz` et `/bougies` ouvrent ces jeux à tout moment pour tester.
 - `src/games/GameCanvas.jsx` : moteur commun des jeux canvas (boucle, mise à l'échelle, clavier, souris, tactile).
 - Vue Speed Dial de Vivaldi : `?dial`, `/dial`, ou fenêtre de 480 px de côté ou moins (`src/components/Dial.jsx`).
 
@@ -38,5 +41,7 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
 - Performance : pas de `backdrop-filter`, animations en `transform`/`opacity`, décor masqué pendant un jeu (`.app.is-gaming`),
   sprites des jeux dessinés une fois dans un canvas hors écran. Viser 60 images/s.
 - Le bouton « Souhaiter un joyeux anniversaire » n'est actif que le jour J.
-- Tester le jeu d'aventure : en local, la console expose `window.flocon` (ex. `flocon.startWave(10)` pour le boss).
+- Tester les jeux : en local uniquement, la console expose `window.flocon` (aventure, ex. `flocon.startWave(10)` pour le boss),
+  `window.fort`, `window.traineau`, `window.foule`, `window.chorale` et `window.bougies`.
+- Calendrier : les portes sans jeu ont un texte vide (`null` dans `src/utils/advent.js`) en attendant les vrais textes.
 - Ne pas committer `preview-local/` ni `design demos/`.

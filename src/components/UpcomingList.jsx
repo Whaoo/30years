@@ -1,7 +1,7 @@
 import Penguin from './Penguin';
 import { formatDay, whenLabel } from '../utils/birthdayLogic';
 
-export default function UpcomingList({ title, items, highlightFirst = false, restLabel, play }) {
+export default function UpcomingList({ title, items, highlightFirst = false, restLabel, play, onQuiz }) {
     return (
         <section className="list-card glass" aria-label="Prochains anniversaires">
             <h2 className="card-title">{title}</h2>
@@ -41,7 +41,16 @@ export default function UpcomingList({ title, items, highlightFirst = false, res
                     );
                 })}
             </ul>
-            {restLabel && <p className="rest">{restLabel}</p>}
+            {(restLabel || onQuiz) && (
+                <div className="rest">
+                    {restLabel && <span>{restLabel}</span>}
+                    {onQuiz && (
+                        <button type="button" className="quiz-link" onClick={onQuiz}>
+                            Qui fête quand ? Teste-toi
+                        </button>
+                    )}
+                </div>
+            )}
         </section>
     );
 }

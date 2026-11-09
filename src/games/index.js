@@ -1,6 +1,6 @@
 import { lazy } from 'react';
 
-// Les 10 mini-jeux du calendrier de l'Avent, un tous les deux jours ouvrés environ,
+// Les 14 mini-jeux du calendrier de l'Avent, presque un par jour ouvré,
 // tous avant le 19 décembre (début des vacances : les jeux suivants passeraient inaperçus).
 // door : jour de décembre où le jeu se débloque (il reste jouable ensuite).
 // Chaque jeu est chargé à la demande pour garder la page d'accueil légère.
@@ -16,6 +16,16 @@ export const GAMES = [
         component: lazy(() => import('./SnowballGame'))
     },
     {
+        id: 'chorale',
+        title: 'La chorale des pingouins',
+        short: 'Chorale',
+        door: 2,
+        icon: 'music',
+        unit: 'notes',
+        help: 'Écoute la mélodie, puis répète-la dans l’ordre : clic sur les pingouins ou touches 1 à 4. Une note de plus à chaque tour, 2 fausses notes permises. S pour le son.',
+        component: lazy(() => import('./ChoirGame'))
+    },
+    {
         id: 'fishing',
         title: 'Pêche sur la banquise',
         short: 'Pêche',
@@ -26,6 +36,16 @@ export const GAMES = [
         component: lazy(() => import('./FishingGame'))
     },
     {
+        id: 'fort',
+        title: 'Fort de neige',
+        short: 'Fort',
+        door: 4,
+        icon: 'castle',
+        unit: 'pts',
+        help: 'Clique, tire vers l’arrière et relâche pour lancer (ou ← → pour viser, ↑ ↓ pour la force, Espace pour tirer). Fais tomber les bonshommes : 5 forts, les boules restantes rapportent un bonus. P pour la pause.',
+        component: lazy(() => import('./FortGame'))
+    },
+    {
         id: 'flappy',
         title: 'Pingouin volant',
         short: 'Volant',
@@ -34,6 +54,16 @@ export const GAMES = [
         unit: 'pts',
         help: 'Espace, ↑ ou clic : un coup de parapluie vers le haut. Passe entre les stalactites sans les toucher (les premières sont plus espacées). P pour la pause.',
         component: lazy(() => import('./FlappyGame'))
+    },
+    {
+        id: 'traineau',
+        title: 'Livraison en traîneau',
+        short: 'Traîneau',
+        door: 8,
+        icon: 'house',
+        unit: 'pts',
+        help: 'La souris (ou ↑ ↓) règle l’altitude, clic ou Espace pour lâcher un cadeau dans la cheminée. Le vent change à chaque maison. P pour la pause.',
+        component: lazy(() => import('./SleighGame'))
     },
     {
         id: 'curling',
@@ -54,6 +84,16 @@ export const GAMES = [
         unit: 'pts',
         help: 'Espace, ↑ ou clic pour sauter (maintenir pour sauter plus haut), ↓ pour glisser sous les mouettes. P pour la pause.',
         component: lazy(() => import('./RunnerGame'))
+    },
+    {
+        id: 'collegue',
+        title: 'Où est mon collègue ?',
+        short: 'Foule',
+        door: 12,
+        icon: 'search',
+        unit: 'pts',
+        help: 'Retrouve le pingouin habillé comme la personne demandée avant la fin du chrono. Mauvais pingouin : 2 secondes de pénalité. 5 manches. P pour la pause.',
+        component: lazy(() => import('./CrowdGame'))
     },
     {
         id: 'slide',
@@ -122,14 +162,43 @@ export const ADVENTURE = {
     component: lazy(() => import('./adventure/AdventureGame'))
 };
 
-export const ALL_GAMES = [...GAMES, ADVENTURE];
+// Quiz sur les anniversaires : disponible toute l'année (liste « Ensuite » et tuile des mini-jeux)
+export const QUIZ = {
+    id: 'quiz',
+    title: 'Qui fête quand ?',
+    short: 'Quiz',
+    eyebrow: 'Quiz · toute l’année',
+    always: true,
+    icon: 'question',
+    unit: 'pts',
+    help: '10 questions sur les anniversaires de l’équipe. Clic ou touches 1 à 4. Plus tu réponds vite, plus tu marques, et une erreur ne coûte rien.',
+    component: lazy(() => import('./QuizGame'))
+};
+
+// Le jeu du jour J : il n'apparaît que le jour d'un anniversaire, au nom de la personne fêtée
+// (l'adresse /bougies l'ouvre à tout moment pour tester, avec le prochain anniversaire)
+export const CANDLES = {
+    id: 'bougies',
+    title: 'Souffle les bougies',
+    short: 'Bougies',
+    eyebrow: 'Le jour J',
+    birthdayOnly: true,
+    icon: 'cake',
+    unit: 'pts',
+    help: 'Clique sur les flammes avant que la cire coule. Maintiens le clic puis relâche pour un grand souffle sur toute une zone (ou Espace). 30 secondes. P pour la pause.',
+    component: lazy(() => import('./CandlesGame'))
+};
+
+export const ALL_GAMES = [...GAMES, QUIZ, CANDLES, ADVENTURE];
 
 export function getGame(id) {
     return ALL_GAMES.find((g) => g.id === id) || null;
 }
 
-export function isUnlocked(game, advent, now = new Date()) {
+export function isUnlocked(game, advent, now = new Date(), ctx = {}) {
     if (!game) return false;
+    if (game.always) return true;
+    if (game.birthdayOnly) return !!ctx.isBirthday;
     if (game.from) return now >= game.from;
     return advent.isDecember && advent.openCount >= game.door;
 }

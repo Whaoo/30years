@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Penguin from './Penguin';
 import Icon from './Icons';
-import { ADVENT_TEASERS, DOOR_ORDER, adventState } from '../utils/advent';
+import { DOOR_ORDER, adventState, teaserFor } from '../utils/advent';
 import { formatScore, getGame } from '../games';
 
 const GUARD_LINES = [
@@ -24,7 +24,7 @@ export default function AdventCalendar({ now, bests = {}, onPlay }) {
     useEffect(() => () => clearTimeout(waveTimer.current), []);
 
     const current = selected || todayDoor || 25;
-    const teaser = ADVENT_TEASERS[current - 1];
+    const teaser = teaserFor(current);
     const unlocked = current <= openCount;
     const wait = current - openCount;
     const game = teaser.game ? getGame(teaser.game) : null;
@@ -62,7 +62,7 @@ export default function AdventCalendar({ now, bests = {}, onPlay }) {
         <article className="advent glass" aria-label="Calendrier de l'Avent">
             <section className="advent__feature" aria-label="Porte sélectionnée">
                 <div className="chips">
-                    <span className={kindClass}>{unlocked ? teaser.kind : 'Fermée'}</span>
+                    {(!unlocked || teaser.kind) && <span className={kindClass}>{unlocked ? teaser.kind : 'Fermée'}</span>}
                     <span className="chip-tag">Porte {current}</span>
                 </div>
                 <h2 className="advent__title">{unlocked ? teaser.title : 'Patience…'}</h2>
@@ -120,7 +120,7 @@ export default function AdventCalendar({ now, bests = {}, onPlay }) {
                     const cls = [
                         'door',
                         open ? 'door--open' : '',
-                        ADVENT_TEASERS[n - 1].game ? 'door--game' : '',
+                        teaserFor(n).game ? 'door--game' : '',
                         n >= 24 ? 'door--special' : '',
                         n === todayDoor ? 'door--today' : ''
                     ].filter(Boolean).join(' ');
@@ -134,7 +134,7 @@ export default function AdventCalendar({ now, bests = {}, onPlay }) {
                             onClick={() => pick(n)}
                         >
                             <span className="door__n">{n}</span>
-                            {open ? <span className="door__kind">{ADVENT_TEASERS[n - 1].kind}</span> : <Icon name="lock" size={14} />}
+                            {open ? teaserFor(n).kind && <span className="door__kind">{teaserFor(n).kind}</span> : <Icon name="lock" size={14} />}
                         </button>
                     );
                 })}

@@ -7,7 +7,7 @@ import UpcomingList from './components/UpcomingList';
 import StatTiles from './components/StatTiles';
 import GamesTile from './components/GamesTile';
 import GameModal from './components/GameModal';
-import { ADVENTURE, ALL_GAMES, getGame, isUnlocked } from './games';
+import { ADVENTURE, ALL_GAMES, CANDLES, QUIZ, getGame, isUnlocked } from './games';
 import { loadBests, saveScore } from './games/scores';
 import AdventCalendar from './components/AdventCalendar';
 import Gags from './components/Gags';
@@ -23,8 +23,10 @@ import { usePenguinPlay } from './hooks/usePenguinPlay';
 
 const HOUR = 3600000;
 
-function isAdventurePath() {
-    return window.location.pathname.replace(/\/+$/, '') === '/aventure';
+// Adresses directes, pratiques pour tester : /aventure, /bougies, /quiz
+const PATH_GAMES = { '/aventure': ADVENTURE.id, '/bougies': CANDLES.id, '/quiz': QUIZ.id };
+function pathGame() {
+    return PATH_GAMES[window.location.pathname.replace(/\/+$/, '')] || null;
 }
 
 function greeting(now, isToday) {
@@ -58,10 +60,11 @@ function App() {
     const [bests, setBests] = useState(() => loadBests(ALL_GAMES.map((g) => g.id)));
     // ?jeu=snowball ouvre directement un jeu (s'il est débloqué), /aventure ouvre le jeu d'aventure
     const [gameId, setGameId] = useState(() => {
-        if (isAdventurePath()) return ADVENTURE.id;
+        const fromPath = pathGame();
+        if (fromPath) return fromPath;
         const id = new URLSearchParams(window.location.search).get('jeu');
         const g = getGame(id);
-        return g && isUnlocked(g, advent, now) ? g.id : null;
+        return g && isUnlocked(g, advent, now, { isBirthday: sorted[0].days === 0 }) ? g.id : null;
     });
 
     const gameOpen = useRef(false);
@@ -107,8 +110,8 @@ function App() {
 
     const closeGame = useCallback(() => {
         setGameId(null);
-        // Arrivé par l'adresse /aventure : on revient à l'accueil sans recharger la page
-        if (isAdventurePath()) window.history.replaceState(null, '', '/');
+        // Arrivé par une adresse directe (/aventure…) : on revient à l'accueil sans recharger la page
+        if (pathGame()) window.history.replaceState(null, '', '/');
         if (reloadPending.current) window.location.reload();
     }, []);
 
@@ -197,8 +200,8 @@ function App() {
     const openGame = (id) => {
         const g = getGame(id);
         if (!g) return;
-        if (!isUnlocked(g, advent, now)) {
-            flash(`${g.title} : disponible le ${g.door} décembre.`);
+        if (!isUnlocked(g, advent, now, { isBirthday: isToday })) {
+            flash(g.birthdayOnly ? 'Ce jeu n’apparaît que le jour d’un anniversaire.' : `${g.title} : disponible le ${g.door} décembre.`);
             return;
         }
         setGameId(id);
@@ -252,7 +255,7 @@ function App() {
                 <main className={`main${isAvent ? ' main--avent' : ''}`}>
                     {isAvent
                         ? <AdventCalendar now={now} bests={bests} onPlay={openGame} />
-                        : <Countdown group={group} now={now} play={play} onWish={onWish} />}
+                        : <Countdown group={group} now={now} play={play} onWish={onWish} onCandles={() => openGame(CANDLES.id)} />}
                     <aside className="side">
                         <UpcomingList
                             title={isAvent ? 'Anniversaires' : 'Ensuite'}
@@ -260,6 +263,7 @@ function App() {
                             highlightFirst={isAvent}
                             restLabel={restLabel}
                             play={play}
+                            onQuiz={isAvent ? null : () => openGame(QUIZ.id)}
                         />
                         {isAvent
                             ? <GamesTile openCount={advent.openCount} bests={bests} onPlay={openGame} />
@@ -285,6 +289,7 @@ function App() {
                     best={bests[gameId]}
                     onScore={onGameScore}
                     onClose={closeGame}
+                    gameProps={gameId === CANDLES.id ? { people: isToday ? group : [] } : undefined}
                 />
             )}
         </div>

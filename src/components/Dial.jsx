@@ -1,7 +1,7 @@
 import Background from './Background';
 import Penguin from './Penguin';
 import { SHORT_MONTHS, formatDay, joinNames } from '../utils/birthdayLogic';
-import { ADVENT_TEASERS } from '../utils/advent';
+import { teaserFor } from '../utils/advent';
 import { themeStyle } from '../utils/theme';
 
 // Vue compacte pour le Speed Dial de Vivaldi (petit carré). Tout est en vmin.
@@ -38,8 +38,8 @@ export default function Dial({ theme, sorted, advent }) {
                         <>
                             <div className="dial__door" aria-hidden="true">{door}</div>
                             <div className="dial__text">
-                                <span className="dial__label dial__label--gold">{ADVENT_TEASERS[door - 1].kind}</span>
-                                <span className="dial__title">{ADVENT_TEASERS[door - 1].title}</span>
+                                <span className="dial__label dial__label--gold">{teaserFor(door).kind || 'Avent'}</span>
+                                <span className="dial__title">{teaserFor(door).title}</span>
                                 <span className="dial__date">Porte {door} sur 25</span>
                             </div>
                         </>

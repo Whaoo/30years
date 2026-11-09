@@ -3,7 +3,7 @@ import Icon from './Icons';
 import { formatScore } from '../games';
 
 // Fenêtre plein écran qui accueille un mini-jeu (chargé à la demande)
-export default function GameModal({ game, best, onScore, onClose }) {
+export default function GameModal({ game, best, onScore, onClose, gameProps }) {
     const closeRef = useRef(null);
 
     useEffect(() => {
@@ -41,7 +41,7 @@ export default function GameModal({ game, best, onScore, onClose }) {
                 </header>
                 <div className="game-stage">
                     <Suspense fallback={<p className="game-loading">Chargement…</p>}>
-                        <Game onScore={handleScore} />
+                        <Game onScore={handleScore} {...gameProps} />
                     </Suspense>
                 </div>
                 <p className="game-help">{game.help}</p>

@@ -39,9 +39,9 @@ export const SHORT_MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', '
 export const WEEKDAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 
 // Tenue de chaque pingouin, attribuée selon la position dans la liste.
-const SCARVES = ['#ff6b6b', '#34d399', '#a78bfa', '#60a5fa', '#fbbf24', '#f472b6', '#2dd4bf', '#fb923c', '#f87171', '#4ade80'];
-const HAT_COLORS = ['#3b82f6', '#f59e0b', '#dc2626', '#0ea5e9', '#7c3aed', '#10b981'];
-const HATS = ['beanie', 'none', 'shades', 'beanie', 'none', 'beanie', 'shades'];
+export const SCARVES = ['#ff6b6b', '#34d399', '#a78bfa', '#60a5fa', '#fbbf24', '#f472b6', '#2dd4bf', '#fb923c', '#f87171', '#4ade80'];
+export const HAT_COLORS = ['#3b82f6', '#f59e0b', '#dc2626', '#0ea5e9', '#7c3aed', '#10b981'];
+export const HATS = ['beanie', 'none', 'shades', 'beanie', 'none', 'beanie', 'shades'];
 
 const MS_DAY = 86400000;
 

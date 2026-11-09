@@ -118,6 +118,50 @@ const PATHS = {
             <circle cx="12" cy="6" r="3" />
         </>
     ),
+    music: (
+        <>
+            <path d="M9 18V5l12-2v13" />
+            <circle cx="6" cy="18" r="3" />
+            <circle cx="18" cy="16" r="3" />
+        </>
+    ),
+    castle: (
+        <>
+            <path d="M3 21V9h3v2h3V9h3v2h3V9h3v2h3V9" />
+            <path d="M3 21h18V9" />
+            <path d="M10 21v-4a2 2 0 0 1 4 0v4" />
+        </>
+    ),
+    house: (
+        <>
+            <path d="M3 11 12 4l9 7" />
+            <path d="M5 10v11h14V10" />
+            <path d="M15 6V3h3v5.5" />
+            <path d="M10 21v-5h4v5" />
+        </>
+    ),
+    search: (
+        <>
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-4-4" />
+        </>
+    ),
+    question: (
+        <>
+            <circle cx="12" cy="12" r="9" />
+            <path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14" />
+            <path d="M12 17h.01" />
+        </>
+    ),
+    cake: (
+        <>
+            <path d="M4 21h16" />
+            <path d="M5 21v-7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7" />
+            <path d="M5 16c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0" />
+            <path d="M12 12V8" />
+            <path d="M12 5.5c.8-.7.8-1.8 0-2.5-.8.7-.8 1.8 0 2.5Z" />
+        </>
+    ),
     gift: (
         <>
             <rect x="4" y="10" width="16" height="10" rx="1.5" />
