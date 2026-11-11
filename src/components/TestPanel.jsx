@@ -30,7 +30,7 @@ function goToDate(value) {
     window.location.assign(url.toString().replace(/%3A/gi, ':'));
 }
 
-export default function TestPanel({ now, sorted, onPlay, onClearBests }) {
+export default function TestPanel({ now, sorted, onPlay, onEnvers, onClearBests }) {
     const [open, setOpen] = useState(false);
     const [confirmClear, setConfirmClear] = useState(false);
     const [custom, setCustom] = useState(() => stamp(now));
@@ -49,6 +49,7 @@ export default function TestPanel({ now, sorted, onPlay, onClearBests }) {
     const star = sorted.find((p) => p.name !== 'Noël' && p.days > 0) || sorted.find((p) => p.name !== 'Noël');
     const presets = [
         { label: 'Vraie date', value: null },
+        { label: '12 nov. · l’Envers', value: `${year}-11-12T10:00` },
         { label: '1er déc.', value: `${year}-12-01T10:00` },
         { label: '10 déc. · aventure', value: `${year}-12-10T10:00` },
         { label: '20 déc. · tous les jeux', value: `${year}-12-20T15:00` },
@@ -137,6 +138,14 @@ export default function TestPanel({ now, sorted, onPlay, onClearBests }) {
                             />
                             <button type="submit" className="tchip">Aller</button>
                         </form>
+                    </div>
+
+                    <div className="testpanel__section">
+                        <span className="testpanel__label">La cave sous la page</span>
+                        <div className="testpanel__chips">
+                            <button type="button" className="tchip tchip--accent" onClick={() => { setOpen(false); onEnvers(); }}>Descendre dans l’Envers</button>
+                            <button type="button" className="tchip" onClick={() => { try { window.localStorage.removeItem('30years:envers'); window.localStorage.removeItem('30years:envers-news'); } catch { /* rien */ } }}>Effacer la progression et l’annonce</button>
+                        </div>
                     </div>
 
                     <div className="testpanel__section">

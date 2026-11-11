@@ -39,6 +39,13 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
   - Les adresses `/aventure`, `/quiz` et `/bougies` ouvrent ces jeux à tout moment pour tester.
 - `src/games/GameCanvas.jsx` : moteur commun des jeux canvas (boucle, mise à l'échelle, clavier, souris, tactile).
 - Vue Speed Dial de Vivaldi : `?dial`, `/dial`, ou fenêtre de 480 px de côté ou moins (`src/components/Dial.jsx`).
+- `src/envers/` : « L'Envers », la cave sous la page (à partir du 12/11/2026, jamais le jour d'un anniversaire).
+  - Passage : trois coups de molette vers le bas (ou trois glissés vers le haut sur téléphone) en moins de 4 s, géré dans `App.jsx`.
+  - Annonce du 12 au 18/11 : bandeau `NewsBanner.jsx` et pastille « Nouveau ! » dans la vue Vivaldi (`config.js`).
+  - `engine.js` : chute d'introduction, exploration à la lampe (cave 2560 x 1440, carte en brouillard), fin (message, citrouille qui gèle, remontée).
+  - `Puzzle.jsx` : remettre TRICK OR TREE dans l'ordre. Progression gardée dans `localStorage` (`30years:envers`), record de temps `30years:best:envers`.
+  - `art/` : décors SVG générés depuis les maquettes du canevas de design (Page 2) ; `level.json` = plateformes, échelles, lettres.
+  - En mode test : `/envers` ouvre la cave, le panneau « Test » a un bouton dédié, la console expose `window.envers` (`revealAll()`, `grabAll()`).
 
 ## Règles à respecter
 

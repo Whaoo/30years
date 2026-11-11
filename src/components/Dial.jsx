@@ -5,7 +5,7 @@ import { teaserFor } from '../utils/advent';
 import { themeStyle } from '../utils/theme';
 
 // Vue compacte pour le Speed Dial de Vivaldi (petit carré). Tout est en vmin.
-export default function Dial({ theme, sorted, advent }) {
+export default function Dial({ theme, sorted, advent, news = false }) {
     const first = sorted[0];
     const group = sorted.filter((p) => p.days === first.days);
     const next = sorted[group.length];
@@ -31,7 +31,9 @@ export default function Dial({ theme, sorted, advent }) {
             <div className="dial__content">
                 <div className="dial__top">
                     <span className="dial__logo">30years</span>
-                    <span className="dial__chip">{advent.isDecember ? 'Avent' : theme.label}</span>
+                    {news
+                        ? <span className="dial__chip dial__chip--new">Nouveau !</span>
+                        : <span className="dial__chip">{advent.isDecember ? 'Avent' : theme.label}</span>}
                 </div>
                 <div className="dial__card">
                     {advent.isDecember ? (
@@ -62,7 +64,14 @@ export default function Dial({ theme, sorted, advent }) {
                         </>
                     )}
                 </div>
-                {footer && <div className="dial__foot">{footer}</div>}
+                {news ? (
+                    <div className="dial__foot dial__foot--new">
+                        <strong>Un secret t’attend sous la page</strong>
+                        <span>À découvrir sur la grande version</span>
+                    </div>
+                ) : (
+                    footer && <div className="dial__foot">{footer}</div>
+                )}
             </div>
         </div>
     );

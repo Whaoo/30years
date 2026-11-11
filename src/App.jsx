@@ -20,18 +20,25 @@ import { useWeather } from './hooks/useWeather';
 import { useNow } from './hooks/useNow';
 import { useDialMode } from './hooks/useDialMode';
 import { usePenguinPlay } from './hooks/usePenguinPlay';
+import { announceActive, dismissAnnounce, formatTime, isEnversOpen } from './envers/config';
+import NewsBanner from './envers/NewsBanner';
+import Crack from './envers/Crack';
 
 const HOUR = 3600000;
 
 /* global __TEST_MODE__ */
 // Panneau « Test » : seulement en mode test (npm run dev, préversion dev). Sur main il n'est pas inclus dans le site.
 const TestPanel = __TEST_MODE__ ? lazy(() => import('./components/TestPanel')) : null;
+// La cave sous la page : chargée seulement quand on y descend
+const EnversGame = lazy(() => import('./envers/EnversGame'));
 
 // Adresses directes, pratiques pour tester : /aventure, /bougies, /quiz
 const PATH_GAMES = { '/aventure': ADVENTURE.id, '/bougies': CANDLES.id, '/quiz': QUIZ.id };
 function pathGame() {
     return PATH_GAMES[window.location.pathname.replace(/\/+$/, '')] || null;
 }
+// /envers ouvre directement la cave, en mode test uniquement (en production, il faut trouver le passage)
+const enversPath = () => __TEST_MODE__ && window.location.pathname.replace(/\/+$/, '') === '/envers';
 
 function greeting(now, isToday) {
     if (isToday) return 'C’est le grand jour !';
@@ -72,8 +79,15 @@ function App() {
         return __TEST_MODE__ || isUnlocked(g, advent, now, { isBirthday: sorted[0].days === 0 }) ? g.id : null;
     });
 
+    const [envers, setEnvers] = useState(enversPath);
+    const [stage, setStage] = useState(0); // passage : 0 rien, 1 ça gratte, 2 ça craque
+    const [newsHidden, setNewsHidden] = useState(false);
+    const [enversCovered, setEnversCovered] = useState(false); // la page reste visible pendant la première seconde de la chute
+    const stageRef = useRef({ n: 0, last: 0, timer: 0 });
+    const touchY = useRef(null);
+
     const gameOpen = useRef(false);
-    gameOpen.current = !!gameId;
+    gameOpen.current = !!gameId || envers;
     const reloadPending = useRef(false);
     const toastTimer = useRef();
     const confettiTimer = useRef();
@@ -154,9 +168,50 @@ function App() {
         return () => clearInterval(id);
     }, [isToday, firstId, wave]);
 
-    // Molette : pas de scroll, mais des gags
+    const enversOpen = isEnversOpen(now, isToday);
+    const news = announceActive(now, isToday) && !newsHidden;
+
+    // Le passage vers l'Envers : trois coups vers le bas (molette ou glissé), sans pause de plus de 4 secondes
+    const passageStep = useCallback(() => {
+        const st = stageRef.current;
+        const t = performance.now();
+        if (t - st.last < 380) return; // un seul coup de molette envoie plusieurs évènements
+        st.last = t;
+        st.n += 1;
+        clearTimeout(st.timer);
+        if (st.n >= 3) {
+            st.n = 0;
+            setStage(0);
+            dismissAnnounce();
+            setNewsHidden(true);
+            setEnvers(true);
+            return;
+        }
+        setStage(st.n);
+        st.timer = setTimeout(() => {
+            st.n = 0;
+            setStage(0);
+        }, 4000);
+    }, []);
+
+    useEffect(() => () => clearTimeout(stageRef.current.timer), []);
+    useEffect(() => {
+        if (!envers) {
+            setEnversCovered(false);
+            return undefined;
+        }
+        const t = setTimeout(() => setEnversCovered(true), 1100);
+        return () => clearTimeout(t);
+    }, [envers]);
+
+    // Molette : pas de scroll, mais des gags (et, à partir du 12 novembre, le passage vers la cave)
     const onWheel = useCallback((e) => {
-        if (gagBusy.current || gameOpen.current) return;
+        if (gameOpen.current) return;
+        if (enversOpen && e.deltaY > 0) {
+            passageStep();
+            return;
+        }
+        if (gagBusy.current) return;
         gagBusy.current = true;
         gagCount.current += 1;
         const n = gagCount.current;
@@ -173,7 +228,31 @@ function App() {
             flash('Sept scrolls pour rien ? Mode aurore débloqué.');
             setTimeout(() => setShake(false), 700);
         }
-    }, [flash]);
+    }, [flash, enversOpen, passageStep]);
+
+    const onTouchStart = (e) => {
+        touchY.current = e.touches[0]?.clientY ?? null;
+    };
+    const onTouchEnd = (e) => {
+        const y0 = touchY.current;
+        touchY.current = null;
+        const y1 = e.changedTouches[0]?.clientY;
+        if (!enversOpen || gameOpen.current || y0 === null || y1 === undefined) return;
+        if (y0 - y1 > 60) passageStep(); // glissé vers le haut = on descend dans la page
+    };
+
+    const closeEnvers = useCallback((result) => {
+        setEnvers(false);
+        if (enversPath()) window.history.replaceState(null, '', '/');
+        if (result?.kind === 'win') {
+            const record = saveScore('envers', Math.round(result.time), true);
+            boom();
+            flash(`Bravo ! Cave éclairée et message retrouvé en ${formatTime(result.time)}${record ? ' · nouveau record' : ''}.`);
+        } else if (result?.kind === 'quit') {
+            flash(`Retour à la surface : ${result.found} lettre${result.found > 1 ? 's' : ''} sur 11 gardée${result.found > 1 ? 's' : ''} pour la prochaine fois.`);
+        }
+        if (reloadPending.current) window.location.reload();
+    }, [boom, flash]);
 
     const onLogo = useCallback(() => {
         logoClicks.current += 1;
@@ -184,7 +263,7 @@ function App() {
         flash(on ? 'Mode aurore activé.' : 'Retour à la normale.');
     }, [disco, flash]);
 
-    if (isDial) return <Dial theme={theme} sorted={sorted} advent={advent} />;
+    if (isDial) return <Dial theme={theme} sorted={sorted} advent={advent} news={announceActive(now, isToday)} />;
 
     // En décembre, le calendrier de l'Avent est affiché par défaut
     const isAvent = advent.isDecember && (view ?? 'avent') === 'avent';
@@ -240,11 +319,11 @@ function App() {
     ];
 
     return (
-        <div className={`app${gameId ? ' is-gaming' : ''}`} style={themeStyle(theme)} onWheel={onWheel}>
+        <div className={`app${gameId || enversCovered ? ' is-gaming' : ''}`} style={themeStyle(theme)} onWheel={onWheel} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
             <Background theme={theme} disco={disco} />
             {!gameId && <WeatherParticles type={theme.weatherParticles} />}
 
-            <div className={`layout${shake ? ' is-shaking' : ''}`}>
+            <div className={`layout${shake ? ' is-shaking' : ''}${stage ? ` envers-stage-${stage}` : ''}`}>
                 <Header
                     theme={theme}
                     weather={weather}
@@ -277,10 +356,19 @@ function App() {
                 </main>
 
                 <footer className="footer-hint hide-short">
-                    <p className="glass">Psst : les pingouins ont des secrets. Et il n’y a rien plus bas… quoique.</p>
+                    <p className="glass">{footerHint(stage, news, enversOpen)}</p>
                 </footer>
             </div>
 
+            {stage > 0 && !envers && <Crack stage={stage} />}
+            {news && !gameId && !envers && (
+                <NewsBanner
+                    onClose={() => {
+                        dismissAnnounce();
+                        setNewsHidden(true);
+                    }}
+                />
+            )}
             {toast && (
                 <div className="toast-wrap" role="status">
                     <span className="toast">{toast}</span>
@@ -288,12 +376,13 @@ function App() {
             )}
             {confetti > 0 && <Confetti key={confetti} />}
             <Gags gag={gag} people={sorted} />
-            {TestPanel && !gameId && (
+            {TestPanel && !gameId && !envers && (
                 <Suspense fallback={null}>
                     <TestPanel
                         now={now}
                         sorted={sorted}
                         onPlay={setGameId}
+                        onEnvers={() => setEnvers(true)}
                         onClearBests={() => {
                             const ids = ALL_GAMES.map((g) => g.id);
                             clearBests(ids);
@@ -312,8 +401,21 @@ function App() {
                     gameProps={gameId === CANDLES.id ? { people: isToday ? group : [] } : undefined}
                 />
             )}
+            {envers && (
+                <Suspense fallback={<div className="envers envers--loading" />}>
+                    <EnversGame onClose={closeEnvers} />
+                </Suspense>
+            )}
         </div>
     );
+}
+
+function footerHint(stage, news, enversOpen) {
+    if (stage === 1) return 'Tu as entendu ? Ça gratte sous la page…';
+    if (stage === 2) return 'Encore un petit coup…';
+    if (news) return 'Psst : il y a du nouveau tout en bas… insiste un peu.';
+    if (enversOpen) return 'Psst : les pingouins ont des secrets. Et il y a quelque chose plus bas…';
+    return 'Psst : les pingouins ont des secrets. Et il n’y a rien plus bas… quoique.';
 }
 
 export default App;
