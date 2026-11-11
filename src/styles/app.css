@@ -862,3 +862,18 @@ html, body, #root { height: 100%; }
 .envers__keys--touch { display: flex !important; bottom: 120px; max-width: calc(100vw - 36px); transform: translateX(-50%); }
 @media (max-width: 900px) { .envers__inv { bottom: 18px; } }
 @media (max-width: 560px) { .envers .envers__inv { bottom: 76px; } .envers__keys--touch { bottom: 150px; } }
+
+/* L'Envers : équipement (pile, bougie, ciseaux) et bouton Fouiller */
+.envers__gear { position: absolute; left: 18px; top: 74px; display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; color: #e9ecf5; background: rgba(13,16,28,0.78); }
+.envers__batt { display: inline-flex; align-items: center; gap: 7px; font-variant-numeric: tabular-nums; }
+.envers__battbar { position: relative; width: 34px; height: 13px; border: 2px solid currentColor; border-radius: 3px; overflow: hidden; }
+.envers__battbar::after { content: ''; position: absolute; right: -5px; top: 2px; width: 3px; height: 5px; border-radius: 1px; background: currentColor; }
+.envers__battbar > span { position: absolute; inset: 1px; transform-origin: left; background: #7be0a3; transition: transform 0.3s; }
+.envers__batt.is-low { color: #ff8a7a; }
+.envers__batt.is-low .envers__battbar > span { background: #ff8a7a; animation: envblink 0.9s steps(2) infinite; }
+.envers__item { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.06); }
+.envers__item.is-on { color: #ffd36e; background: rgba(255,211,110,0.16); }
+.envers__search { position: absolute; right: 18px; bottom: 210px; padding: 16px 22px; border: 0; border-radius: 999px; font: 800 17px 'Bricolage Grotesque', system-ui, sans-serif; color: #14172b; background: #ffd36e; box-shadow: 0 6px 0 #b8892c; animation: pop 0.25s ease-out; }
+.envers__search:active { transform: translateY(3px); box-shadow: 0 3px 0 #b8892c; }
+@keyframes envblink { 50% { opacity: 0.35; } }
+@media (max-width: 560px) { .envers__gear { top: 58px; left: 10px; } .envers__search { bottom: 250px; right: 12px; } }

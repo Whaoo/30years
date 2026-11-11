@@ -44,6 +44,11 @@ function isWalk(x, y) {
     const gy = Math.floor(y / WS);
     return gx >= 0 && gy >= 0 && gx < WW && gy < WH && walk[gy * WW + gx] === 1;
 }
+function setRect([x0, y0, x1, y1], v) {
+    for (let gy = Math.floor(y0 / WS); gy < Math.ceil(y1 / WS); gy++) {
+        for (let gx = Math.floor(x0 / WS); gx < Math.ceil(x1 / WS); gx++) walk[gy * WW + gx] = v;
+    }
+}
 // La lumière s'arrête aux murs, mais éclaire la face visible du mur du fond
 const isLightable = (x, y) => isWalk(x, y) || isWalk(x, y + level.face);
 function visible(x0, y0, x1, y1) {
@@ -179,6 +184,21 @@ function bubble(ctx, x, y, str, size = 22) {
 }
 
 // Dessine une image 1280x720 en « cover » sur tout l'écran ; renvoie la transformation pour y placer des éléments
+function bubbleW(ctx, x, y, str) {
+    ctx.save();
+    ctx.font = `700 14px ${BODY}`;
+    const w = ctx.measureText(str).width + 22;
+    ctx.fillStyle = 'rgba(255,211,110,0.95)';
+    ctx.beginPath();
+    ctx.roundRect(x - w / 2, y - 14, w, 28, 14);
+    ctx.fill();
+    ctx.fillStyle = '#14172b';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(str, x, y + 1);
+    ctx.restore();
+}
+
 function cover(ctx, img, vw, vh, zoom = 1, alpha = 1, dx = 0, dy = 0) {
     const s = Math.max(vw / 1280, vh / 720) * zoom;
     const ox = (vw - 1280 * s) / 2 + dx;
@@ -194,6 +214,7 @@ function cover(ctx, img, vw, vh, zoom = 1, alpha = 1, dx = 0, dy = 0) {
 
 // ------------------------------------------------------------------ moteur
 export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
+    level.doors.forEach((d) => setRect(d.rect, 1)); // grille propre avant de compter les zones à éclairer
     const ctx = canvas.getContext('2d');
     const light = document.createElement('canvas');
     const lctx = light.getContext('2d');
@@ -244,6 +265,44 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
             }
         }
         elapsed = progress.elapsed || 0;
+    }
+
+    // portes (glace / toile), objets (bougie, ciseaux), piles, cachettes, fantômes
+    const doors = level.doors.map((d) => ({ ...d, open: false, anim: 0 }));
+    const items = level.items.map((it) => ({ ...it, taken: false }));
+    const batteries = level.batteries.map(([x, y]) => ({ x, y, taken: false }));
+    const spots = level.search.map((sp, i) => ({ ...sp, i, searched: false, anim: 0 }));
+    const ghosts = level.ghosts.map(([x, y], i) => ({ x, y, hx: x, hy: y, vx: 0, vy: 0, cd: 2 + i, ph: i * 2.1, lit: 0, turn: 0 }));
+    let battery = 100;
+    let msgCd = 0;
+    let searching = null;
+    letters.forEach((l) => (l.hidden = !!level.letters[l.i].hidden));
+    if (progress) {
+        (progress.doors || []).forEach((id) => {
+            const d = doors.find((x) => x.id === id);
+            if (d) d.open = true;
+        });
+        (progress.items || []).forEach((k) => {
+            const it = items.find((x) => x.kind === k);
+            if (it) it.taken = true;
+        });
+        (progress.batteries || []).forEach((i) => batteries[i] && (batteries[i].taken = true));
+        (progress.searched || []).forEach((i) => {
+            if (!spots[i]) return;
+            spots[i].searched = true;
+            if (spots[i].letter !== null) letters[spots[i].letter].hidden = false;
+        });
+        Object.entries(progress.moved || {}).forEach(([i, [x, y]]) => {
+            if (letters[i]) Object.assign(letters[i], { x, y, hidden: false });
+        });
+        if (typeof progress.battery === 'number') battery = progress.battery;
+    }
+    doors.forEach((d) => setRect(d.rect, d.open ? 1 : 0));
+    const hasItem = (k) => items.some((it) => it.kind === k && it.taken);
+    const lampK = () => (battery > 30 ? 1 : battery > 0 ? 0.35 + 0.65 * (battery / 30) : 0.22 + 0.12 * Math.sin(performance.now() / 90));
+    const BL = () => BEAM_L * (0.55 + 0.45 * lampK());
+    function say(text) {
+        cb.onHint?.(text);
     }
 
     const p = {
@@ -319,10 +378,10 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
     function markExplored() {
         const L = lens();
         let added = 0;
-        const minX = Math.floor((Math.min(L.x, p.x) - BEAM_L) / CELL);
-        const maxX = Math.ceil((Math.max(L.x, p.x) + BEAM_L) / CELL);
-        const minY = Math.floor((Math.min(L.y, p.y) - BEAM_L) / CELL);
-        const maxY = Math.ceil((Math.max(L.y, p.y) + BEAM_L) / CELL);
+        const minX = Math.floor((Math.min(L.x, p.x) - BL()) / CELL);
+        const maxX = Math.ceil((Math.max(L.x, p.x) + BL()) / CELL);
+        const minY = Math.floor((Math.min(L.y, p.y) - BL()) / CELL);
+        const maxY = Math.ceil((Math.max(L.y, p.y) + BL()) / CELL);
         for (let gy = Math.max(0, minY); gy < Math.min(GH, maxY); gy++) {
             for (let gx = Math.max(0, minX); gx < Math.min(GW, maxX); gx++) {
                 const k = gy * GW + gx;
@@ -333,7 +392,7 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
                 const dy = cy - L.y;
                 const d = Math.hypot(dx, dy);
                 const near = Math.hypot(cx - p.x, cy - (p.y - 30)) < 110;
-                const inBeam = p.lampOn && d < BEAM_L * 0.9 && Math.abs(angDiff(Math.atan2(dy, dx), L.a)) < BEAM_HALF + 24 / Math.max(d, 1);
+                const inBeam = p.lampOn && d < BL() * 0.9 && Math.abs(angDiff(Math.atan2(dy, dx), L.a)) < BEAM_HALF + 24 / Math.max(d, 1);
                 if ((near || inBeam) && visible(near ? p.x : L.x, near ? p.y - 20 : L.y, cx, cy)) {
                     explored[k] = 1;
                     added += 1;
@@ -409,9 +468,11 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
             p.facing = Math.cos(p.aim) >= 0 ? 1 : -1;
         }
 
+        updateMechanics(dt);
+
         // lettres : on les ramasse en passant tout près
         for (const l of letters) {
-            if (!l.found && Math.abs(p.x - l.x) < 38 && Math.abs(p.y - l.y) < 44) {
+            if (!l.found && !l.hidden && Math.abs(p.x - l.x) < 38 && Math.abs(p.y - l.y) < 44) {
                 l.found = true;
                 foundOrder.push(l.i);
                 cb.onLetter?.(l);
@@ -425,10 +486,10 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
             cb.onGoal?.();
         } else if (allLetters && pct() < GOAL && !hintSent) {
             hintSent = true;
-            cb.onHint?.('Toutes les lettres ! Il reste des coins sombres : éclaire 90 % de la cave.');
+            cb.onHint?.('Toutes les lettres ! Il reste des coins sombres : éclaire 85 % de la cave.');
         } else if (!allLetters && pct() >= GOAL && !hintSent) {
             hintSent = true;
-            cb.onHint?.(`Cave éclairée ! Il manque encore ${LETTER_COUNT - foundOrder.length} lettre${LETTER_COUNT - foundOrder.length > 1 ? 's' : ''} : suis les éclats dorés.`);
+            cb.onHint?.(`Cave éclairée ! Il manque encore ${LETTER_COUNT - foundOrder.length} lettre${LETTER_COUNT - foundOrder.length > 1 ? 's' : ''} : suis les éclats dorés et fouille les ✦.`);
         }
 
         // caméra
@@ -444,12 +505,285 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
         }
     }
 
+    // ---------------------------------------------------------- portes, objets, pile, cachettes, fantômes
+    function rectDist([x0, y0, x1, y1], x, y) {
+        return Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(y0 - y, 0, y - y1));
+    }
+    function lightOn(x, y) {
+        const L = lens();
+        const d = Math.hypot(x - L.x, y - L.y);
+        return p.lampOn && d < BL() && Math.abs(angDiff(Math.atan2(y - L.y, x - L.x), L.a)) < BEAM_HALF && visible(L.x, L.y, x, y);
+    }
+    function nearSpot() {
+        return spots.find((sp) => !sp.searched && Math.hypot(p.x - sp.x, p.y - sp.y) < 80) || null;
+    }
+    function search() {
+        const sp = nearSpot();
+        if (!sp || searching) return;
+        searching = { sp, t: 0 };
+    }
+    function updateMechanics(dt) {
+        msgCd = Math.max(0, msgCd - dt);
+        // la pile s'use : environ 1 min 40 de lumière pleine
+        battery = Math.max(0, battery - dt * 1.0);
+        for (const b of batteries) {
+            if (!b.taken && Math.hypot(p.x - b.x, p.y - b.y) < 40) {
+                b.taken = true;
+                battery = Math.min(100, battery + 55);
+                say('Une pile neuve : la lampe repart de plus belle !');
+            }
+        }
+        for (const it of items) {
+            if (!it.taken && Math.hypot(p.x - it.x, p.y - it.y) < 40) {
+                it.taken = true;
+                say(it.kind === 'candle' ? 'Une bougie allumée : de quoi faire fondre de la glace…' : 'Des ciseaux : parfait pour une grosse toile d’araignée !');
+            }
+        }
+        for (const d of doors) {
+            if (d.open) continue;
+            if (d.anim > 0) {
+                d.anim += dt / 0.9;
+                if (d.anim >= 1) {
+                    d.open = true;
+                    setRect(d.rect, 1);
+                }
+                continue;
+            }
+            if (rectDist(d.rect, p.x, p.y) < 46) {
+                const need = d.kind === 'ice' ? 'candle' : 'scissors';
+                if (hasItem(need)) {
+                    d.anim = 0.001;
+                    say(d.kind === 'ice' ? 'La bougie fait fondre la glace !' : 'Clac ! La toile est coupée.');
+                } else if (msgCd <= 0) {
+                    msgCd = 5;
+                    say(d.kind === 'ice' ? 'Un mur de glace bloque le passage… il faudrait une flamme.' : 'Une énorme toile d’araignée… impossible de passer sans de quoi couper.');
+                }
+            }
+        }
+        if (searching) {
+            searching.t += dt;
+            if (searching.t > 0.6) {
+                const sp = searching.sp;
+                sp.searched = true;
+                searching = null;
+                if (sp.letter !== null) {
+                    const l = letters[sp.letter];
+                    l.hidden = false;
+                    if (!l.found) {
+                        l.found = true;
+                        foundOrder.push(l.i);
+                        cb.onLetter?.(l);
+                    }
+                    say(`Le ${l.ch} était caché dans ${sp.what} !`);
+                } else {
+                    say(['Rien ici… à part une vieille chaussette.', 'Rien. Juste de la poussière et une toile.', 'Vide ! Il faudra chercher ailleurs.'][sp.i % 3]);
+                }
+            }
+        }
+        updateGhosts(dt);
+    }
+    function ghostCan(x, y) {
+        return isWalk(x, y);
+    }
+    function updateGhosts(dt) {
+        for (const g of ghosts) {
+            g.ph += dt;
+            g.cd = Math.max(0, g.cd - dt);
+            const lit = lightOn(g.x, g.y - 20);
+            g.lit = lit ? Math.min(1, g.lit + dt * 4) : Math.max(0, g.lit - dt * 2);
+            const dx = p.x - g.x;
+            const dy = p.y - 20 - g.y;
+            const d = Math.hypot(dx, dy) || 1;
+            let sp = 55;
+            let ax = Math.cos(g.ph * 0.6 + g.hx);
+            let ay = Math.sin(g.ph * 0.5 + g.hy);
+            if (lit) {
+                sp = 230; // la lumière les fait fuir
+                ax = -dx / d;
+                ay = -dy / d;
+            } else if (g.cd <= 0 && d < 290 && visible(g.x, g.y, p.x, p.y - 20)) {
+                sp = 112;
+                ax = dx / d;
+                ay = dy / d;
+            }
+            g.vx += (ax * sp - g.vx) * Math.min(1, dt * 3);
+            g.vy += (ay * sp - g.vy) * Math.min(1, dt * 3);
+            const nx = g.x + g.vx * dt;
+            const ny = g.y + g.vy * dt;
+            if (ghostCan(nx, g.y)) g.x = nx;
+            else g.vx *= -0.5;
+            if (ghostCan(g.x, ny)) g.y = ny;
+            else g.vy *= -0.5;
+            // il te touche dans le noir : il vole la dernière lettre et la cache ailleurs
+            if (!lit && g.cd <= 0 && d < 36) {
+                g.cd = 10;
+                const last = foundOrder.pop();
+                if (last !== undefined) {
+                    const l = letters[last];
+                    const taken = (hx, hy) => letters.some((o) => !o.found && Math.hypot(o.x - hx, o.y - hy) < 60);
+                    const far = level.hide.filter(([hx, hy]) => Math.hypot(hx - p.x, hy - p.y) > 500 && isWalk(hx, hy) && !taken(hx, hy));
+                    const [hx, hy] = far.length ? far[Math.floor(Math.random() * far.length)] : level.hide[0];
+                    Object.assign(l, { found: false, hidden: false, x: hx, y: hy, moved: true });
+                    cb.onLetter?.(l);
+                    say(`Bouh ! Un fantôme t’a pris le ${l.ch} et l’a caché ailleurs. Garde-les dans la lumière !`);
+                } else {
+                    say('Bouh ! Un fantôme… Éclaire-le pour le faire fuir.');
+                }
+                shake = 6;
+                const far = level.hide.filter(([hx, hy]) => Math.hypot(hx - p.x, hy - p.y) > 700);
+                const [tx, ty] = far.length ? far[Math.floor(Math.random() * far.length)] : [g.hx, g.hy];
+                g.x = tx;
+                g.y = ty;
+            }
+        }
+    }
+
+    function drawDoor(d) {
+        const [x0, y0, x1, y1] = d.rect;
+        const k = 1 - Math.min(1, d.anim);
+        if (d.open) return;
+        ctx.save();
+        if (d.kind === 'ice') {
+            const h = (y1 - y0) * k;
+            const g = ctx.createLinearGradient(x0, y0, x1, y1);
+            g.addColorStop(0, 'rgba(230,246,255,0.92)');
+            g.addColorStop(0.5, 'rgba(160,210,245,0.85)');
+            g.addColorStop(1, 'rgba(110,170,230,0.9)');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.roundRect(x0 - 4, y1 - h - 30 * k, x1 - x0 + 8, h + 30 * k, 8);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x0 + 8, y1 - h - 22 * k);
+            ctx.lineTo(x0 + 20, y1 - 8);
+            ctx.moveTo(x1 - 14, y1 - h - 18 * k);
+            ctx.lineTo(x1 - 26, y1 - h * 0.4);
+            ctx.stroke();
+            if (d.anim > 0) {
+                ctx.fillStyle = 'rgba(160,210,245,0.5)';
+                ctx.beginPath();
+                ctx.ellipse((x0 + x1) / 2, y1, (x1 - x0) * 0.7, 10, 0, 0, TAU);
+                ctx.fill();
+            }
+        } else {
+            ctx.globalAlpha = k;
+            ctx.strokeStyle = 'rgba(235,240,248,0.85)';
+            ctx.lineWidth = 1.4;
+            const cx = (x0 + x1) / 2;
+            const cy = (y0 + y1) / 2 - 20;
+            const R = Math.max(x1 - x0, y1 - y0) * 0.75;
+            ctx.beginPath();
+            for (let i = 0; i < 12; i++) {
+                const a = (i / 12) * TAU;
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R * 0.8);
+            }
+            for (let r = 12; r < R; r += 12) {
+                for (let i = 0; i < 12; i++) {
+                    const a0 = (i / 12) * TAU;
+                    const a1 = ((i + 1) / 12) * TAU;
+                    ctx.moveTo(cx + Math.cos(a0) * r, cy + Math.sin(a0) * r * 0.8);
+                    ctx.quadraticCurveTo(cx + Math.cos((a0 + a1) / 2) * r * 0.85, cy + Math.sin((a0 + a1) / 2) * r * 0.68, cx + Math.cos(a1) * r, cy + Math.sin(a1) * r * 0.8);
+                }
+            }
+            ctx.stroke();
+            ctx.fillStyle = '#15161c';
+            ctx.beginPath();
+            ctx.ellipse(cx + 10, cy + 6, 7, 8, 0, 0, TAU);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    function drawProps() {
+        // cachettes : léger frémissement quand on fouille
+        // objets et piles au sol
+        for (const it of items) {
+            if (it.taken) continue;
+            ctx.save();
+            ctx.translate(it.x, it.y);
+            if (it.kind === 'candle') {
+                ctx.fillStyle = '#efe4c8';
+                ctx.fillRect(-5, -26, 10, 26);
+                ctx.fillStyle = '#ffb34d';
+                ctx.beginPath();
+                ctx.ellipse(0, -34, 4, 8, 0, 0, TAU);
+                ctx.fill();
+            } else {
+                ctx.strokeStyle = '#c9ced8';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(-10, -4);
+                ctx.lineTo(12, -22);
+                ctx.moveTo(10, -4);
+                ctx.lineTo(-12, -22);
+                ctx.stroke();
+                ctx.strokeStyle = '#d7263d';
+                ctx.lineWidth = 3.5;
+                ctx.beginPath();
+                ctx.arc(-12, -2, 5, 0, TAU);
+                ctx.moveTo(17, -2);
+                ctx.arc(12, -2, 5, 0, TAU);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+        for (const b of batteries) {
+            if (b.taken) continue;
+            ctx.fillStyle = '#2b2f3a';
+            ctx.fillRect(b.x - 8, b.y - 26, 16, 26);
+            ctx.fillStyle = '#7be0a3';
+            ctx.fillRect(b.x - 8, b.y - 26, 16, 9);
+            ctx.fillStyle = '#c9ced8';
+            ctx.fillRect(b.x - 3, b.y - 30, 6, 4);
+        }
+        for (const d of doors) drawDoor(d);
+    }
+
+    function drawGhost(g) {
+        const a = 0.3 + 0.6 * g.lit;
+        const bob = Math.sin(g.ph * 3) * 5;
+        ctx.save();
+        ctx.translate(g.x, g.y + bob);
+        ctx.scale(g.vx < 0 ? -1 : 1, 1);
+        ctx.globalAlpha = a;
+        ctx.fillStyle = '#eef3ff';
+        ctx.beginPath();
+        ctx.moveTo(-20, 0);
+        ctx.quadraticCurveTo(-22, -46, 0, -48);
+        ctx.quadraticCurveTo(22, -46, 20, 0);
+        for (let i = 0; i < 4; i++) ctx.quadraticCurveTo(15 - i * 10, 10 + Math.sin(g.ph * 6 + i) * 3, 10 - i * 10, 0);
+        ctx.fill();
+        // tête-citrouille
+        ctx.globalAlpha = Math.min(1, a + 0.2);
+        ctx.fillStyle = '#ff8a2a';
+        ctx.beginPath();
+        ctx.ellipse(0, -46, 15, 12, 0, 0, TAU);
+        ctx.fill();
+        ctx.fillStyle = '#3f7d3a';
+        ctx.fillRect(-2, -61, 4, 6);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#ffe28a';
+        ctx.beginPath();
+        ctx.moveTo(-9, -48);
+        ctx.lineTo(-4, -53);
+        ctx.lineTo(-2, -46);
+        ctx.moveTo(9, -48);
+        ctx.lineTo(4, -53);
+        ctx.lineTo(2, -46);
+        ctx.fill();
+        ctx.fillRect(-6, -42, 12, 3);
+        ctx.restore();
+    }
+
     function updateAmbient(dt) {
         for (const b of bats) {
             b.ph += dt * 3;
             const L = lens();
             const d = Math.hypot(b.x - L.x, b.y - L.y);
-            const lit = p.lampOn && d < BEAM_L && Math.abs(angDiff(Math.atan2(b.y - L.y, b.x - L.x), L.a)) < BEAM_HALF;
+            const lit = p.lampOn && d < BL() && Math.abs(angDiff(Math.atan2(b.y - L.y, b.x - L.x), L.a)) < BEAM_HALF;
             b.flee = lit ? 1 : Math.max(0, b.flee - dt);
             b.x += b.vx * (1 + b.flee * 3) * dt;
             if (b.x < 100 || b.x > level.w - 100) b.vx *= -1;
@@ -483,8 +817,9 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
             const k = Math.min(3, Math.floor((n / LETTER_COUNT) * 3.999));
             ctx.drawImage(c.ice[k], level.ice.x - 52, level.ice.y - 134, 105, 135);
         }
-        // lettres pas encore ramassées
-        for (const l of letters) if (!l.found) drawScrap(ctx, l.x, l.y - 17, 26, 30, l.ch, l.dot, l.rot, l.i + 1);
+        drawProps();
+        // lettres pas encore ramassées (sauf celles cachées dans un objet)
+        for (const l of letters) if (!l.found && !l.hidden) drawScrap(ctx, l.x, l.y - 17, 26, 30, l.ch, l.dot, l.rot, l.i + 1);
         // chauves-souris
         for (const b of bats) {
             const flap = Math.sin(b.ph * 4) * 0.5 + 0.5;
@@ -527,16 +862,41 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
                 const x = p.x + d.x + Math.cos(L.a) * 260;
                 const y = p.y - 40 + d.y + Math.sin(L.a) * 260;
                 const dd = Math.hypot(x - L.x, y - L.y);
-                if (dd > BEAM_L * 0.8 || Math.abs(angDiff(Math.atan2(y - L.y, x - L.x), L.a)) > BEAM_HALF * 0.9) continue;
-                ctx.globalAlpha = d.a * (1 - dd / BEAM_L);
+                if (dd > BL() * 0.8 || Math.abs(angDiff(Math.atan2(y - L.y, x - L.x), L.a)) > BEAM_HALF * 0.9) continue;
+                ctx.globalAlpha = d.a * (1 - dd / BL());
                 ctx.fillStyle = '#fff3d0';
                 ctx.fillRect(x, y, 1.6, 1.6);
             }
             ctx.globalAlpha = 1;
         }
         const now = performance.now() / 1000;
+        for (const sp of spots) {
+            if (sp.searched) continue;
+            const tw = 0.35 + 0.35 * Math.sin(now * 2 + sp.i * 1.3);
+            ctx.fillStyle = `rgba(255,255,255,${tw})`;
+            ctx.font = `700 14px ${BODY}`;
+            ctx.textAlign = 'center';
+            ctx.fillText('✦', sp.x + 18, sp.y - 46);
+        }
+        for (const b of batteries) {
+            if (b.taken) continue;
+            const pulse = 0.5 + 0.5 * Math.sin(now * 4 + b.x);
+            ctx.strokeStyle = `rgba(123,224,163,${0.4 + 0.5 * pulse})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(b.x, b.y - 14, 10 + pulse * 8, 0, TAU);
+            ctx.stroke();
+        }
+        for (const g of ghosts) drawGhost(g);
+        if (phase === 'play') {
+            const sp = nearSpot();
+            if (sp) {
+                const label = searching ? 'Je fouille…' : touch ? 'Touche « Fouiller »' : 'Espace : fouiller';
+                bubbleW(ctx, sp.x, sp.y - 74, label);
+            }
+        }
         for (const l of letters) {
-            if (l.found) continue;
+            if (l.found || l.hidden) continue;
             const pulse = 0.5 + 0.5 * Math.sin(now * 3.4 + l.i);
             const g = ctx.createRadialGradient(l.x, l.y - 20, 0, l.x, l.y - 20, 22);
             g.addColorStop(0, `rgba(255,246,207,${0.55 + 0.4 * pulse})`);
@@ -658,9 +1018,10 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
         if (p.lampOn) {
             const L = lens();
             const flick = 1 - 0.015 * Math.sin(tw * 13) * Math.sin(tw * 5);
-            beam(L, BEAM_HALF * 1.45, BEAM_L * 0.8, 0.28 * flick);
-            beam(L, BEAM_HALF, BEAM_L, 0.78 * flick);
-            beam(L, BEAM_HALF * 0.45, BEAM_L * 0.45, 0.5);
+            const lk = 0.4 + 0.6 * lampK();
+            beam(L, BEAM_HALF * 1.45, BL() * 0.8, 0.28 * flick * lk);
+            beam(L, BEAM_HALF, BL(), 0.78 * flick * lk);
+            beam(L, BEAM_HALF * 0.45, BL() * 0.45, 0.5 * lk);
         }
         lctx.globalCompositeOperation = 'source-over';
         ctx.save();
@@ -674,12 +1035,12 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
             ctx.scale(scale, scale);
             ctx.translate(-cam.x, -cam.y);
             ctx.globalCompositeOperation = 'lighter';
-            const g = ctx.createRadialGradient(L.x, L.y, 0, L.x, L.y, BEAM_L);
+            const g = ctx.createRadialGradient(L.x, L.y, 0, L.x, L.y, BL());
             g.addColorStop(0, 'rgba(255,226,160,0.11)');
             g.addColorStop(0.3, 'rgba(255,214,140,0.04)');
             g.addColorStop(1, 'rgba(255,214,140,0)');
             ctx.fillStyle = g;
-            beamPath(ctx, L, BEAM_HALF, BEAM_L);
+            beamPath(ctx, L, BEAM_HALF, BL());
             ctx.fill();
             ctx.restore();
         }
@@ -1019,7 +1380,7 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
         // le texte, lettre par lettre, en vague
         const lines = [
             { str: 'IT’S…', start: 0.25, y: 0.2, size: 0.85 },
-            { str: 'TAAAAIIIIMMEEEE !', start: 0.75, y: 0.37, size: 1 }
+            { str: 'TIIIIIMEEEE !', start: 0.75, y: 0.37, size: 1 }
         ];
         const base = Math.min(vw * 0.085, vh * 0.16, 120);
         const cx = vw * 0.36;
@@ -1244,6 +1605,7 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
             hudT += dt;
             if (hudT > 0.25) {
                 hudT = 0;
+                cb.onStatus?.({ battery: Math.round(battery), candle: hasItem('candle'), scissors: hasItem('scissors'), near: !!nearSpot() });
                 const pc = Math.floor(pct() * 100);
                 if (pc !== lastPct) {
                     lastPct = pc;
@@ -1272,7 +1634,21 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
     function snapshot() {
         let s = '';
         for (let k = 0; k < explored.length; k++) s += explored[k] ? '1' : '0';
-        return { found: foundOrder.slice(), explored: s, elapsed };
+        const moved = {};
+        letters.forEach((l) => {
+            if (l.moved) moved[l.i] = [l.x, l.y];
+        });
+        return {
+            found: foundOrder.slice(),
+            explored: s,
+            elapsed,
+            doors: doors.filter((d) => d.open).map((d) => d.id),
+            items: items.filter((it) => it.taken).map((it) => it.kind),
+            batteries: batteries.map((b, i) => (b.taken ? i : -1)).filter((i) => i >= 0),
+            searched: spots.filter((sp) => sp.searched).map((sp) => sp.i),
+            moved,
+            battery
+        };
     }
 
     // ---------------------------------------------------------- API
@@ -1300,6 +1676,7 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
             if (code === 'Space' && down) {
                 if (phase === 'intro') api.skip();
                 else if (ORDER.includes(phase)) nextEnd();
+                else if (phase === 'play') search();
                 return true;
             }
             return false;
@@ -1351,6 +1728,7 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
             joy.dy = 0;
         },
         joyState: () => ({ ...joy }),
+        search,
         openPuzzle() {
             phase = 'puzzle';
             t = 0;
@@ -1381,12 +1759,24 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
             p.x = level.spawn.x;
             p.y = level.spawn.y;
             lastPct = -1;
+            battery = 100;
+            doors.forEach((d) => {
+                d.open = false;
+                d.anim = 0;
+                setRect(d.rect, 0);
+            });
+            items.forEach((it) => (it.taken = false));
+            batteries.forEach((b) => (b.taken = false));
+            spots.forEach((sp) => (sp.searched = false));
+            letters.forEach((l) => {
+                Object.assign(l, { x: level.letters[l.i].x, y: level.letters[l.i].y, hidden: !!level.letters[l.i].hidden, moved: false });
+            });
         },
         state: () => ({ found: foundOrder.map((i) => letters[i]), pct: pct(), elapsed, phase }),
         snapshot,
         touch
     };
-    if (__TEST_MODE__) window.envers = { p, letters, api, explored, revealAll: () => { explored.fill(0); for (let k = 0; k < explored.length; k++) if (explorable[k]) explored[k] = 1; exploredCount = explorableCount; redrawMemory(); }, grabAll: () => letters.forEach((l) => { if (!l.found) { l.found = true; foundOrder.push(l.i); cb.onLetter?.(l); } }) };
+    if (__TEST_MODE__) window.envers = { p, letters, api, explored, doors, items, ghosts, setBattery: (v) => (battery = v), openDoors: () => doors.forEach((d) => { d.open = true; setRect(d.rect, 1); }), revealAll: () => { explored.fill(0); for (let k = 0; k < explored.length; k++) if (explorable[k]) explored[k] = 1; exploredCount = explorableCount; redrawMemory(); }, grabAll: () => letters.forEach((l) => { if (!l.found) { l.found = true; foundOrder.push(l.i); cb.onLetter?.(l); } }) };
     return api;
 }
 

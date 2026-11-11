@@ -16,7 +16,8 @@ export default function EnversGame({ onClose }) {
     const [phase, setPhase] = useState('intro');
     const [found, setFound] = useState([]);
     const [pct, setPct] = useState(0);
-    const [hint, setHint] = useState('');
+    const [hint, setHint] = useState(null);
+    const [status, setStatus] = useState({ battery: 100, candle: false, scissors: false, near: false });
     const [paused, setPaused] = useState(false);
     const [music, setMusic] = useState(false);
     const [bigMap, setBigMap] = useState(false);
@@ -42,9 +43,10 @@ export default function EnversGame({ onClose }) {
                 onPhase: setPhase,
                 onLetter: () => setFound(engine.state().found.slice()),
                 onProgress: setPct,
-                onHint: (h) => setHint(h),
+                onHint: (h) => setHint(h ? { text: h, k: Date.now() } : null),
+                onStatus: (st) => setStatus((o) => (o.battery === st.battery && o.candle === st.candle && o.scissors === st.scissors && o.near === st.near ? o : st)),
                 onGoal: () => {
-                    setHint('');
+                    setHint(null);
                     setTimeout(() => engine.openPuzzle(), 700);
                 },
                 onSave: (snap) => saveProgress(snap),
@@ -130,7 +132,7 @@ export default function EnversGame({ onClose }) {
 
     useEffect(() => {
         if (!hint) return undefined;
-        const t = setTimeout(() => setHint(''), 6000);
+        const t = setTimeout(() => setHint(null), 5500);
         return () => clearTimeout(t);
     }, [hint]);
 
@@ -159,6 +161,7 @@ export default function EnversGame({ onClose }) {
         saveProgress(null);
         setFound([]);
         setPct(0);
+        setStatus({ battery: 100, candle: false, scissors: false, near: false });
         setPaused(false);
     };
 
@@ -194,7 +197,19 @@ export default function EnversGame({ onClose }) {
                     <span>Lettres <strong>{found.length} / {LETTER_COUNT}</strong></span>
                     <span className="envers__sep">·</span>
                     <span>Cave éclairée <strong className="is-gold">{pct} %</strong></span>
-                    <span className="envers__bar"><span style={{ transform: `scaleX(${Math.min(1, pct / 90)})` }} /></span>
+                    <span className="envers__bar"><span style={{ transform: `scaleX(${Math.min(1, pct / 85)})` }} /></span>
+                </div>
+                <div className="envers__gear" aria-label="Équipement">
+                    <span className={`envers__batt${status.battery <= 30 ? ' is-low' : ''}`} title="Pile de la lampe">
+                        <span className="envers__battbar"><span style={{ transform: `scaleX(${status.battery / 100})` }} /></span>
+                        {status.battery} %
+                    </span>
+                    <span className={`envers__item${status.candle ? ' is-on' : ''}`} title={status.candle ? 'Bougie : fait fondre la glace' : 'Bougie : pas encore trouvée'}>
+                        <svg width="16" height="20" viewBox="0 0 16 20" aria-hidden="true"><path d="M8 1c2 3 3 4 3 6a3 3 0 0 1-6 0c0-2 1-3 3-6z" fill="currentColor" /><rect x="5" y="10" width="6" height="9" rx="1" fill="currentColor" opacity=".7" /></svg>
+                    </span>
+                    <span className={`envers__item${status.scissors ? ' is-on' : ''}`} title={status.scissors ? 'Ciseaux : coupent les toiles' : 'Ciseaux : pas encore trouvés'}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="6" cy="18" r="3" /><circle cx="18" cy="18" r="3" /><path d="M8 16L19 3M16 16L5 3" /></svg>
+                    </span>
                 </div>
                 <div className="envers__actions">
                     <button type="button" className="envers__rope" onClick={rope} disabled={!playing}>
@@ -226,6 +241,7 @@ export default function EnversGame({ onClose }) {
                     <div className={`envers__keys${showKeys || paused ? ' is-on' : ''}`} aria-hidden="true">
                         <span><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> se déplacer partout</span>
                         <span className="envers__mouse">la souris oriente la lampe</span>
+                        <span><kbd className="is-wide">Espace</kbd> fouiller</span>
                         <span><kbd>M</kbd> carte</span>
                         <span><kbd className="is-wide">Échap</kbd> pause</span>
                     </div>
@@ -236,7 +252,11 @@ export default function EnversGame({ onClose }) {
                 </button>
             </div>
 
-            {hint && playing && <div className="envers__hint" role="status">{hint}</div>}
+            {hint && playing && <div key={hint.k} className="envers__hint" role="status">{hint.text}</div>}
+
+            {touch && playing && status.near && (
+                <button type="button" className="envers__search" onClick={() => engineRef.current?.search()}>Fouiller</button>
+            )}
 
             {paused && playing && (
                 <div className="envers__pause" role="dialog" aria-modal="true" aria-label="Pause">
