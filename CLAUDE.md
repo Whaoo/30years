@@ -42,9 +42,10 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
 - `src/envers/` : « L'Envers », la cave sous la page (à partir du 12/11/2026, jamais le jour d'un anniversaire).
   - Passage : trois coups de molette vers le bas (ou trois glissés vers le haut sur téléphone) en moins de 4 s, géré dans `App.jsx`.
   - Annonce du 12 au 18/11 : bandeau `NewsBanner.jsx` et pastille « Nouveau ! » dans la vue Vivaldi (`config.js`).
-  - `engine.js` : chute d'introduction, exploration à la lampe (cave 2560 x 1440, carte en brouillard), fin (message, citrouille qui gèle, remontée).
+  - `engine.js` : chute d'introduction, exploration à la lampe en vue de dessus (4 salles : crypte et potions côté Halloween, atelier et sapin côté Noël ;
+    déplacement libre aux flèches ou au doigt, lumière arrêtée par les murs, carte en brouillard, objectif 85 % éclairé + 11 lettres, environ 2 min), fin (message, citrouille qui gèle, remontée).
   - `Puzzle.jsx` : remettre TRICK OR TREE dans l'ordre. Progression gardée dans `localStorage` (`30years:envers`), record de temps `30years:best:envers`.
-  - `art/` : décors SVG générés depuis les maquettes du canevas de design (Page 2) ; `level.json` = plateformes, échelles, lettres.
+  - `art/` : décors SVG générés depuis les maquettes du canevas de design (Page 2) ; `level-top.json` = salles, couloirs, obstacles, lumières, lettres.
   - En mode test : `/envers` ouvre la cave, le panneau « Test » a un bouton dédié, la console expose `window.envers` (`revealAll()`, `grabAll()`).
 
 ## Règles à respecter

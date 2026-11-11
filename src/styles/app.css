@@ -858,3 +858,7 @@ html, body, #root { height: 100%; }
   .envers__inv { left: 8px; right: 8px; bottom: 76px; }
   .envers-pz__slot { width: 40px; height: 50px; }
 }
+
+.envers__keys--touch { display: flex !important; bottom: 120px; max-width: calc(100vw - 36px); transform: translateX(-50%); }
+@media (max-width: 900px) { .envers__inv { bottom: 18px; } }
+@media (max-width: 560px) { .envers .envers__inv { bottom: 76px; } .envers__keys--touch { bottom: 150px; } }

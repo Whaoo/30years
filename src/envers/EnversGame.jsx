@@ -162,17 +162,6 @@ export default function EnversGame({ onClose }) {
         setPaused(false);
     };
 
-    const hold = (code) => ({
-        onPointerDown: (e) => {
-            e.preventDefault();
-            if (code === 'Space') engineRef.current?.touchJump();
-            else engineRef.current?.key(code, true);
-        },
-        onPointerUp: () => engineRef.current?.key(code, false),
-        onPointerLeave: () => engineRef.current?.key(code, false),
-        onPointerCancel: () => engineRef.current?.key(code, false)
-    });
-
     const playing = phase === 'play';
     const hud = playing || phase === 'puzzle';
     const ending = ['lights', 'message', 'freeze', 'time', 'rope', 'done'].includes(phase);
@@ -182,8 +171,18 @@ export default function EnversGame({ onClose }) {
             <canvas
                 ref={canvasRef}
                 className="envers__canvas"
-                onPointerMove={(e) => engineRef.current?.pointerMove(e.clientX, e.clientY)}
-                onPointerDown={() => engineRef.current?.click()}
+                onPointerMove={(e) => {
+                    if (e.pointerType === 'touch') engineRef.current?.joyMove(e.clientX, e.clientY);
+                    else engineRef.current?.pointerMove(e.clientX, e.clientY);
+                }}
+                onPointerDown={(e) => {
+                    if (e.pointerType === 'touch' && phase === 'play') {
+                        e.currentTarget.setPointerCapture?.(e.pointerId);
+                        engineRef.current?.joyStart(e.clientX, e.clientY);
+                    } else engineRef.current?.click();
+                }}
+                onPointerUp={() => engineRef.current?.joyEnd()}
+                onPointerCancel={() => engineRef.current?.joyEnd()}
             />
 
             {phase === 'intro' && (
@@ -219,15 +218,16 @@ export default function EnversGame({ onClose }) {
                         ))}
                     </div>
                 </div>
-                {!touch && (
+                {touch ? (
+                    <div className={`envers__keys envers__keys--touch${showKeys ? ' is-on' : ''}`} aria-hidden="true">
+                        <span>Pose le doigt et glisse pour te déplacer : la lampe suit.</span>
+                    </div>
+                ) : (
                     <div className={`envers__keys${showKeys || paused ? ' is-on' : ''}`} aria-hidden="true">
-                        <span><kbd>←</kbd><kbd>→</kbd> marcher</span>
-                        <span><kbd>↑</kbd> grimper · lampe plus haut</span>
-                        <span><kbd>↓</kbd> descendre · lampe plus bas</span>
-                        <span><kbd className="is-wide">Espace</kbd> sauter</span>
+                        <span><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> se déplacer partout</span>
+                        <span className="envers__mouse">la souris oriente la lampe</span>
                         <span><kbd>M</kbd> carte</span>
                         <span><kbd className="is-wide">Échap</kbd> pause</span>
-                        <span className="envers__mouse">la souris vise aussi</span>
                     </div>
                 )}
                 <button type="button" className={`envers__map${bigMap ? ' is-big' : ''}`} onClick={() => setBigMap((v) => !v)} aria-label={bigMap ? 'Réduire la carte' : 'Agrandir la carte'}>
@@ -235,20 +235,6 @@ export default function EnversGame({ onClose }) {
                     <span className="envers__maplabel">Carte · {pct} %</span>
                 </button>
             </div>
-
-            {touch && playing && !paused && (
-                <div className="envers__pad" aria-hidden="true">
-                    <div className="envers__padgroup">
-                        <button type="button" {...hold('ArrowLeft')}>◀</button>
-                        <button type="button" {...hold('ArrowRight')}>▶</button>
-                    </div>
-                    <div className="envers__padgroup">
-                        <button type="button" {...hold('ArrowUp')}>▲</button>
-                        <button type="button" {...hold('ArrowDown')}>▼</button>
-                        <button type="button" className="is-wide" {...hold('Space')}>Saut</button>
-                    </div>
-                </div>
-            )}
 
             {hint && playing && <div className="envers__hint" role="status">{hint}</div>}
 

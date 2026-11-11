@@ -1,9 +1,9 @@
 // Moteur de « L'Envers » : la cave à la lampe torche.
 // Tout se dessine dans un seul canvas plein écran : chute d'introduction, exploration, puis fin (message, citrouille qui gèle, remontée).
 // Les décors sont des SVG dessinés une seule fois dans des canvas hors écran (voir art/, générés à partir des maquettes).
-import level from './art/level.json';
-import caveUrl from './art/cave.svg';
-import minimapUrl from './art/minimap.svg';
+import level from './art/level-top.json';
+import caveUrl from './art/cave-top.svg';
+import minimapUrl from './art/minimap-top.svg';
 import fallOpenUrl from './art/fall-open.svg';
 import fallClosedUrl from './art/fall-closed.svg';
 import messageUrl from './art/message.svg';
@@ -22,10 +22,37 @@ export const WORDS = ['TRICK', 'OR', 'TREE'];
 const CELL = 64;
 const GW = Math.ceil(level.w / CELL);
 const GH = Math.ceil(level.h / CELL);
-const BEAM_L = 640;
-const BEAM_HALF = 0.36;
-const PENGUIN_H = 60;
-const GOAL = 0.9; // part de la cave à éclairer
+const BEAM_L = 560;
+const BEAM_HALF = 0.4;
+const PENGUIN_H = 56;
+const SPEED = 280;
+const GOAL = 0.85; // part de la cave à éclairer (réglée pour une partie d'environ 2 minutes)
+
+// Où l'on peut marcher : les 4 salles et les couloirs (grille de 16 px)
+const WS = 16;
+const WW = Math.ceil(level.w / WS);
+const WH = Math.ceil(level.h / WS);
+const walk = new Uint8Array(WW * WH);
+for (const [x0, y0, x1, y1] of [...level.rooms, ...level.corridors]) {
+    for (let gy = Math.floor(y0 / WS); gy < Math.ceil(y1 / WS); gy++) {
+        for (let gx = Math.floor(x0 / WS); gx < Math.ceil(x1 / WS); gx++) walk[gy * WW + gx] = 1;
+    }
+}
+function isWalk(x, y) {
+    const gx = Math.floor(x / WS);
+    const gy = Math.floor(y / WS);
+    return gx >= 0 && gy >= 0 && gx < WW && gy < WH && walk[gy * WW + gx] === 1;
+}
+// La lumière s'arrête aux murs, mais éclaire la face visible du mur du fond
+const isLightable = (x, y) => isWalk(x, y) || isWalk(x, y + level.face);
+function visible(x0, y0, x1, y1) {
+    const d = Math.hypot(x1 - x0, y1 - y0);
+    const n = Math.ceil(d / 20);
+    for (let i = 1; i < n; i++) {
+        if (!isLightable(x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n)) return false;
+    }
+    return true;
+}
 
 // ------------------------------------------------------------------ images
 function loadImage(url) {
@@ -187,8 +214,7 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
     let explorableCount = 0;
     for (let gy = 0; gy < GH; gy++) {
         for (let gx = 0; gx < GW; gx++) {
-            const cy = gy * CELL + CELL / 2;
-            if (cy > level.ceil && cy < level.ground) {
+            if (isWalk(gx * CELL + CELL / 2, gy * CELL + CELL / 2)) {
                 explorable[gy * GW + gx] = 1;
                 explorableCount += 1;
             }
@@ -220,19 +246,18 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
         y: level.spawn.y,
         vx: 0,
         vy: 0,
-        onGround: true,
-        climb: null,
         facing: 1,
-        aimRel: 0.18,
+        aim: 0.25,
         walkT: 0,
         lampOn: false,
         mood: 'normal'
     };
+    const joy = { active: false, dx: 0, dy: 0, x0: 0, y0: 0 };
     const cam = { x: 0, y: 0 };
     const keys = { left: false, right: false, up: false, down: false };
     const mouse = { x: 0, y: 0, active: 0 };
-    const bats = [0, 1, 2, 3].map((i) => ({ x: 400 + i * 600, y: 220 + (i % 2) * 520, ph: i * 1.7, vx: (i % 2 ? -1 : 1) * 60, flee: 0 }));
-    const sporesList = Array.from({ length: 70 }, () => ({ x: rand(0, level.w), y: rand(level.ceil, level.ground), r: rand(0.8, 2.2), v: rand(6, 16), a: rand(0.15, 0.5) }));
+    const bats = [0, 1, 2, 3].map((i) => ({ x: 300 + i * 550, y: 0, by: [300, 1100, 520, 1250][i], ph: i * 1.7, vx: (i % 2 ? -1 : 1) * 70, flee: 0 }));
+    const sporesList = Array.from({ length: 90 }, () => ({ x: rand(0, level.w), y: rand(0, level.h), r: rand(0.8, 2.2), v: rand(6, 16), a: rand(0.15, 0.5) }));
     const dust = Array.from({ length: 46 }, () => ({ x: rand(-300, 300), y: rand(-200, 200), v: rand(-6, 6), a: rand(0.3, 0.9) }));
     const snow = Array.from({ length: 220 }, () => ({ x: rand(0, 1), y: rand(0, 1), r: rand(0.8, 3.2), v: rand(0.04, 0.12), d: rand(0, TAU) }));
     const confetti = Array.from({ length: 90 }, () => ({ x: rand(0, 1), y: rand(-1, 0), w: rand(6, 12), h: rand(10, 18), v: rand(0.12, 0.3), r: rand(0, TAU), vr: rand(-4, 4), c: ['#ffd36e', '#ff8a2a', '#d7263d', '#2f9e6b', '#ffffff', '#9fd8ff'][Math.floor(rand(0, 6))] }));
@@ -279,7 +304,7 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
     function aimAngle() {
         const pv = pivot();
         if (mouse.active > 0 && phase === 'play') return Math.atan2(mouse.y - pv.y, mouse.x - pv.x);
-        return p.facing > 0 ? p.aimRel : Math.PI - p.aimRel;
+        return p.aim;
     }
     function lens() {
         const pv = pivot();
@@ -304,9 +329,9 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
                 const dx = cx - L.x;
                 const dy = cy - L.y;
                 const d = Math.hypot(dx, dy);
-                const near = Math.hypot(cx - p.x, cy - (p.y - 30)) < 120;
-                const inBeam = p.lampOn && d < BEAM_L * 0.92 && Math.abs(angDiff(Math.atan2(dy, dx), L.a)) < BEAM_HALF + 24 / Math.max(d, 1);
-                if (near || inBeam) {
+                const near = Math.hypot(cx - p.x, cy - (p.y - 30)) < 110;
+                const inBeam = p.lampOn && d < BEAM_L * 0.9 && Math.abs(angDiff(Math.atan2(dy, dx), L.a)) < BEAM_HALF + 24 / Math.max(d, 1);
+                if ((near || inBeam) && visible(near ? p.x : L.x, near ? p.y - 20 : L.y, cx, cy)) {
                     explored[k] = 1;
                     added += 1;
                     mctx.fillStyle = '#000';
@@ -335,90 +360,44 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
 
     const pct = () => exploredCount / explorableCount;
 
-    // ---------------------------------------------------------- physique
-    function nearLadder() {
-        return level.ladders.find(([x, top, bottom]) => Math.abs(p.x - x) < 24 && p.y >= top - 6 && p.y <= bottom + 6);
-    }
-    function nearRope() {
-        const r = level.rope;
-        return Math.abs(p.x - r.x) < 26 && p.y <= r.bottom + 8 && p.y > r.top + 40;
-    }
-
-    function jump() {
-        if (phase !== 'play' || paused) return;
-        if (p.climb) {
-            p.climb = null;
-            p.vy = -320;
-            return;
-        }
-        if (p.onGround) {
-            p.vy = -560;
-            p.onGround = false;
-        }
+    // ---------------------------------------------------------- déplacement libre (vue de dessus)
+    function canStand(x, y) {
+        if (!(isWalk(x - 14, y) && isWalk(x + 14, y) && isWalk(x, y - 8) && isWalk(x, y + 2))) return false;
+        for (const o of level.solids) if (Math.hypot(x - o.x, (y - o.y) * 1.6) < o.r + 12) return false;
+        return true;
     }
 
     function updatePlay(dt) {
         elapsed += dt;
-        const dir = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
-        const vert = (keys.down ? 1 : 0) - (keys.up ? 1 : 0);
-        if (p.climb) {
-            const c = p.climb;
-            p.x += (c.x - p.x) * Math.min(1, dt * 14);
-            p.y += vert * 210 * dt;
-            p.walkT += Math.abs(vert) * dt;
-            if (p.y <= c.top) {
-                if (c.rope) {
-                    p.y = c.top;
-                    cb.onRopeTop?.();
-                } else {
-                    p.y = c.top;
-                    p.climb = null;
-                    p.onGround = true;
-                }
-            }
-            if (p.y >= c.bottom) {
-                p.y = c.bottom;
-                p.climb = null;
-                p.onGround = true;
-            }
-            if (dir && p.climb && !c.rope && (p.y <= c.top + 2 || p.y >= c.bottom - 2)) p.climb = null;
-        } else {
-            p.vx = dir * 240;
-            if (dir) p.facing = dir;
-            const lad = nearLadder();
-            if (lad && ((keys.up && p.y > lad[1] + 4) || (keys.down && p.y < lad[2] - 4))) {
-                p.climb = { x: lad[0], top: lad[1], bottom: lad[2] };
-                p.vx = 0;
-                p.vy = 0;
-            } else if (keys.up && nearRope()) {
-                p.climb = { x: level.rope.x, top: level.rope.top + 40, bottom: level.rope.bottom, rope: true };
-                p.vx = 0;
-                p.vy = 0;
-            } else if (vert && mouse.active <= 0) {
-                p.aimRel = clamp(p.aimRel + vert * 1.7 * dt, -1.15, 1.1);
-            }
-            if (!p.climb) {
-                p.x = clamp(p.x + p.vx * dt, 26, level.w - 26);
-                p.vy = Math.min(p.vy + 1500 * dt, 1200);
-                const ny = p.y + p.vy * dt;
-                p.onGround = false;
-                if (p.vy >= 0) {
-                    for (const [x0, x1, y] of level.platforms) {
-                        if (p.x >= x0 - 8 && p.x <= x1 + 8 && p.y <= y + 0.5 && ny >= y) {
-                            p.y = y;
-                            p.vy = 0;
-                            p.onGround = true;
-                            break;
-                        }
-                    }
-                }
-                if (!p.onGround) p.y = ny;
-                if (dir && p.onGround) p.walkT += dt;
+        let dx = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+        let dy = (keys.down ? 1 : 0) - (keys.up ? 1 : 0);
+        if (joy.active) {
+            dx = joy.dx;
+            dy = joy.dy;
+        }
+        const len = Math.hypot(dx, dy);
+        const k = len > 1 ? 1 / len : 1;
+        p.vx = dx * k * SPEED;
+        p.vy = dy * k * SPEED;
+        const nx = p.x + p.vx * dt;
+        const ny = p.y + p.vy * dt;
+        if (canStand(nx, p.y)) p.x = nx;
+        if (canStand(p.x, ny)) p.y = ny;
+        const moving = len > 0.15;
+        if (moving) {
+            p.walkT += dt;
+            if (Math.abs(p.vx) > 4) p.facing = p.vx > 0 ? 1 : -1;
+            if (mouse.active <= 0) {
+                // sans souris, la lampe se tourne doucement vers où l'on marche
+                const target = Math.atan2(p.vy, p.vx);
+                p.aim += angDiff(target, p.aim) * Math.min(1, dt * 9);
             }
         }
         if (mouse.active > 0) {
             mouse.active -= dt;
-            if (!p.climb) p.facing = mouse.x >= p.x ? 1 : -1;
+            p.facing = mouse.x >= p.x ? 1 : -1;
+        } else if (!moving) {
+            p.facing = Math.cos(p.aim) >= 0 ? 1 : -1;
         }
 
         // lettres : on les ramasse en passant tout près
@@ -445,7 +424,7 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
 
         // caméra
         const tx = clamp(p.x - viewW / 2, 0, Math.max(0, level.w - viewW));
-        const ty = clamp(p.y - 40 - viewH / 2, 0, Math.max(0, level.h - viewH));
+        const ty = clamp(p.y - 30 - viewH / 2, 0, Math.max(0, level.h - viewH));
         cam.x += (tx - cam.x) * Math.min(1, dt * 5);
         cam.y += (ty - cam.y) * Math.min(1, dt * 5);
 
@@ -464,13 +443,13 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
             const lit = p.lampOn && d < BEAM_L && Math.abs(angDiff(Math.atan2(b.y - L.y, b.x - L.x), L.a)) < BEAM_HALF;
             b.flee = lit ? 1 : Math.max(0, b.flee - dt);
             b.x += b.vx * (1 + b.flee * 3) * dt;
-            if (b.x < 60 || b.x > level.w - 60) b.vx *= -1;
-            b.y += Math.sin(b.ph * 0.7) * 30 * dt;
+            if (b.x < 100 || b.x > level.w - 100) b.vx *= -1;
+            b.y = b.by + Math.sin(b.ph * 0.5) * 120;
         }
         for (const s of sporesList) {
             s.y -= s.v * dt;
             s.x += Math.sin(s.y / 60) * 4 * dt;
-            if (s.y < level.ceil) s.y = level.ground;
+            if (s.y < 0) s.y = level.h;
         }
         for (const d of dust) {
             d.y += d.v * dt;
@@ -573,18 +552,18 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
     }
 
     function drawHero() {
-        const bob = p.onGround && Math.abs(p.vx) > 0 ? Math.abs(Math.sin(p.walkT * 12)) * 2.5 : 0;
+        const bob = Math.hypot(p.vx, p.vy) > 4 ? Math.abs(Math.sin(p.walkT * 12)) * 2.5 : 0;
         const a = aimAngle();
         const pv = pivot();
         // la nageoire suit la lampe
         const local = p.facing > 0 ? a : Math.PI - a;
         const flip = p.lampOn || phase === 'play' ? clamp(local - 0.9, -2.4, 0.8) : 0;
-        if (p.climb) {
-            drawPenguin(ctx, p.x, p.y - bob, PENGUIN_H, { facing: Math.sin(p.walkT * 10) > 0 ? 1 : -1, flip: -1.6, mood: p.mood });
-        } else {
-            drawPenguin(ctx, p.x, p.y - bob, PENGUIN_H, { facing: p.facing, flip, mood: p.mood, rotate: p.onGround ? 0 : p.vy * 0.0002 * p.facing });
-        }
-        if (p.lampOn && !p.climb) {
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y + 2, 20, 6, 0, 0, TAU);
+        ctx.fill();
+        drawPenguin(ctx, p.x, p.y - bob, PENGUIN_H, { facing: p.facing, flip, mood: p.mood, rotate: Math.hypot(p.vx, p.vy) > 4 ? Math.sin(p.walkT * 12) * 0.05 : 0 });
+        if (p.lampOn) {
             ctx.save();
             ctx.translate(pv.x, pv.y - bob);
             ctx.rotate(a);
@@ -611,6 +590,28 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
         lctx.fill();
     }
 
+    // Forme du faisceau : des rayons qui s'arrêtent au premier mur
+    function beamPath(c, L, half, len) {
+        const n = 44;
+        c.beginPath();
+        c.moveTo(L.x, L.y);
+        for (let i = 0; i <= n; i++) {
+            const a = L.a - half + (2 * half * i) / n;
+            const ca = Math.cos(a);
+            const sa = Math.sin(a);
+            let d = 0;
+            while (d < len) {
+                d += 14;
+                if (!isLightable(L.x + ca * d, L.y + sa * d)) {
+                    d += 10;
+                    break;
+                }
+            }
+            c.lineTo(L.x + ca * Math.min(d, len), L.y + sa * Math.min(d, len));
+        }
+        c.closePath();
+    }
+
     function beam(L, half, len, a) {
         const g = lctx.createRadialGradient(L.x, L.y, 0, L.x, L.y, len);
         g.addColorStop(0, `rgba(0,0,0,${a})`);
@@ -618,10 +619,7 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
         g.addColorStop(0.82, `rgba(0,0,0,${a * 0.5})`);
         g.addColorStop(1, 'rgba(0,0,0,0)');
         lctx.fillStyle = g;
-        lctx.beginPath();
-        lctx.moveTo(L.x, L.y);
-        lctx.arc(L.x, L.y, len, L.a - half, L.a + half);
-        lctx.closePath();
+        beamPath(lctx, L, half, len);
         lctx.fill();
     }
 
@@ -639,21 +637,13 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
         lctx.imageSmoothingEnabled = true;
         lctx.drawImage(mem, 0, 0, GW * CELL, GH * CELL);
         lctx.globalAlpha = 1;
-        // petites sources : le trou du plafond, la guirlande, la radio, la glace
-        const h = level.hole;
-        lctx.fillStyle = 'rgba(0,0,0,0.35)';
-        lctx.beginPath();
-        lctx.moveTo(h.x - 40, 0);
-        lctx.lineTo(h.x + 40, 0);
-        lctx.lineTo(h.x + 120, level.spawn.y);
-        lctx.lineTo(h.x - 70, level.spawn.y);
-        lctx.closePath();
-        lctx.fill();
-        lightBlob(h.x, 30, 90, 0.8);
+        // petites sources : bougies, chaudron, cheminée, sapin, guirlandes, trou du plafond
         const tw = performance.now() / 1000;
-        level.bulbs.forEach(([x, y], i) => lightBlob(x, y, 34 + 6 * Math.sin(tw * 2 + i), 0.75));
-        lightBlob(level.radio.x + 20, level.radio.y - 30, 46, 0.55);
-        lightBlob(level.ice.x, level.ice.y - 60, 70, 0.4 + (foundOrder.length / LETTER_COUNT) * 0.3);
+        level.lights.forEach(([x, y, r, a], i) => {
+            if (x + r < cam.x || x - r > cam.x + viewW || y + r < cam.y || y - r > cam.y + viewH) return;
+            lightBlob(x, y, r * (1 + 0.05 * Math.sin(tw * 5 + i * 1.7)), a);
+        });
+        lightBlob(level.ice.x, level.ice.y - 50, 70, 0.35 + (foundOrder.length / LETTER_COUNT) * 0.3);
         // le pingouin et sa lampe
         lightBlob(p.x, p.y - 30, 125, 0.85);
         if (p.lampOn) {
@@ -680,10 +670,7 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
             g.addColorStop(0.3, 'rgba(255,214,140,0.08)');
             g.addColorStop(1, 'rgba(255,214,140,0)');
             ctx.fillStyle = g;
-            ctx.beginPath();
-            ctx.moveTo(L.x, L.y);
-            ctx.arc(L.x, L.y, BEAM_L, L.a - BEAM_HALF, L.a + BEAM_HALF);
-            ctx.closePath();
+            beamPath(ctx, L, BEAM_HALF, BEAM_L);
             ctx.fill();
             ctx.restore();
         }
@@ -710,12 +697,11 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
         m.drawImage(fog, 0, 0, GW, GH, 0, 0, (GW * CELL * mw) / level.w, (GH * CELL * mh) / level.h);
         const sx = mw / level.w;
         const sy = mh / level.h;
-        // point de départ : la corde
+        // point de départ : la corde sous le trou
         m.strokeStyle = '#8a6234';
-        m.lineWidth = 1.6;
+        m.lineWidth = 1.4;
         m.beginPath();
-        m.moveTo(level.rope.x * sx, level.rope.top * sy);
-        m.lineTo(level.rope.x * sx, level.rope.bottom * sy);
+        m.arc(level.hole.x * sx, level.hole.y * sy, 3, 0, TAU);
         m.stroke();
         // lettres trouvées
         m.fillStyle = '#d7263d';
@@ -895,7 +881,7 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
             p.y = lt < 0.3 ? startY + (level.spawn.y - startY) * easeIn(lt / 0.3) : level.spawn.y;
             p.mood = lt < 0.3 ? 'surprised' : lt < 0.95 ? 'dizzy' : 'normal';
             cam.x = clamp(p.x - viewW / 2, 0, level.w - viewW);
-            cam.y = clamp(level.spawn.y - 40 - viewH / 2, 0, level.h - viewH);
+            cam.y = clamp(level.spawn.y - 30 - viewH / 2, 0, level.h - viewH);
             shake = lt > 0.3 && lt < 0.5 ? 6 : 0;
             if (lt > 0.9) p.lampOn = true;
             ctx.save();
@@ -1199,7 +1185,6 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
             if (code === 'Space' && down) {
                 if (phase === 'intro') api.skip();
                 else if (ORDER.includes(phase)) nextEnd();
-                else jump();
                 return true;
             }
             return false;
@@ -1227,7 +1212,30 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
             if (v) api.releaseKeys();
             last = 0;
         },
-        touchJump: jump,
+        // joystick tactile : on pose le doigt n'importe où, on glisse dans la direction voulue
+        joyStart(x, y) {
+            if (phase !== 'play') return;
+            joy.active = true;
+            joy.x0 = x;
+            joy.y0 = y;
+            joy.dx = 0;
+            joy.dy = 0;
+        },
+        joyMove(x, y) {
+            if (!joy.active) return;
+            const dx = x - joy.x0;
+            const dy = y - joy.y0;
+            const d = Math.hypot(dx, dy);
+            const k = d < 8 ? 0 : Math.min(1, d / 50) / d;
+            joy.dx = dx * k;
+            joy.dy = dy * k;
+        },
+        joyEnd() {
+            joy.active = false;
+            joy.dx = 0;
+            joy.dy = 0;
+        },
+        joyState: () => ({ ...joy }),
         openPuzzle() {
             phase = 'puzzle';
             t = 0;
@@ -1257,7 +1265,6 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
             redrawMemory();
             p.x = level.spawn.x;
             p.y = level.spawn.y;
-            p.climb = null;
             lastPct = -1;
         },
         state: () => ({ found: foundOrder.map((i) => letters[i]), pct: pct(), elapsed, phase }),
