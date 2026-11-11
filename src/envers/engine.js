@@ -9,7 +9,7 @@ import fallClosedUrl from './art/fall-closed.svg';
 import messageUrl from './art/message.svg';
 import warmUrl from './art/pumpkin-warm.svg';
 import frozenUrl from './art/pumpkin-frozen.svg';
-import elfUrl from './art/elf.svg';
+import micUrl from './art/mic.svg';
 import ice0 from './art/ice-0.svg';
 import ice1 from './art/ice-1.svg';
 import ice2 from './art/ice-2.svg';
@@ -96,15 +96,15 @@ export function loadCaveArt(scale) {
     }));
 }
 
-const SHOUT_FONT = '"Lilita One", "Bricolage Grotesque", system-ui, sans-serif';
+const SHOUT_FONT = DISPLAY; // la police du site et des jeux du pingouin
 
 export function loadEndArt() {
-    const font = document.fonts?.load ? document.fonts.load('96px "Lilita One"').catch(() => null) : Promise.resolve();
-    return Promise.all([loadImage(messageUrl), loadImage(warmUrl), loadImage(frozenUrl), loadImage(elfUrl), font]).then(([message, warm, frozen, elf]) => ({
+    const font = document.fonts?.load ? document.fonts.load('800 96px "Bricolage Grotesque"').catch(() => null) : Promise.resolve();
+    return Promise.all([loadImage(messageUrl), loadImage(warmUrl), loadImage(frozenUrl), loadImage(micUrl), font]).then(([message, warm, frozen, mic]) => ({
         message: raster(message, 1280, 720),
         warm: raster(warm, 1280, 720),
         frozen: raster(frozen, 1280, 720),
-        elf: raster(elf, 420, 520, 2)
+        mic: raster(mic, 300, 640, 2)
     }));
 }
 
@@ -1343,31 +1343,40 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
 
     function drawShout(dt) {
         const e = art.end;
-        // un voile pour faire ressortir le lutin
-        ctx.fillStyle = 'rgba(5,10,20,0.28)';
+        ctx.fillStyle = 'rgba(5,10,20,0.14)';
         ctx.fillRect(0, 0, vw, vh);
-        // le lutin monte en scène, un peu de rebond, il se balance en chantant
-        const eh = Math.min(vh * 0.66, vw * 0.5);
-        const ew = eh * (420 / 520);
-        const enter = Math.min(1, t / 0.55);
-        const bounce = enter < 1 ? 1 - (1 - enter) ** 3 + Math.sin(enter * Math.PI) * 0.08 : 1;
-        const ex = vw * 0.73 - ew / 2;
-        const ey = vh - eh * bounce * 0.98;
-        const sway = Math.sin(t * 4.2) * 0.035;
-        if (e?.elf) {
+        // le micro doré monte sur scène, sous un halo de projecteur, et bat la mesure
+        const tall = vh > vw;
+        const mh = tall ? Math.min(vh * 0.46, vw * 1.05) : Math.min(vh * 0.8, vw * 0.62);
+        const mw = mh * (300 / 640);
+        const enter = Math.min(1, t / 0.6);
+        const rise = enter < 1 ? 1 - (1 - enter) ** 3 + Math.sin(enter * Math.PI) * 0.06 : 1;
+        const mx0 = tall ? vw * 0.5 : vw * 0.79;
+        const ground = vh + mh * (1 - rise) - vh * 0.02;
+        const beat = Math.max(0, Math.sin(t * 8)) ** 6;
+        const sway = Math.sin(t * 2.6) * 0.03;
+        const halo = ctx.createRadialGradient(mx0, ground - mh * 0.72, 0, mx0, ground - mh * 0.72, mh * 0.62);
+        halo.addColorStop(0, `rgba(255,214,120,${0.32 + beat * 0.12})`);
+        halo.addColorStop(1, 'rgba(255,214,120,0)');
+        ctx.fillStyle = halo;
+        ctx.fillRect(mx0 - mh, ground - mh * 1.4, mh * 2, mh * 1.4);
+        if (e?.mic) {
             ctx.save();
-            ctx.translate(ex + ew / 2, ey + eh);
+            ctx.translate(mx0, ground);
             ctx.rotate(sway);
-            ctx.drawImage(e.elf, -ew / 2, -eh, ew, eh);
+            ctx.scale(1 + beat * 0.025, 1 + beat * 0.025);
+            ctx.drawImage(e.mic, -mw / 2, -mh, mw, mh);
             ctx.restore();
         }
-        // notes de musique qui s'envolent du micro
-        const mx = ex + ew * (262 / 420) + Math.sin(sway) * eh * 0.4;
-        const my = ey + eh * (190 / 520);
+        // notes de musique qui s'envolent de la capsule
+        const ang = sway;
+        const capY = -mh * (565 / 640); // haut de la capsule
+        const mxn = mx0 + Math.sin(ang) * -capY;
+        const myn = ground + Math.cos(ang) * capY;
         noteT += dt;
-        while (noteT > 0.11 && t > 0.4) {
-            noteT -= 0.11;
-            notes.push({ x: mx + ew * 0.06, y: my - eh * 0.06, vx: rand(30, 140), vy: rand(-190, -110), s: rand(0.9, 1.6) * (vh / 720), k: Math.random() < 0.4 ? 1 : 0, c: NOTE_COLORS[Math.floor(rand(0, NOTE_COLORS.length))], r: rand(-0.4, 0.4), ph: rand(0, TAU), life: 0 });
+        while (noteT > 0.1 && t > 0.45) {
+            noteT -= 0.1;
+            notes.push({ x: mxn + rand(-mw * 0.2, mw * 0.2), y: myn, vx: rand(-110, 110), vy: rand(-240, -150), s: rand(0.9, 1.6) * (vh / 720), k: Math.random() < 0.4 ? 1 : 0, c: NOTE_COLORS[Math.floor(rand(0, NOTE_COLORS.length))], r: rand(-0.4, 0.4), ph: rand(0, TAU), life: 0 });
         }
         for (let i = notes.length - 1; i >= 0; i--) {
             const n = notes[i];
@@ -1382,15 +1391,17 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
             { str: 'IT’S…', start: 0.25, y: 0.2, size: 0.85 },
             { str: 'TIIIIIMEEEE !', start: 0.75, y: 0.37, size: 1 }
         ];
-        const base = Math.min(vw * 0.085, vh * 0.16, 120);
-        const cx = vw * 0.36;
+        const tallT = vh > vw;
+        const base = tallT ? Math.min(vw * 0.16, 90) : Math.min(vw * 0.085, vh * 0.16, 120);
+        const cx = tallT ? vw * 0.5 : vw * 0.38;
+        const shine = ((t * 0.55) % 1.6) - 0.3; // le reflet traverse le mot
         for (const ln of lines) {
             const size = base * ln.size;
-            ctx.font = `${Math.round(size)}px ${SHOUT_FONT}`;
+            ctx.font = `800 ${Math.round(size)}px ${SHOUT_FONT}`;
             const letters = [...ln.str];
             const widths = letters.map((ch) => ctx.measureText(ch).width * 0.92);
             const total = widths.reduce((a, b) => a + b, 0);
-            const fit = Math.min(1, (vw * 0.66) / total);
+            const fit = Math.min(1, (vw * (tallT ? 0.9 : 0.66)) / total);
             let x = cx - (total * fit) / 2;
             letters.forEach((ch, i) => {
                 const lt = t - ln.start - i * 0.055;
@@ -1398,7 +1409,7 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
                 if (lt > 0) {
                     const pop = lt < 0.25 ? 1.7 - 0.7 * ease(lt / 0.25) : 1;
                     const wave = Math.sin(t * 7 - i * 0.55) * size * 0.07;
-                    const yy = vh * ln.y + wave;
+                    const yy = vh * (tallT ? ln.y * 0.62 + 0.04 : ln.y) + wave;
                     ctx.save();
                     ctx.translate(x + w / 2, yy);
                     ctx.rotate(Math.sin(t * 5 + i) * 0.05);
@@ -1406,25 +1417,69 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.lineJoin = 'round';
-                    ctx.font = `${Math.round(size)}px ${SHOUT_FONT}`;
-                    ctx.shadowColor = 'rgba(0,0,0,0.45)';
-                    ctx.shadowBlur = size * 0.18;
-                    ctx.shadowOffsetY = size * 0.06;
-                    ctx.lineWidth = size * 0.17;
-                    ctx.strokeStyle = '#5a0a14';
+                    ctx.font = `800 ${Math.round(size)}px ${SHOUT_FONT}`;
+                    // lettrage doré cartoon : relief orange, contour brun, reflet blanc
+                    const ox = size * 0.035;
+                    const oy = size * 0.075;
+                    ctx.lineWidth = size * 0.16;
+                    ctx.strokeStyle = '#5b2a0c';
+                    ctx.strokeText(ch, ox, oy);
+                    ctx.fillStyle = '#5b2a0c';
+                    ctx.fillText(ch, ox, oy);
                     ctx.strokeText(ch, 0, 0);
-                    ctx.shadowColor = 'transparent';
-                    const g = ctx.createLinearGradient(0, -size * 0.45, 0, size * 0.45);
-                    g.addColorStop(0, '#fff7c7');
-                    g.addColorStop(0.45, '#ffd04a');
-                    g.addColorStop(1, '#ff7a1a');
+                    ctx.fillStyle = '#c86a12';
+                    ctx.fillText(ch, ox * 0.5, oy * 0.5);
+                    const g = ctx.createLinearGradient(0, -size * 0.38, 0, size * 0.34);
+                    g.addColorStop(0, '#fff3a8');
+                    g.addColorStop(0.45, '#ffd23f');
+                    g.addColorStop(1, '#f59a1c');
                     ctx.fillStyle = g;
                     ctx.fillText(ch, 0, 0);
+                    // reflet : la moitié haute un peu plus claire
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(-size, -size, size * 2, size * 0.92);
+                    ctx.clip();
+                    ctx.fillStyle = 'rgba(255,255,235,0.35)';
+                    ctx.fillText(ch, 0, 0);
                     ctx.restore();
+                    // le reflet qui balaie les lettres
+                    const sx = (x + w / 2 - (cx - (total * fit) / 2)) / (total * fit);
+                    const d = sx - shine;
+                    if (Math.abs(d) < 0.1) {
+                        ctx.globalAlpha = (1 - Math.abs(d) / 0.1) * 0.7;
+                        ctx.fillStyle = '#fffbe6';
+                        ctx.fillText(ch, 0, 0);
+                        ctx.globalAlpha = 1;
+                    }
+                    ctx.restore();
+                    // paillettes
+                    const tw = Math.sin(t * 6 + i * 2.3 + ln.size * 9);
+                    if (tw > 0.75) {
+                        const k = (tw - 0.75) / 0.25;
+                        const px = x + w * (0.25 + ((i * 37) % 50) / 100);
+                        const py = yy - size * (0.15 + ((i * 53) % 30) / 100);
+                        sparkle(px, py, size * 0.12 * k);
+                    }
                 }
                 x += w;
             });
         }
+    }
+    function sparkle(x, y, r) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.fillStyle = '#fffbe6';
+        ctx.shadowColor = 'rgba(255,220,120,0.9)';
+        ctx.shadowBlur = r * 1.5;
+        ctx.beginPath();
+        ctx.moveTo(0, -r);
+        ctx.quadraticCurveTo(0, 0, r, 0);
+        ctx.quadraticCurveTo(0, 0, 0, r);
+        ctx.quadraticCurveTo(0, 0, -r, 0);
+        ctx.quadraticCurveTo(0, 0, 0, -r);
+        ctx.fill();
+        ctx.restore();
     }
     const ORDER = ['lights', 'message', 'freeze', 'time', 'rope'];
 

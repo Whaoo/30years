@@ -168,7 +168,7 @@ function App() {
         return () => clearInterval(id);
     }, [isToday, firstId, wave]);
 
-    const enversOpen = isEnversOpen(now, isToday);
+    const enversOpen = isEnversOpen(now);
     const news = announceActive(now, isToday) && !newsHidden;
 
     // Le passage vers l'Envers : trois coups vers le bas (molette ou glissé), sans pause de plus de 4 secondes
