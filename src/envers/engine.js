@@ -704,6 +704,7 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
             if (it.taken) continue;
             ctx.save();
             ctx.translate(it.x, it.y);
+            ctx.scale(1.5, 1.5);
             if (it.kind === 'candle') {
                 ctx.fillStyle = '#efe4c8';
                 ctx.fillRect(-5, -26, 10, 26);
@@ -877,6 +878,16 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
             ctx.font = `700 14px ${BODY}`;
             ctx.textAlign = 'center';
             ctx.fillText('✦', sp.x + 18, sp.y - 46);
+        }
+        // bougie et ciseaux : un halo doré qui pulse, visible même dans le noir
+        for (const it of items) {
+            if (it.taken) continue;
+            const pulse = 0.5 + 0.5 * Math.sin(now * 3 + it.x);
+            ctx.strokeStyle = `rgba(255,211,110,${0.45 + 0.5 * pulse})`;
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(it.x, it.y - 16, 16 + pulse * 10, 0, TAU);
+            ctx.stroke();
         }
         for (const b of batteries) {
             if (b.taken) continue;
