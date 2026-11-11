@@ -844,7 +844,7 @@ html, body, #root { height: 100%; }
 .envers-pz__card.is-solved h2 { color: #2f7d55; }
 .envers-scrap { display: block; overflow: visible; }
 
-@media (max-width: 1240px) { .envers__keys { bottom: 96px; transform: translateX(-50%); max-width: calc(100vw - 36px); } }
+@media (max-width: 1240px) { .envers__keys { bottom: 96px; transform: translateX(-50%); max-width: calc(100vw - 580px); } }
 @media (max-width: 900px) {
   .envers__keys { display: none; }
   .envers__map { width: 192px; height: 108px; }
@@ -880,3 +880,8 @@ html, body, #root { height: 100%; }
 
 /* Téléphone : pas de mini-carte, pour laisser toute la place à la cave (le % éclairé reste en haut) */
 @media (max-width: 560px) { .envers__map { display: none; } }
+
+/* Rappel discret des touches sur ordinateur, une fois la légende complète passée */
+.envers__keys.is-mini { padding: 6px 12px; font-size: 11.5px; opacity: 0.72; gap: 4px 12px; }
+.envers__keys.is-mini .envers__more, .envers__keys.is-mini .envers__mouse { display: none; }
+.envers__keys.is-mini kbd { min-width: 18px; height: 18px; font-size: 10px; }

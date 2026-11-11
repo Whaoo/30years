@@ -123,7 +123,7 @@ export default function EnversGame({ onClose }) {
         engineRef.current?.setPaused(paused);
     }, [paused]);
 
-    // la légende des touches s'efface au bout de 12 secondes de jeu
+    // la légende complète des touches se réduit à un rappel au bout de 12 secondes de jeu
     useEffect(() => {
         if (phase !== 'play') return undefined;
         const t = setTimeout(() => setShowKeys(false), 12000);
@@ -238,12 +238,13 @@ export default function EnversGame({ onClose }) {
                         <span>Pose le doigt et glisse pour te déplacer : la lampe suit.</span>
                     </div>
                 ) : (
-                    <div className={`envers__keys${showKeys || paused ? ' is-on' : ''}`} aria-hidden="true">
-                        <span><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> se déplacer partout</span>
+                    // la légende complète au début, puis un rappel discret des touches qui reste affiché
+                    <div className={`envers__keys is-on${showKeys || paused ? '' : ' is-mini'}`} aria-hidden="true">
+                        <span><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> ou <kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> se déplacer</span>
                         <span className="envers__mouse">la souris oriente la lampe</span>
                         <span><kbd className="is-wide">Espace</kbd> fouiller</span>
-                        <span><kbd>M</kbd> carte</span>
-                        <span><kbd className="is-wide">Échap</kbd> pause</span>
+                        <span className="envers__more"><kbd>M</kbd> carte</span>
+                        <span className="envers__more"><kbd className="is-wide">Échap</kbd> pause</span>
                     </div>
                 )}
                 <button type="button" className={`envers__map${bigMap ? ' is-big' : ''}`} onClick={() => setBigMap((v) => !v)} aria-label={bigMap ? 'Réduire la carte' : 'Agrandir la carte'}>
