@@ -20,7 +20,7 @@ import { useWeather } from './hooks/useWeather';
 import { useNow } from './hooks/useNow';
 import { useDialMode } from './hooks/useDialMode';
 import { usePenguinPlay } from './hooks/usePenguinPlay';
-import { announceActive, dismissAnnounce, formatTime, isEnversOpen } from './envers/config';
+import { announceActive, announceWindow, dismissAnnounce, formatTime, isEnversOpen } from './envers/config';
 import NewsBanner from './envers/NewsBanner';
 import Crack from './envers/Crack';
 
@@ -263,7 +263,7 @@ function App() {
         flash(on ? 'Mode aurore activé.' : 'Retour à la normale.');
     }, [disco, flash]);
 
-    if (isDial) return <Dial theme={theme} sorted={sorted} advent={advent} news={announceActive(now, isToday)} />;
+    if (isDial) return <Dial theme={theme} sorted={sorted} advent={advent} news={announceWindow(now, isToday)} />; // la vue Vivaldi garde le message toute la semaine
 
     // En décembre, le calendrier de l'Avent est affiché par défaut
     const isAvent = advent.isDecember && (view ?? 'avent') === 'avent';

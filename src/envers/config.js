@@ -31,9 +31,14 @@ function write(key, value) {
 }
 
 // Le message est caché si on l'a fermé ou si on a déjà trouvé la cave
+// Semaine d'annonce (12-18/11), sauf le jour d'un anniversaire
+export function announceWindow(now, isBirthday) {
+    return !isBirthday && now >= ENVERS_FROM && now < ANNOUNCE_UNTIL;
+}
+
+// Bandeau de la grande page : s'efface une fois fermé ou la cave visitée
 export function announceActive(now, isBirthday) {
-    if (isBirthday || now < ENVERS_FROM || now >= ANNOUNCE_UNTIL) return false;
-    return read(KEY_NEWS) !== 'vu';
+    return announceWindow(now, isBirthday) && read(KEY_NEWS) !== 'vu';
 }
 
 export function dismissAnnounce() {
