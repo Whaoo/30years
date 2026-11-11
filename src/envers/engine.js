@@ -1628,6 +1628,8 @@ export function createEngine({ canvas, miniCanvas, progress, touch, cb }) {
             return;
         }
         phase = ORDER[i + 1];
+        // téléphone à la verticale : la carte reconstituée serait trop rognée, on passe directement au gel
+        if (phase === 'message' && vh > vw) phase = 'freeze';
         t = 0;
         cb.onPhase?.(phase);
     }

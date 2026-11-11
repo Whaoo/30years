@@ -877,3 +877,6 @@ html, body, #root { height: 100%; }
 .envers__search:active { transform: translateY(3px); box-shadow: 0 3px 0 #b8892c; }
 @keyframes envblink { 50% { opacity: 0.35; } }
 @media (max-width: 560px) { .envers__gear { top: 58px; left: 10px; } .envers__search { bottom: 250px; right: 12px; } }
+
+/* Téléphone : pas de mini-carte, pour laisser toute la place à la cave (le % éclairé reste en haut) */
+@media (max-width: 560px) { .envers__map { display: none; } }
