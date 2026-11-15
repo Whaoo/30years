@@ -1,0 +1,14 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:"Gloock";src:url(fonts/Gloock-Regular.ttf)}
+@font-face{font-family:"Crimson Pro";src:url(fonts/CrimsonPro-Regular.ttf);font-weight:400;font-style:normal}
+@font-face{font-family:"Crimson Pro";src:url(fonts/CrimsonPro-Bold.ttf);font-weight:600 700;font-style:normal}
+@font-face{font-family:"Crimson Pro";src:url(fonts/CrimsonPro-Italic.ttf);font-style:italic;font-weight:400 700}
+@font-face{font-family:"Bricolage Grotesque";src:url(fonts/BricolageGrotesque-Bold.ttf);font-weight:700 900}
+html,body{margin:0;background:#000}canvas{display:block}</style></head><body>
+<canvas id="c" width="1280" height="720"></canvas>
+<script src="../film_lib.js"></script><script src="../film_v2_helpers.js"></script><script src="../film_v2_scenes.js"></script><script src="mock.js"></script><script src="film_v3.js"></script>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');const buf=document.createElement('canvas');buf.width=1280;buf.height=720;
+window.ready = Promise.all(['400 20px Gloock','400 20px "Crimson Pro"','italic 400 20px "Crimson Pro"','600 20px "Crimson Pro"','800 20px "Bricolage Grotesque"'].map(f=>document.fonts.load(f)));
+window.renderAt=(t)=>{renderFilm3(ctx,t,buf);};
+</script></body></html>

@@ -39,7 +39,8 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
     final jamais verrouillé ; « Passer » après 3 échecs ; code de passage de 4 lettres pour un autre navigateur ; score officiel = premier essai du jour.
   - `results.js` : écran de fin commun (détail du score, mention S/A/B/C, record, code de vérification).
 - `src/components/QuestModal.jsx` : la carte de la quête (bouton « La quête » de l'en-tête en décembre), le film, les éclats de givre.
-- `public/film/prologue.mp4` : le film d'introduction (1 min 48). Sa source (dessinée en code) est dans `tools/film/`.
+- `public/film/prologue.mp4` : le film d'introduction (v3 « conte », 2 min 11). Sa source (dessinée en code) est dans `tools/film/` (v3 dans `tools/film/v3/`).
+  Le 1er décembre, `FilmPromo.jsx` propose de le lancer (tant qu'il n'est pas vu) ; `FilmPlayer.jsx` le joue en mode cinéma plein écran.
 - `src/games/index.js` : le registre des jeux.
   - `GAMES` : les mini-jeux de l'Avent, débloqués porte par porte en décembre (jours ouvrés : 1-4, 7-9, 11, 14, 15, 17, 18, 21, 22).
   - `MONTS` (« Les Monts Givrés », `src/games/monts/`) : épisode 1 de la quête, le 1er décembre. Plateforme en 3 niveaux + yéti (~4 min),
