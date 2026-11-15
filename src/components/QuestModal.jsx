@@ -58,29 +58,25 @@ function MapArt() {
     );
 }
 
-export default function QuestModal({ now, onPlay, onClose, available = () => true }) {
+export default function QuestModal({ now, onPlay, onClose, onFilm, available = () => true }) {
     const [q, setQ] = useState(loadQuest);
-    const [film, setFilm] = useState(false);
     const [code, setCode] = useState('');
     const [msg, setMsg] = useState('');
 
     useEffect(() => {
         const onKey = (e) => {
-            if (e.key === 'Escape') {
-                if (film) setFilm(false);
-                else onClose();
-            }
+            if (e.key === 'Escape') onClose();
         };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [film, onClose]);
+    }, [onClose]);
 
     const filmOpen = now >= FILM.from;
     const shards = shardCount(q);
 
     const openFilm = () => {
-        setFilm(true);
         setQ(markFilmSeen());
+        onFilm();
     };
 
     const submitCode = (e) => {
@@ -118,86 +114,76 @@ export default function QuestModal({ now, onPlay, onClose, available = () => tru
                     </button>
                 </header>
 
-                {film ? (
-                    <div className="quest__film">
-                        {/* La vidéo démarre au clic (geste de l'utilisateur) : le son est autorisé par le navigateur */}
-                        <video controls autoPlay playsInline preload="metadata" poster={FILM.poster}>
-                            {FILM.sources.map((s) => <source key={s.src} src={s.src} type={s.type} />)}
-                        </video>
-                        <button type="button" className="btn btn--ghost" onClick={() => setFilm(false)}>← Retour à la carte</button>
-                    </div>
-                ) : (
-                    <div className="quest__body">
-                        <div className="quest__map" aria-label="Carte de la quête">
-                            <MapArt />
-                            <svg className="quest__path" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                                <path d={pathD} />
-                            </svg>
-                            <span className="quest__home" style={{ left: '8%', top: '84%' }}>Igloo de Mamie</span>
-                            {QUEST.map((ep) => {
-                                const st = episodeState(ep.id, now, q);
-                                const fails = q.fails[ep.id] || 0;
-                                const done = st === 'done' || q.skipped[ep.id];
-                                const canPlay = (st === 'open' || st === 'done') && available(ep.id);
-                                let note = '';
-                                if (st === 'done') note = q.done[ep.id].score ? `${q.done[ep.id].score.toLocaleString('fr-FR')} pts` : 'Réussi';
-                                else if (q.skipped[ep.id]) note = 'Passé';
-                                else if (st === 'locked-date') note = `Le ${fmtDay(ep.from)}`;
-                                else if (st === 'locked-prev') note = `Après l’épisode ${ep.ep - 1}`;
-                                else if (!available(ep.id)) note = 'Bientôt';
-                                else note = 'Ouvert !';
-                                return (
-                                    <div key={ep.id} className={`quest__stop is-${done ? 'done' : st}`} style={{ left: `${ep.place[0]}%`, top: `${ep.place[1]}%` }}>
-                                        <button
-                                            type="button"
-                                            className="quest__pin"
-                                            disabled={!canPlay}
-                                            onClick={() => onPlay(ep.id)}
-                                            aria-label={`Épisode ${ep.ep}, ${ep.title} : ${note}`}
-                                        >
-                                            {done ? '✓' : ep.ep}
-                                        </button>
-                                        <span className="quest__label">
-                                            <strong>{ep.title}</strong>
-                                            <span>{ep.kind} · {note}</span>
-                                        </span>
-                                        {st === 'open' && !done && fails >= SKIP_AFTER_FAILS && (
-                                            <button type="button" className="quest__skip" onClick={() => setQ(markSkipped(ep.id))}>
-                                                Passer l’épisode
-                                            </button>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        <aside className="quest__side">
-                            <div className="quest__card">
-                                <Penguin hat="beanie" scarf="#e94b4b" mood="happy" size="72px" />
-                                <div>
-                                    <strong>Le prologue</strong>
-                                    <p>Deux minutes pour savoir pourquoi Flocon quitte l’igloo de Mamie.</p>
-                                    <button type="button" className="btn btn--primary btn--icon" disabled={!filmOpen} onClick={openFilm}>
-                                        <Icon name="film" size={18} />
-                                        {filmOpen ? (q.film ? 'Revoir le film' : 'Regarder le film') : `Le ${fmtDay(FILM.from)}`}
+                <div className="quest__body">
+                    <div className="quest__map" aria-label="Carte de la quête">
+                        <MapArt />
+                        <svg className="quest__path" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                            <path d={pathD} />
+                        </svg>
+                        <span className="quest__home" style={{ left: '8%', top: '84%' }}>Igloo de Mamie</span>
+                        {QUEST.map((ep) => {
+                            const st = episodeState(ep.id, now, q);
+                            const fails = q.fails[ep.id] || 0;
+                            const done = st === 'done' || q.skipped[ep.id];
+                            const canPlay = (st === 'open' || st === 'done') && available(ep.id);
+                            let note = '';
+                            if (st === 'done') note = q.done[ep.id].score ? `${q.done[ep.id].score.toLocaleString('fr-FR')} pts` : 'Réussi';
+                            else if (q.skipped[ep.id]) note = 'Passé';
+                            else if (st === 'locked-date') note = `Le ${fmtDay(ep.from)}`;
+                            else if (st === 'locked-prev') note = `Après l’épisode ${ep.ep - 1}`;
+                            else if (!available(ep.id)) note = 'Bientôt';
+                            else note = 'Ouvert !';
+                            return (
+                                <div key={ep.id} className={`quest__stop is-${done ? 'done' : st}`} style={{ left: `${ep.place[0]}%`, top: `${ep.place[1]}%` }}>
+                                    <button
+                                        type="button"
+                                        className="quest__pin"
+                                        disabled={!canPlay}
+                                        onClick={() => onPlay(ep.id)}
+                                        aria-label={`Épisode ${ep.ep}, ${ep.title} : ${note}`}
+                                    >
+                                        {done ? '✓' : ep.ep}
                                     </button>
+                                    <span className="quest__label">
+                                        <strong>{ep.title}</strong>
+                                        <span>{ep.kind} · {note}</span>
+                                    </span>
+                                    {st === 'open' && !done && fails >= SKIP_AFTER_FAILS && (
+                                        <button type="button" className="quest__skip" onClick={() => setQ(markSkipped(ep.id))}>
+                                            Passer l’épisode
+                                        </button>
+                                    )}
                                 </div>
-                            </div>
-                            <p className="quest__rules">
-                                Chaque épisode s’ouvre à sa date, une fois le précédent réussi. Pas de panique :
-                                il s’ouvre de toute façon deux jours plus tard. Le grand final est ouvert à tous.
-                            </p>
-                            <form className="quest__code" onSubmit={submitCode}>
-                                <label htmlFor="quest-code">Déjà joué ailleurs ? Code de passage</label>
-                                <div>
-                                    <input id="quest-code" value={code} maxLength={4} autoComplete="off" spellCheck="false" placeholder="ABCD" onChange={(e) => setCode(e.target.value.toUpperCase())} />
-                                    <button type="submit" className="btn btn--ghost">Valider</button>
-                                </div>
-                                {msg && <p className="quest__msg" role="status">{msg}</p>}
-                            </form>
-                        </aside>
+                            );
+                        })}
                     </div>
-                )}
+
+                    <aside className="quest__side">
+                        <div className="quest__card">
+                            <Penguin hat="beanie" scarf="#e94b4b" mood="happy" size="72px" />
+                            <div>
+                                <strong>Le prologue</strong>
+                                <p>Deux minutes pour savoir pourquoi Flocon quitte l’igloo de Mamie.</p>
+                                <button type="button" className="btn btn--primary btn--icon" disabled={!filmOpen} onClick={openFilm}>
+                                    <Icon name="film" size={18} />
+                                    {filmOpen ? (q.film ? 'Revoir le film' : 'Regarder le film') : `Le ${fmtDay(FILM.from)}`}
+                                </button>
+                            </div>
+                        </div>
+                        <p className="quest__rules">
+                            Chaque épisode s’ouvre à sa date, une fois le précédent réussi. Pas de panique :
+                            il s’ouvre de toute façon deux jours plus tard. Le grand final est ouvert à tous.
+                        </p>
+                        <form className="quest__code" onSubmit={submitCode}>
+                            <label htmlFor="quest-code">Déjà joué ailleurs ? Code de passage</label>
+                            <div>
+                                <input id="quest-code" value={code} maxLength={4} autoComplete="off" spellCheck="false" placeholder="ABCD" onChange={(e) => setCode(e.target.value.toUpperCase())} />
+                                <button type="submit" className="btn btn--ghost">Valider</button>
+                            </div>
+                            {msg && <p className="quest__msg" role="status">{msg}</p>}
+                        </form>
+                    </aside>
+                </div>
             </div>
         </div>
     );
