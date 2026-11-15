@@ -28,13 +28,15 @@ export const FILM = {
 // shard : l'épisode rend un éclat de givre (les 3 éclats ouvrent le fort du Golem).
 export const QUEST = [
     { id: 'monts', ep: 1, title: 'Les Monts Givrés', kind: 'Plateforme', from: day(1), place: [22, 70], shard: true },
-    { id: 'reveillon', ep: 2, title: 'Opération Réveillon', kind: 'Défense du sapin', from: day(8), place: [42, 38], shard: true },
-    { id: 'chrono', ep: 3, title: 'Chronoflocon', kind: 'Gestion', from: day(15), place: [66, 44], shard: true },
-    { id: 'aventure', ep: 4, title: 'Le fort du Golem', kind: 'Aventure', from: day(18), place: [84, 68], shard: false }
+    { id: 'reveillon', ep: 2, title: 'Opération Réveillon', kind: 'Défense du sapin', from: day(4), place: [42, 38], shard: true },
+    { id: 'chrono', ep: 3, title: 'Chronoflocon', kind: 'Gestion', from: day(9), place: [66, 44], shard: true },
+    { id: 'aventure', ep: 4, title: 'Le fort du Golem', kind: 'Aventure', from: day(15), place: [84, 68], shard: false }
 ];
 
-// Le grand final ouvre le vendredi 18 (beaucoup de collègues sont en congés la semaine de Noël) ;
-// la quête reste jouable pendant les vacances, jusqu'au 8 janvier inclus.
+// Les épisodes : 1er, 4, 9 et 15 décembre. Le vendredi 18, dernier jour avant les vacances, une vidéo
+// « Joyeux Noël en avance » clôt l'histoire (pas de jeu le 24 : beaucoup de collègues sont en congés).
+// La quête reste jouable pendant les vacances, jusqu'au 8 janvier inclus.
+export const NOEL_DAY = day(18);
 export const QUEST_UNTIL = new Date(YEAR + 1, 0, 9);
 
 export function isQuestSeason(now) {

@@ -32,7 +32,8 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
 - `src/utils/advent.js` : les 25 portes du calendrier de l'Avent (affiché par défaut en décembre, verrouillé sinon).
 - `src/utils/theme.js` : saisons × moment de la journée × météo (Open-Meteo).
 - `src/december/` : décembre 2026, la source de vérité du calendrier et de la grande quête.
-  - `calendar.js` : un mini-jeu par jour ouvré (jamais le week-end), les 4 épisodes de la quête (`QUEST`) et le film du 1er décembre.
+  - `calendar.js` : un mini-jeu par jour ouvré (jamais le week-end), les 4 épisodes de la quête (`QUEST` : 1er, 4, 9 et 15 décembre),
+    le film du 1er décembre et `NOEL_DAY` (18/12) : vidéo « Joyeux Noël en avance » à la place d'un jeu le 24.
   - `seed.js` : « scénario du jour » : graine = date de Paris + identifiant du jeu (même partie pour tout le monde le même jour).
     Tout l'aléatoire qui change une partie passe par `dailyRng` ; `Math.random` est réservé au cosmétique.
   - `quest.js` : progression (`30years:quest`), épisode ouvert à sa date ET après le précédent, ou de toute façon à J+2 ;

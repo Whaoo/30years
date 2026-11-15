@@ -148,10 +148,10 @@ function v3fort(ctx, tv) {
     vignette(ctx, 0.75);
 }
 
-// ---------------------------------------------------------------- 7. la carte : le chemin de la quête (v2 76 → 86.4)
+// ---------------------------------------------------------------- 7. la carte : le chemin de la quête (1er, 4, 9 et 15 décembre) (v2 76 → 86.4)
 const ROUTE = [[[262, 590], [320, 520], [380, 470], [430, 450]], [[430, 450], [520, 420], [580, 400], [640, 410]], [[640, 410], [780, 430], [880, 480], [980, 505]], [[980, 505], [1100, 480], [1130, 330], [1065, 240]]];
 const ROUTE_PTS = (() => { const pts = []; ROUTE.forEach(([a, b, c, d]) => { for (let i = 0; i <= 40; i++) { const k = i / 40, u = 1 - k; pts.push([u * u * u * a[0] + 3 * u * u * k * b[0] + 3 * u * k * k * c[0] + k * k * k * d[0], u * u * u * a[1] + 3 * u * u * k * b[1] + 3 * u * k * k * c[1] + k * k * k * d[1]]); } }); return pts; })();
-const STOPS = [[430, 450, 'Les Monts Givrés', '1er déc.', 0.25], [650, 410, 'Le village', '8 déc.', 0.5], [1000, 505, 'L’Archipel du Tri', '15 déc.', 0.75], [1062, 236, 'Le fort du Golem', '18 déc.', 1]];
+const STOPS = [[430, 450, 'Les Monts Givrés', '1er déc.', 0.25], [650, 410, 'Le village', '4 déc.', 0.5], [1000, 505, 'L’Archipel du Tri', '9 déc.', 0.75], [1062, 236, 'Le fort du Golem', '15 déc.', 1]];
 function v3route(ctx, tv) {
     const lt = tv - 76, t = tv;
     const kd = ease.io(seg(lt, 0.8, 7.2));
