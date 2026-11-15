@@ -56,10 +56,15 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
   - `REVEILLON` (« Opération Réveillon », `src/games/reveillon/`) : épisode 2, le 4 décembre. Défense du sapin (~4 min) : une carte par jour (graine),
     8 vagues (nuit : mimiques révélées par le phare, blizzard, monstres pressés), boss qui se coupe en trois, 10 cadeaux, 4 tours × 3 niveaux.
     Score = 500/cadeau + monstres + 20/s d'avance (« Vague suivante ») + poissons restants. Réglage global : `HP_SCALE`. `/reveillon` ; console : `window.reveillon`.
+  - `CHRONO` (« Chronoflocon », `src/games/chrono/`) : épisode 3, le 9 décembre. Gestion du centre de tri (~4 min) : glisser d'une île à l'autre
+    ouvre une liaison (train, bateau ou avion selon `LINKS`), cliquer dessus la ferme ; les colis suivent le plus court chemin tout seuls.
+    3 tournées (50/70/80 s, réseau conservé, un renfort à choisir entre deux), humeur (Mamie envoie un traîneau une fois, puis sursis de 8 s,
+    puis on rejoue la tournée ; le Matin ne se perd pas), express dorés, Radio Banquise (événements annoncés 8 s avant), traîneau joker.
+    Score = (colis × 15 + rapidité + express × 50) × (1 + 0,4 × humeur) + 150 si le joker est gardé. `/chrono` ; console : `window.chrono`.
   - `ADVENTURE` (« L'aventure de Flocon », `src/games/adventure/`) : le grand final, épisode 4 de la quête (date dans `calendar.js`).
   - `QUIZ` (« Qui fête quand ? », `always`) : ouvert toute l'année depuis la liste des anniversaires.
   - `CANDLES` (« Souffle les bougies », `birthdayOnly`) : bouton du compte à rebours, uniquement le jour J.
-  - Les adresses `/aventure`, `/monts`, `/reveillon`, `/quiz` et `/bougies` ouvrent ces jeux à tout moment pour tester.
+  - Les adresses `/aventure`, `/monts`, `/reveillon`, `/chrono`, `/quiz` et `/bougies` ouvrent ces jeux à tout moment pour tester.
 - `src/games/GameCanvas.jsx` : moteur commun des jeux canvas (boucle, mise à l'échelle, clavier, souris, tactile).
   `fixedStep` : mise à jour à pas fixe de 1/120 s (obligatoire pour les jeux de décembre, sinon la partie dépend de la fréquence de l'écran).
   Les gestionnaires `pointer*` reçoivent l'identifiant du doigt (multi-touch).

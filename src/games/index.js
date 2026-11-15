@@ -179,6 +179,21 @@ export const REVEILLON = {
     component: lazy(() => import('./reveillon/ReveillonGame'))
 };
 
+const CHR = questEpisode('chrono');
+export const CHRONO = {
+    id: 'chrono',
+    quest: 'chrono',
+    title: 'Chronoflocon',
+    short: 'Chrono',
+    eyebrow: 'La quête · épisode 3',
+    door: CHR.from.getDate(),
+    from: CHR.from,
+    icon: 'sled',
+    unit: 'pts',
+    help: 'Glisse d’une île à l’autre pour ouvrir une liaison (train, bateau ou avion selon la géographie) ; clique sur une liaison pour la fermer et récupérer son véhicule. Les colis trouvent leur chemin tout seuls. T : traîneau joker, P : pause. Garde l’humeur au-dessus de zéro !',
+    component: lazy(() => import('./chrono/ChronoGame'))
+};
+
 // Le grand final : le jeu d'aventure, épisode 4 de la quête (bouton de l'en-tête une fois ouvert).
 // L'adresse /aventure l'ouvre à tout moment, pour tester.
 const FINAL = questEpisode('aventure');
@@ -196,7 +211,7 @@ export const ADVENTURE = {
     component: lazy(() => import('./adventure/AdventureGame'))
 };
 
-export const QUEST_GAMES = [MONTS, REVEILLON, ADVENTURE];
+export const QUEST_GAMES = [MONTS, REVEILLON, CHRONO, ADVENTURE];
 
 // Quiz sur les anniversaires : disponible toute l'année (liste « Ensuite » et tuile des mini-jeux)
 export const QUIZ = {
