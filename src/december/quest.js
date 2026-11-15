@@ -1,4 +1,4 @@
-import { QUEST, questEpisode } from './calendar';
+import { FILMS, QUEST, questEpisode } from './calendar';
 import { hash32 } from './seed';
 
 // Progression de la quête, gardée dans ce navigateur (localStorage `30years:quest`).
@@ -33,6 +33,19 @@ function saveQuest(q) {
 
 export function isCleared(q, id) {
     return !!(q.done[id] || q.skipped[id]);
+}
+
+// État d'un film : 'locked-date', 'locked-prev' (le palier d'avant n'est ni réussi ni passé), 'open'.
+// Contrairement aux épisodes, pas d'ouverture automatique à J+2 : le film montre le méchant précédent vaincu.
+export function filmState(film, now, q = loadQuest()) {
+    if (now < film.from) return 'locked-date';
+    if (film.after && !isCleared(q, film.after)) return 'locked-prev';
+    return 'open';
+}
+
+// Le film à annoncer : le plus récent déjà débloqué
+export function latestOpenFilm(now, q = loadQuest()) {
+    return [...FILMS].reverse().find((f) => filmState(f, now, q) === 'open') || null;
 }
 
 // État d'un épisode : 'locked-date' (pas encore sa date), 'locked-prev' (finir le précédent), 'open', 'done'

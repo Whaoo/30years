@@ -9,9 +9,9 @@ import StatTiles from './components/StatTiles';
 import GamesTile from './components/GamesTile';
 import GameModal from './components/GameModal';
 import { ADVENTURE, ALL_GAMES, CANDLES, MONTS, QUIZ, getGame, isUnlocked } from './games';
-import { episodeState, loadQuest } from './december/quest';
+import { episodeState, latestOpenFilm, loadQuest } from './december/quest';
 import { parisDay } from './december/seed';
-import { filmById, isQuestSeason, latestFilm, questEpisode } from './december/calendar';
+import { filmById, isQuestSeason, questEpisode } from './december/calendar';
 import { clearBests, loadBests, saveScore } from './games/scores';
 import AdventCalendar from './components/AdventCalendar';
 import Gags from './components/Gags';
@@ -84,7 +84,7 @@ function App() {
             return false;
         }
     });
-    const promoFilm = isQuestSeason(now) ? latestFilm(now) : null;
+    const promoFilm = isQuestSeason(now) ? latestOpenFilm(now) : null;
     const showPromo = !promoHidden && !filmOpen && !!promoFilm && !loadQuest().films[promoFilm.id];
     const [disco, setDisco] = useState(false);
     const [shake, setShake] = useState(false);

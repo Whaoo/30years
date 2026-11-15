@@ -978,7 +978,7 @@ html, body, #root { height: 100%; }
 .advent__quest:hover { background: rgba(255, 211, 110, 0.26); }
 
 /* ---------- Mode cinéma (FilmPlayer) et grande annonce du film (FilmPromo) ---------- */
-.cinema { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: #000; animation: fadeIn 0.3s ease-out; }
+.cinema { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(2, 5, 14, 0.96); animation: fadeIn 0.3s ease-out; }
 .cinema__video {
   /* même rendu que l'affiche de l'annonce : coins arrondis, bords fondus dans le noir */
   width: min(94vw, calc(94vh * 16 / 9)); max-width: 100%; height: auto; aspect-ratio: 16 / 9;

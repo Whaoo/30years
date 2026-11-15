@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import Icon from './Icons';
 import Penguin from './Penguin';
 import { FILMS, QUEST } from '../december/calendar';
-import { SKIP_AFTER_FAILS, episodeState, loadQuest, markFilmSeen, markSkipped, redeemCode, shardCount } from '../december/quest';
+import { SKIP_AFTER_FAILS, episodeState, filmState, loadQuest, markFilmSeen, markSkipped, redeemCode, shardCount } from '../december/quest';
 
 // La carte de la Grande Quête de Flocon : les films (prologue et cinématiques), les 4 épisodes (débloqués par date
 // ET par la réussite du précédent), les éclats de givre récupérés et la saisie d'un code de passage
@@ -171,13 +171,16 @@ export default function QuestModal({ now, onPlay, onClose, onFilm, available = (
                         </div>
                         <ul className="quest__films" aria-label="Les cinématiques de la quête">
                             {FILMS.slice(1).map((f) => {
-                                const out = now >= f.from;
+                                const st = filmState(f, now, q);
+                                const out = st === 'open';
+                                const prev = QUEST.find((e) => e.id === f.after);
+                                const lockNote = st === 'locked-date' ? `Le ${fmtDay(f.from)}` : `Après l’épisode ${prev ? prev.ep : ''}`;
                                 return (
                                     <li key={f.id} className={`quest__film${out ? '' : ' is-locked'}${q.films[f.id] ? ' is-seen' : ''}`}>
-                                        <button type="button" disabled={!out} onClick={() => openFilm(f.id)} aria-label={out ? `Regarder : ${f.title}` : `${f.title}, le ${fmtDay(f.from)}`}>
+                                        <button type="button" disabled={!out} onClick={() => openFilm(f.id)} aria-label={out ? `Regarder : ${f.title}` : `${f.title} : ${lockNote}`}>
                                             <span className="quest__film-ico"><Icon name={out ? 'play' : 'film'} size={14} /></span>
                                             <span className="quest__film-title">{f.title}</span>
-                                            <span className="quest__film-note">{out ? (q.films[f.id] ? 'Vu ✓' : f.length) : `Le ${fmtDay(f.from)}`}</span>
+                                            <span className="quest__film-note">{out ? (q.films[f.id] ? 'Vu ✓' : f.length) : lockNote}</span>
                                         </button>
                                     </li>
                                 );

@@ -3,9 +3,10 @@ import Icon from './Icons';
 import { FILM } from '../december/calendar';
 import { markFilmSeen } from '../december/quest';
 
-// Mode cinéma : un film de la quête (prologue ou cinématique d'épisode) en plein écran, sur fond noir.
-// Ouvert depuis un clic (grande annonce du 1er décembre ou carte de la quête) : ce geste autorise
-// le plein écran et le son. Échap ou la croix referment ; à la fin, « À toi de jouer ! » ouvre la quête.
+// Mode cinéma : un film de la quête (prologue ou cinématique d'épisode) en pleine page, sur fond noir,
+// dans la fenêtre du navigateur (pas de plein écran), la vidéo aux bords arrondis et fondus.
+// Ouvert depuis un clic (grande annonce ou carte de la quête) : ce geste autorise le son.
+// Échap ou la croix referment ; à la fin, « À toi de jouer ! » ouvre la quête.
 const clampTime = (v, t) => Math.max(0, Math.min((v.duration || t) - 0.1, t));
 
 export default function FilmPlayer({ film = FILM, onClose, onPlay }) {
@@ -17,13 +18,6 @@ export default function FilmPlayer({ film = FILM, onClose, onPlay }) {
 
     useEffect(() => {
         markFilmSeen(film.id);
-        const wrap = wrapRef.current;
-        try {
-            const p = wrap.requestFullscreen ? wrap.requestFullscreen({ navigationUI: 'hide' }) : null;
-            if (p && p.catch) p.catch(() => {});
-        } catch {
-            /* plein écran refusé (téléphone, iframe) : la fenêtre noire couvre déjà toute la page */
-        }
         const v = videoRef.current;
         const play = v && v.play();
         if (play && play.catch) play.catch(() => {});
@@ -61,21 +55,12 @@ export default function FilmPlayer({ film = FILM, onClose, onPlay }) {
                 v.src = blobUrl;
             })
             .catch(() => { /* hors ligne ou fenêtre fermée : on garde la lecture en continu */ });
-        // Sortie du plein écran par le navigateur (Échap natif) : on referme aussi le mode cinéma
-        let entered = false;
-        const onFs = () => {
-            if (document.fullscreenElement) entered = true;
-            else if (entered) onClose();
-        };
         window.addEventListener('keydown', onKey);
-        document.addEventListener('fullscreenchange', onFs);
         return () => {
             window.removeEventListener('keydown', onKey);
-            document.removeEventListener('fullscreenchange', onFs);
             clearTimeout(hideTimer.current);
             if (ctrl) ctrl.abort();
             if (blobUrl) URL.revokeObjectURL(blobUrl);
-            if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
         };
     }, [onClose, film]);
 

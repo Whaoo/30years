@@ -46,7 +46,9 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
   puis une cinématique d'environ 1 min avant chaque épisode (`chapitre2` le 4, `chapitre3` le 9, `chapitre4` le 15) : le méchant précédent vaincu,
   le dérèglement causé par le suivant, Flocon qui part l'affronter ; enfin `noel` le 18 (épilogue « Joyeux Noël » et générique avec les prénoms de l'équipe :
   à mettre à jour dans `TEAM` de `tools/film/v3/film_noel.js` si l'équipe change). Sources (dessinées en code) dans `tools/film/` (v3 et épisodes dans `tools/film/v3/`).
-  `FilmPromo.jsx` annonce le film le plus récent tant qu'il n'est pas vu ; `FilmPlayer.jsx` le joue en mode cinéma plein écran ; la carte de la quête les liste tous.
+  Un film ne s'ouvre qu'à sa date ET une fois le palier d'avant réussi ou passé (`after`, `filmState` dans `quest.js`, sans ouverture à J+2).
+  `FilmPromo.jsx` annonce le film débloqué le plus récent tant qu'il n'est pas vu ; `FilmPlayer.jsx` le joue en pleine page dans la fenêtre
+  (pas de plein écran), vidéo aux bords arrondis ; la carte de la quête les liste tous.
 - `src/games/index.js` : le registre des jeux.
   - `GAMES` : les mini-jeux de l'Avent, débloqués porte par porte en décembre (jours ouvrés : 1-4, 7-9, 11, 14, 15, 17, 18, 21, 22).
   - `MONTS` (« Les Monts Givrés », `src/games/monts/`) : épisode 1 de la quête, le 1er décembre. Plateforme en 3 niveaux + yéti (~4 min),
