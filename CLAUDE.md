@@ -30,6 +30,8 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
 
 - `src/utils/birthdayLogic.js` : la liste des anniversaires (`{ name, date: 'JJ-MM' }`, pas d'année, pas d'âge affiché).
 - `src/utils/advent.js` : les 25 portes du calendrier de l'Avent (affiché par défaut en décembre, verrouillé sinon).
+  Vue Avent allégée : à droite, seulement la tuile des mini-jeux (et un rappel cliquable le jour d'un anniversaire) ;
+  la liste des prochains anniversaires reste dans l'onglet « Anniversaires ».
 - `src/utils/theme.js` : saisons × moment de la journée × météo (Open-Meteo).
 - `src/december/` : décembre 2026, la source de vérité du calendrier et de la grande quête.
   - `calendar.js` : un mini-jeu par jour ouvré (jamais le week-end), les 4 épisodes de la quête (`QUEST` : 1er, 4, 9 et 15 décembre),

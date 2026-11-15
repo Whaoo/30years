@@ -4,6 +4,7 @@ import WeatherParticles from './components/WeatherParticles';
 import Header from './components/Header';
 import Countdown from './components/Countdown';
 import UpcomingList from './components/UpcomingList';
+import Icon from './components/Icons';
 import StatTiles from './components/StatTiles';
 import GamesTile from './components/GamesTile';
 import GameModal from './components/GameModal';
@@ -345,9 +346,10 @@ function App() {
         });
     };
 
-    // En décembre, la tuile des 10 mini-jeux prend de la place : 3 anniversaires au lieu de 4
-    const listItems = isAvent ? sorted.slice(0, 3) : sorted.slice(group.length, group.length + 4);
-    const shownCount = isAvent ? 3 : group.length + 4;
+    // Vue Avent : pas de liste des anniversaires (elle reste dans l'onglet « Anniversaires »), sauf un rappel le jour J
+    const listItems = sorted.slice(group.length, group.length + 4);
+    const shownCount = group.length + 4;
+    const todayNames = group.map((p) => p.name).join(' et ');
     const restCount = Math.max(0, sorted.length - shownCount);
     const lastMonth = sorted[sorted.length - 1].nextBirthday.getMonth();
     const horizon = lastMonth === now.getMonth() ? 'dans l’année' : `d’ici ${MONTHS[lastMonth]}`;
@@ -385,19 +387,31 @@ function App() {
                     {isAvent
                         ? <AdventCalendar now={now} bests={bests} onPlay={openGame} onQuest={() => setQuestOpen(true)} />
                         : <Countdown group={group} now={now} play={play} onWish={onWish} onCandles={() => openGame(CANDLES.id)} />}
-                    <aside className="side">
-                        <UpcomingList
-                            title={isAvent ? 'Anniversaires' : 'Ensuite'}
-                            items={listItems}
-                            highlightFirst={isAvent}
-                            restLabel={restLabel}
-                            play={play}
-                            onQuiz={isAvent ? null : () => openGame(QUIZ.id)}
-                        />
-                        {isAvent
-                            ? <GamesTile openCount={advent.openCount} bests={bests} onPlay={openGame} />
-                            : <StatTiles tiles={tiles} />}
-                    </aside>
+                    {isAvent ? (
+                        <aside className={`side side--avent${isToday ? ' has-bday' : ''}`}>
+                            {isToday && (
+                                <button type="button" className="tile glass bday-strip" onClick={onHome}>
+                                    <Icon name="cake" size={22} />
+                                    <span>
+                                        <strong>Aujourd’hui : {todayNames} !</strong>
+                                        <span>Voir l’anniversaire</span>
+                                    </span>
+                                </button>
+                            )}
+                            <GamesTile openCount={advent.openCount} bests={bests} onPlay={openGame} />
+                        </aside>
+                    ) : (
+                        <aside className="side">
+                            <UpcomingList
+                                title="Ensuite"
+                                items={listItems}
+                                restLabel={restLabel}
+                                play={play}
+                                onQuiz={() => openGame(QUIZ.id)}
+                            />
+                            <StatTiles tiles={tiles} />
+                        </aside>
+                    )}
                 </main>
 
                 <footer className="footer-hint hide-short">
