@@ -19,7 +19,6 @@ export const CATCH_UP_DAY = 23;
 export const FILM = {
     from: day(1),
     sources: [
-        { src: '/film/prologue.webm', type: 'video/webm' },
         { src: '/film/prologue.mp4', type: 'video/mp4' }
     ],
     poster: '/film/prologue.jpg'
