@@ -9,7 +9,7 @@ function chapterCard(ctx, lt, num, title, sub) {
     ctx.fillStyle = 'rgba(241,230,201,0.72)'; ctx.fillRect(0, 0, W, H);
     const k = ease.out(seg(lt, 0.4, 1.4)), k2 = ease.out(seg(lt, 1.0, 2.0));
     ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.globalAlpha = k; ctx.font = `italic 400 30px ${BOOK}`; ctx.fillStyle = '#6b5130'; ctx.fillText(`~ Chapitre ${num} ~`, W / 2, 260 + (1 - k) * 10);
+    ctx.globalAlpha = k; ctx.font = `italic 400 30px ${BOOK}`; ctx.fillStyle = '#6b5130'; ctx.fillText(typeof num === 'string' ? '~ Épilogue ~' : `~ Chapitre ${num} ~`, W / 2, 260 + (1 - k) * 10);
     ctx.globalAlpha = k2; ctx.font = `400 74px ${SERIF}`; ctx.fillStyle = '#3b2a17'; ctx.fillText(title, W / 2, 345 + (1 - k2) * 12);
     ctx.strokeStyle = '#a5121f'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(W / 2 - 160 * k2, 405); ctx.lineTo(W / 2 + 160 * k2, 405); ctx.stroke();
     starShape(ctx, W / 2, 405, 9, '#a5121f');

@@ -105,11 +105,18 @@ export default function FilmPlayer({ film = FILM, onClose, onPlay }) {
             </button>
             {ended && (
                 <div className="cinema__end">
-                    <p className="cinema__eyebrow">{film.ep ? `Épisode ${film.ep} · la suite de la quête` : 'La Grande Quête de Flocon'}</p>
-                    <button type="button" className="btn btn--primary btn--icon cinema__go" onClick={onPlay}>
-                        <Icon name="play" size={20} />
-                        À toi de jouer !
-                    </button>
+                    <p className="cinema__eyebrow">{film.final ? 'Joyeux Noël à toute l’équipe !' : film.ep ? `Épisode ${film.ep} · la suite de la quête` : 'La Grande Quête de Flocon'}</p>
+                    {film.final ? (
+                        <button type="button" className="btn btn--primary btn--icon cinema__go" onClick={onClose}>
+                            <Icon name="close" size={20} />
+                            Fermer
+                        </button>
+                    ) : (
+                        <button type="button" className="btn btn--primary btn--icon cinema__go" onClick={onPlay}>
+                            <Icon name="play" size={20} />
+                            À toi de jouer !
+                        </button>
+                    )}
                     <button type="button" className="btn btn--ghost" onClick={() => { setEnded(false); videoRef.current.currentTime = 0; videoRef.current.play(); }}>
                         Revoir le film
                     </button>

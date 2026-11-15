@@ -8,6 +8,8 @@ le dérèglement causé par le méchant suivant, puis Flocon qui arrive pour l'a
   et les maquettes de Chronoflocon (`v3/chrono_mock.js`, pour l'archipel et le bateau).
 - `v3/eps.html?ep=2` expose `renderAt(t)` et `DUR` ; capture : `node capture_eps.js 0 3720 ../frames_ep2 2` (3 840 images pour le chapitre 4).
 - `v3/soundtrack_eps.py 2 ep2.wav` : bande-son (mêmes instruments que le prologue, niveau aligné sur `soundtrack2.wav`).
+- Épilogue « Joyeux Noël » (18 déc., 1 min 38) : `v3/film_noel.js` (`FILM5`, `eps.html?ep=5`, 5 880 images, `soundtrack_eps.py 5`) ;
+  le générique reprend les prénoms de l'équipe (`TEAM`).
 - Encodage comme le prologue ; vidéos et affiches : `public/film/chapitre2.mp4` / `.jpg`, etc. Liste et dates : `FILMS` dans `src/december/calendar.js`.
 
 # Le prologue de la quête (film du 1er décembre)

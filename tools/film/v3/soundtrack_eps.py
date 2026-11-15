@@ -2,7 +2,7 @@
 # instruments du prologue (st3_head.py). Usage : python3 soundtrack_eps.py <2|3|4> sortie.wav
 import sys, re
 EP = int(sys.argv[1]); OUT = sys.argv[2]
-DURS = {2: 62.0, 3: 62.0, 4: 64.0}
+DURS = {2: 62.0, 3: 62.0, 4: 64.0, 5: 98.0}
 import os
 src = open('st3_head.py' if os.path.exists('st3_head.py') else 'soundtrack3.py').read()
 src = src.split('# ================================================================ INTRO v3')[0]
@@ -20,7 +20,7 @@ def reverb(x, d=2.4, seed=3, wet=0.22):
 
 THEME = [('F#5', 2), ('A5', 1), ('D6', 2), ('C#6', 1), ('B5', 1), ('A5', 1), ('G5', 1), ('E5', 3)]
 VOICES = {'yeti': (95, (420, 800)), 'maire': (150, (600, 1100)), 'flocon': (250, (700, 1500)), 'cheffe': (330, (800, 1700)),
-          'mamie': (205, (650, 1250)), 'bonhomme': (115, (500, 900))}
+          'mamie': (205, (650, 1250)), 'bonhomme': (115, (500, 900)), 'golem': (80, (380, 720))}
 def babble(a, b, who, amp=0.07, pan=0.0):
     """Babillage pendant un sous-titre (le texte s'écrit pendant ~60 % du temps)."""
     f0, (F1, F2) = VOICES[who]; r = np.random.RandomState(int(a * 100))
@@ -131,6 +131,47 @@ elif EP == 3:
     babble(42.8, 47.4, 'cheffe', 0.07, 0.35)
     babble(47.8, 51.6, 'flocon', 0.07, -0.2)
     title(53.0, 9.0)
+elif EP == 5:
+    chapter(0.0)
+    # le Golem gronde une dernière fois puis se calme ; les éclats montent rejoindre les aurores
+    place(sfx, 5.2, roar(1.6), 0.18); place(music, 5.3, timpani(hz('D2'), 2.0), 0.2)
+    place(sfx, 7.4, filt(noise(1.0), 'highpass', 3000) * env_ar(int(1.0 * SR), 0.05, 0.8), 0.06)
+    chord(['D3', 'A3', 'D4', 'F#4'], 7.6, 6.0, strings, 0.045, a=1.6)
+    for i in range(16): place(music, 9.4 + i * 0.28, bell(hz(['D5', 'F#5', 'A5', 'D6', 'F#6', 'A6', 'D7', 'A6'][i % 8]), 1.6), 0.035, (i % 4 - 1.5) * 0.3)
+    place(sfx, 9.4, whoosh(4.8, 400, 4000, 0.5), 0.1); shard_get(13.6, 14.2)
+    chord(['G2', 'D3', 'B3', 'G4'], 13.6, 6.0, pad, 0.04, a=1.0, vib=0.006)
+    babble(18.0, 23.6, 'golem', 0.08, 0.3)
+    map_leg(19.0, 12.4)
+    for i in range(4): place(music, 22.6 + i * 1.4, bell(hz(['D6', 'F#6', 'A6', 'D7'][i]), 2.0), 0.06, 0.2)
+    # la fête : un petit air de danse en ré majeur (132 bpm), grelots et feux d'artifice
+    B = 60 / 132; prog = [('D2', ['D4', 'F#4', 'A4']), ('A1', ['C#4', 'E4', 'A4']), ('B1', ['D4', 'F#4', 'B4']), ('G1', ['D4', 'G4', 'B4'])]
+    mel = [('A5', 1), ('F#5', 0.5), ('G5', 0.5), ('A5', 1), ('D6', 1), ('C#6', 1), ('A5', 1), ('E5', 2), ('F#5', 1), ('D5', 0.5), ('E5', 0.5), ('F#5', 1), ('B5', 1), ('A5', 1), ('G5', 1), ('D5', 2)]
+    t0 = 31.2
+    for bar in range(15):
+        root, ch = prog[bar % 4]; tb = t0 + bar * 4 * B
+        if tb > 57.8: break
+        for k in range(4):
+            place(music, tb + k * B, pluck(hz(root) * (1.5 if k % 2 else 1.0), 0.4, bright=0.9, decay=5), 0.08)
+            for n in ch: place(music, tb + k * B + B / 2, pluck(hz(n), 0.25, bright=1.4, decay=7), 0.025, 0.25)
+            place(sfx, tb + k * B, jingle(0.2), 0.03 if k % 2 else 0.045, -0.4)
+    for rep in range(3): seq(mel, t0 + 4 * 4 * B * rep + 2 * B, B, flute, 0.045, -0.15)
+    seq(mel, t0 + 4 * 4 * B + 2 * B, B, bell, 0.025, 0.3)
+    r5 = np.random.RandomState(5)
+    for tb in np.arange(31.5, 57.5, 0.9):
+        place(sfx, tb + r5.rand() * 0.4, pop(250 + r5.rand() * 200, 0.2), 0.08, r5.rand() * 1.6 - 0.8)
+        place(sfx, tb + 0.35 + r5.rand() * 0.3, crackle(0.6), 0.03, r5.rand() * 1.6 - 0.8)
+    for k in range(12): place(sfx, 31.8 + k * 0.3, blip(240 + (k % 5) * 40, (700, 1500), 0.08), 0.03, (k % 3 - 1) * 0.6)
+    babble(39.0, 43.0, 'mamie', 0.07, 0.2)
+    babble(43.6, 46.6, 'golem', 0.08, 0.35)
+    place(music, 42.6, bell(hz('A6'), 2.0), 0.05, 0.4); place(music, 42.7, bell(hz('D7'), 2.0), 0.04, 0.4)
+    title(58.0, 14.0, heroic=True)
+    for tb in np.arange(58.6, 71.5, 1.1): place(sfx, tb, pop(260, 0.2), 0.07, r5.rand() * 1.6 - 0.8); place(sfx, tb + 0.4, crackle(0.5), 0.03)
+    # le générique : le thème du film, doucement
+    for k, c in enumerate([['D3', 'A3', 'F#4'], ['G2', 'D3', 'B3'], ['B2', 'F#3', 'D4'], ['A2', 'E3', 'C#4'], ['D3', 'A3', 'F#4'], ['G2', 'D3', 'B3'], ['A2', 'E3', 'C#4'], ['D3', 'A3', 'D4', 'F#4']]):
+        chord(c, 72.0 + k * 3.2, 3.6, strings, 0.04, a=0.8)
+    seq(THEME + [('F#5', 2), ('G5', 1), ('A5', 2), ('F#5', 1), ('E5', 3)], 72.6, 0.62, musicbox, 0.07, 0.2)
+    seq(THEME, 86.0, 0.62, flute, 0.04, -0.2)
+    for tl, n in [(80.0, 'A6'), (88.0, 'F#6'), (95.0, 'D6')]: place(music, tl, bell(hz(n), 2.4), 0.05, 0.2)
 else:
     chapter(0.0)
     place(sfx, 5.0, filt(noise(4.0), 'bandpass', [180, 900]) * env_ar(int(4.0 * SR), 0.1, 2.5), 0.06)   # la machine ralentit

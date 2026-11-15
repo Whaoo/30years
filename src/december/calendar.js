@@ -35,6 +35,11 @@ export const FILMS = [
     film('chapitre4', day(15), {
         title: 'Chapitre 4 · Le fort du Golem', length: '1 min', ep: 4,
         promo: { eyebrow: 'Le grand final', title: 'Le Golem de givre se réveille…', text: 'Les trois éclats sont réunis, et toute la colère du Golem s’abat sur le royaume. Une minute avant le grand final.' }
+    }),
+    // vendredi 18, dernier jour avant les vacances : l'épilogue et son générique (avec les prénoms de l'équipe)
+    film('noel', day(18), {
+        title: 'Épilogue · Joyeux Noël !', length: '1 min 40', final: true,
+        promo: { eyebrow: 'Joyeux Noël en avance', title: 'Tout le royaume fait la fête !', text: 'Le Golem est vaincu, le givre fond, et tout le monde se retrouve au village… Une petite vidéo pour fêter Noël avant les vacances, avec un générique un peu spécial.' }
     })
 ];
 export const FILM = FILMS[0];

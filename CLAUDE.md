@@ -42,7 +42,8 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
 - `src/components/QuestModal.jsx` : la carte de la quête (bouton « La quête » de l'en-tête en décembre), le film, les éclats de givre.
 - `public/film/` : les films de la quête (liste et dates : `FILMS` dans `calendar.js`). Le prologue (v3 « conte », 2 min 20, le 1er décembre)
   puis une cinématique d'environ 1 min avant chaque épisode (`chapitre2` le 4, `chapitre3` le 9, `chapitre4` le 15) : le méchant précédent vaincu,
-  le dérèglement causé par le suivant, Flocon qui part l'affronter. Sources (dessinées en code) dans `tools/film/` (v3 et épisodes dans `tools/film/v3/`).
+  le dérèglement causé par le suivant, Flocon qui part l'affronter ; enfin `noel` le 18 (épilogue « Joyeux Noël » et générique avec les prénoms de l'équipe :
+  à mettre à jour dans `TEAM` de `tools/film/v3/film_noel.js` si l'équipe change). Sources (dessinées en code) dans `tools/film/` (v3 et épisodes dans `tools/film/v3/`).
   `FilmPromo.jsx` annonce le film le plus récent tant qu'il n'est pas vu ; `FilmPlayer.jsx` le joue en mode cinéma plein écran ; la carte de la quête les liste tous.
 - `src/games/index.js` : le registre des jeux.
   - `GAMES` : les mini-jeux de l'Avent, débloqués porte par porte en décembre (jours ouvrés : 1-4, 7-9, 11, 14, 15, 17, 18, 21, 22).
