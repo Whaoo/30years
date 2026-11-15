@@ -14,7 +14,7 @@ function LogoMark() {
     );
 }
 
-export default function Header({ theme, weather, isAvent, isDecember, daysToStart, onHome, onAvent, onLogo, onAdventure }) {
+export default function Header({ theme, weather, isAvent, isDecember, daysToStart, onHome, onAvent, onLogo, onQuest }) {
     return (
         <header className="header">
             <div className="header__left">
@@ -29,10 +29,10 @@ export default function Header({ theme, weather, isAvent, isDecember, daysToStar
                 <WeatherWidget weather={weather} night={theme.timeOfDay === 'night'} />
             </div>
             <div className="header__right">
-                {onAdventure && (
-                    <button type="button" className="adv-btn" onClick={onAdventure} aria-label="Jouer à L’aventure de Flocon">
-                        <Icon name="gift" size={18} />
-                        <span>Aventure</span>
+                {onQuest && (
+                    <button type="button" className="adv-btn" onClick={onQuest} aria-label="Ouvrir la Grande Quête de Flocon">
+                        <Icon name="map" size={18} />
+                        <span>La quête</span>
                     </button>
                 )}
                 <nav className="segs glass" aria-label="Choix de la vue">

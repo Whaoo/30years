@@ -176,16 +176,13 @@ export function text(ctx, str, x, y, opts = {}) {
     ctx.font = `${weight} ${size}px ${font}`;
     ctx.textAlign = align;
     ctx.textBaseline = baseline;
+    // Ombre portée simulée par un second texte décalé : shadowBlur coûte très cher à chaque image
     if (shadow) {
-        ctx.shadowColor = 'rgba(0,0,0,0.45)';
-        ctx.shadowBlur = 6;
-        ctx.shadowOffsetY = 2;
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.fillText(str, x + 1, y + 2);
     }
     ctx.fillStyle = color;
     ctx.fillText(str, x, y);
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
 }
 
 // Étiquette « Score 120 » en haut de l'écran. align: 'left' (x = bord gauche) ou 'right' (x = bord droit)

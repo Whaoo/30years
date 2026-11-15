@@ -3,6 +3,9 @@ import Penguin from './Penguin';
 import Icon from './Icons';
 import { DOOR_ORDER, adventState, teaserFor } from '../utils/advent';
 import { formatScore, getGame } from '../games';
+import { QUEST } from '../december/calendar';
+
+const QUEST_LABEL = Object.fromEntries(QUEST.map((e) => [e.id, `épisode ${e.ep} de la quête, ${e.title}`]));
 
 const GUARD_LINES = [
     'Joyeux Avent !',
@@ -12,7 +15,7 @@ const GUARD_LINES = [
     'Cinq clics : te voilà ami officiel.'
 ];
 
-export default function AdventCalendar({ now, bests = {}, onPlay }) {
+export default function AdventCalendar({ now, bests = {}, onPlay, onQuest }) {
     const { openCount, todayDoor } = adventState(now);
     const [selected, setSelected] = useState(null);
     const [guard, setGuard] = useState(null);
@@ -71,6 +74,13 @@ export default function AdventCalendar({ now, bests = {}, onPlay }) {
                         ? teaser.text
                         : 'Cette porte est verrouillée. Le pingouin garde la clé et ne se laisse pas amadouer.'}
                 </p>
+                {unlocked && teaser.quest && onQuest && (
+                    <button type="button" className="advent__quest" onClick={onQuest}>
+                        <Icon name="map" size={16} />
+                        <span>{teaser.quest === 'aventure' ? 'Le grand final de la quête' : `Aujourd’hui aussi : ${QUEST_LABEL[teaser.quest]}`}</span>
+                        <span aria-hidden="true">›</span>
+                    </button>
+                )}
                 {unlocked && game && onPlay && (
                     <div className="advent__play">
                         <button type="button" className="btn btn--primary btn--icon" onClick={() => onPlay(game.id)}>

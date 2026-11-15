@@ -180,7 +180,26 @@ const PATHS = {
             <rect x="3.5" y="5" width="17" height="15.5" rx="2" />
             <path d="M3.5 10h17M8 3v4M16 3v4" />
         </>
-    )
+    ),
+    mountain: (
+        <>
+            <path d="M2.5 20 9 8l4 7 2.5-4 6 9Z" />
+            <path d="m7.2 11.3 1.8 1.2 1.4-1.6" />
+        </>
+    ),
+    map: (
+        <>
+            <path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4Z" />
+            <path d="M9 4v14M15 6v14" />
+        </>
+    ),
+    film: (
+        <>
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="M10 9.5v5l4.5-2.5Z" />
+        </>
+    ),
+    shard: <path d="M12 2.5 17 12l-5 9.5L7 12Z" />
 };
 
 export default function Icon({ name, size = 18 }) {

@@ -885,3 +885,66 @@ html, body, #root { height: 100%; }
 .envers__keys.is-mini { padding: 6px 12px; font-size: 11.5px; opacity: 0.72; gap: 4px 12px; }
 .envers__keys.is-mini .envers__more, .envers__keys.is-mini .envers__mouse { display: none; }
 .envers__keys.is-mini kbd { min-width: 18px; height: 18px; font-size: 10px; }
+
+/* ---------- La grande quête de décembre (QuestModal) ---------- */
+.quest__body { flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); gap: clamp(12px, 2vw, 22px); }
+.quest__map {
+  position: relative; min-height: 0; border-radius: 22px; overflow: hidden;
+  background: #c7def4;
+}
+.quest__art { position: absolute; inset: 0; width: 100%; height: 100%; }
+.quest__path { position: absolute; inset: 0; width: 100%; height: 100%; }
+.quest__path path { fill: none; stroke: #a5121f; stroke-width: 4; stroke-dasharray: 2 9; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.quest__home { position: absolute; transform: translate(-30%, -150%); padding: 4px 10px; border-radius: 999px; background: rgba(20, 30, 60, 0.75); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.quest__stop { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.quest__pin {
+  width: 52px; height: 52px; border-radius: 50%; border: 3px solid #fff;
+  display: grid; place-items: center; cursor: pointer;
+  font-family: 'Bricolage Grotesque', 'DM Sans', sans-serif; font-weight: 800; font-size: 22px;
+  background: #ffd36e; box-shadow: 0 6px 0 #c98a12; transition: transform 0.2s;
+}
+.app .quest__pin { color: #2a1d05; }
+.quest__pin:hover:not(:disabled) { transform: translateY(-3px); }
+.quest__pin:disabled { cursor: default; background: #8aa0c0; box-shadow: 0 6px 0 #5c6f8f; }
+.app .quest__pin:disabled { color: #eef3ff; }
+.quest__stop.is-done .quest__pin { background: #2bb673; box-shadow: 0 6px 0 #1d8551; }
+.app .quest__stop.is-done .quest__pin { color: #fff; }
+.quest__stop.is-open .quest__pin { animation: questPulse 1.6s ease-in-out infinite; }
+.quest__label { display: flex; flex-direction: column; align-items: center; padding: 6px 12px; border-radius: 14px; background: rgba(12, 18, 42, 0.82); text-align: center; white-space: nowrap; }
+.quest__label strong { font-family: 'Bricolage Grotesque', 'DM Sans', sans-serif; font-size: 15px; }
+.quest__label span { font-size: 12px; color: rgba(255, 255, 255, 0.8); }
+.quest__skip { padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.5); background: rgba(12, 18, 42, 0.7); font-size: 12px; font-weight: 700; cursor: pointer; }
+.quest__side { min-width: 0; display: flex; flex-direction: column; gap: 14px; overflow: auto; }
+.quest__card { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: 20px; background: rgba(255, 255, 255, 0.08); }
+.quest__card p { margin: 4px 0 10px; font-size: 14px; color: rgba(255, 255, 255, 0.82); }
+.quest__card .btn--primary { min-height: 42px; padding: 0 18px; font-size: 15px; display: inline-flex; align-items: center; gap: 8px; }
+.quest__rules { margin: 0; font-size: 13px; line-height: 1.5; color: rgba(255, 255, 255, 0.75); }
+.quest__code { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: rgba(255, 255, 255, 0.8); }
+.quest__code div { display: flex; gap: 8px; }
+.quest__code input {
+  width: 96px; min-height: 42px; padding: 0 12px; border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3); background: rgba(255, 255, 255, 0.08);
+  color: #fff; font: 800 18px 'Bricolage Grotesque', 'DM Sans', sans-serif; letter-spacing: 0.18em; text-transform: uppercase;
+}
+.quest__code .btn--ghost { min-height: 42px; padding: 0 16px; font-size: 14px; }
+.quest__msg { margin: 0; font-weight: 700; color: #ffd36e; }
+.quest__shards { gap: 6px; }
+.quest__shard { display: inline-grid; place-items: center; color: rgba(255, 255, 255, 0.3); }
+.quest__shard.is-on { color: #7fe8ff; }
+.quest__film { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.quest__film video { flex: 1 1 0; min-height: 0; max-width: 100%; border-radius: 18px; background: #000; }
+@keyframes questPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@media (max-width: 760px) {
+  .quest__body { grid-template-columns: 1fr; grid-template-rows: minmax(260px, 1fr) auto; }
+  .quest__label span { display: none; }
+  .quest__label strong { font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .quest__stop.is-open .quest__pin { animation: none; } }
+
+.advent__quest {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-radius: 999px; border: 1px solid rgba(255, 211, 110, 0.6);
+  background: rgba(255, 211, 110, 0.14); font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.app .advent__quest { color: #ffe3a1; }
+.advent__quest:hover { background: rgba(255, 211, 110, 0.26); }

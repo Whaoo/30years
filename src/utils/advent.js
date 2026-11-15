@@ -1,35 +1,36 @@
 import { daysBetween } from './birthdayLogic';
 
 // Teasers du calendrier de l'Avent : un par jour, du 1er au 25 décembre.
-// game : identifiant du mini-jeu débloqué ce jour-là (voir src/games/index.js)
+// game : identifiant du mini-jeu débloqué ce jour-là (voir src/games/index.js et src/december/calendar.js)
+// quest : un épisode de la grande quête s'ouvre aussi ce jour-là (bouton « La quête »)
 // null : porte sans texte pour l'instant. Pour en écrire un, remplacer null par
 //   { kind: 'Défi', title: 'Titre court', text: 'Une ou deux phrases, 140 caractères maximum.' }
 //   (utiliser l'apostrophe typographique ’ dans les textes)
 export const ADVENT_TEASERS = [
-    { kind: 'Jeu', title: 'Bataille de boules de neige', text: 'Premier mini-jeu : le pingouin vise les cibles, 45 secondes pour faire le meilleur score.', game: 'snowball' },
+    { kind: 'Jeu', title: 'Bataille de boules de neige', text: 'Premier mini-jeu : le pingouin vise les cibles, 45 secondes pour faire le meilleur score.', game: 'snowball', quest: 'monts' },
     { kind: 'Jeu', title: 'La chorale des pingouins', text: 'Nouveau mini-jeu : les pingouins chantent, répète la mélodie dans l’ordre. Une note de plus à chaque tour.', game: 'chorale' },
     { kind: 'Jeu', title: 'Pêche sur la banquise', text: 'Nouveau mini-jeu : lance ta ligne, attrape les poissons dorés et évite les méduses.', game: 'fishing' },
     { kind: 'Jeu', title: 'Fort de neige', text: 'Nouveau mini-jeu : une catapulte, des boules de neige et cinq forteresses gardées par des bonhommes grognons.', game: 'fort' },
-    null, // porte 5 : texte à écrire
-    null, // porte 6 : texte à écrire
+    null, // porte 5 : samedi, pas de jeu
+    null, // porte 6 : dimanche
     { kind: 'Jeu', title: 'Pingouin volant', text: 'Nouveau mini-jeu : un parapluie, des stalactites, une seule touche. Combien en passeras-tu ?', game: 'flappy' },
-    { kind: 'Jeu', title: 'Livraison en traîneau', text: 'Nouveau mini-jeu : Flocon lâche les cadeaux dans les cheminées. Attention au vent, il change à chaque toit.', game: 'traineau' },
+    { kind: 'Jeu', title: 'Livraison en traîneau', text: 'Nouveau mini-jeu : Flocon lâche les cadeaux dans les cheminées. Attention au vent, il change à chaque toit.', game: 'traineau', quest: 'reveillon' },
     { kind: 'Jeu', title: 'Curling des pingouins', text: 'Nouveau mini-jeu : vise, dose, balaie. Une pierre d’essai guidée, puis cinq pierres pour viser le cœur de la cible.', game: 'curling' },
-    { kind: 'Jeu', title: 'L’aventure de Flocon', text: 'Le grand jeu de Noël : explore la banquise, récupère les cadeaux et affronte le Golem de givre. Il reste ensuite dans l’en-tête.', game: 'aventure' },
+    { kind: 'Jeu', title: 'Guirlande express', text: 'Nouveau mini-jeu : relie les ampoules de la même couleur avant que le sapin s’éteigne.', game: 'guirlande' },
     { kind: 'Jeu', title: 'Saut sur la banquise', text: 'Nouveau mini-jeu : saute les blocs de glace, glisse sous les mouettes. Jusqu’où iras-tu ?', game: 'runner' },
+    null, // porte 12 : samedi
+    null, // porte 13 : dimanche
     { kind: 'Jeu', title: 'Où est mon collègue ?', text: 'Nouveau mini-jeu : une foule de pingouins habillés comme l’équipe. Retrouve la bonne personne avant la fin du chrono.', game: 'collegue' },
-    null, // porte 13 : texte à écrire
+    { kind: 'Jeu', title: 'Memory des pingouins', text: 'Nouveau mini-jeu : retrouve les paires de pingouins de l’équipe. Enchaîne les paires pour le bonus de série.', game: 'memory', quest: 'chrono' },
+    { kind: 'Jeu', title: 'Relais Express', text: 'Nouveau mini-jeu : fusionne les objets pour servir les clients du relais colis avant qu’ils s’impatientent.', game: 'relais' },
     { kind: 'Jeu', title: 'Banquise glissante', text: 'Nouveau mini-jeu : un casse-tête de glisse en 8 niveaux, retournés à chaque partie. Le moins de coups, le plus vite possible.', game: 'slide' },
-    { kind: 'Jeu', title: 'Memory des pingouins', text: 'Nouveau mini-jeu : retrouve les paires de pingouins de l’équipe. Enchaîne les paires pour le bonus de série.', game: 'memory' },
     { kind: 'Jeu', title: 'Tour de bonhommes de neige', text: 'Nouveau mini-jeu : lâche la boule au bon moment et empile le plus haut possible.', game: 'tower' },
+    null, // porte 19 : samedi
+    null, // porte 20 : dimanche
     { kind: 'Jeu', title: 'Descente en luge', text: 'Nouveau mini-jeu : slalom entre les sapins, poissons à ramasser, portes à passer.', game: 'sled' },
-    { kind: 'Jeu', title: 'Empilage de glaçons', text: 'Le grand final avant les vacances : empile les glaçons et complète des lignes avant que ça déborde.', game: 'ice' },
-    null, // porte 19 : texte à écrire
-    null, // porte 20 : texte à écrire
-    null, // porte 21 : texte à écrire
-    null, // porte 22 : texte à écrire
-    null, // porte 23 : texte à écrire
-    null, // porte 24 : texte à écrire
+    { kind: 'Jeu', title: 'Empilage de glaçons', text: 'Dernier mini-jeu avant les vacances : empile les glaçons et complète des lignes avant que ça déborde.', game: 'ice' },
+    { kind: 'Rattrapage', title: 'Le jour du rattrapage', text: 'Pas de nouveau jeu aujourd’hui : tous les jeux et la quête restent ouverts. C’est le moment de battre tes records.' },
+    { kind: 'Grand final', title: 'Le fort du Golem', text: 'Le dernier épisode de la quête : les trois éclats de givre ouvrent le fort du Golem. Le grand final est ouvert à tous.', game: 'aventure', quest: 'aventure' },
     null // porte 25 : texte à écrire
 ];
 

@@ -7,7 +7,9 @@ import UpcomingList from './components/UpcomingList';
 import StatTiles from './components/StatTiles';
 import GamesTile from './components/GamesTile';
 import GameModal from './components/GameModal';
-import { ADVENTURE, ALL_GAMES, CANDLES, QUIZ, getGame, isUnlocked } from './games';
+import { ADVENTURE, ALL_GAMES, CANDLES, MONTS, QUIZ, getGame, isUnlocked } from './games';
+import { episodeState } from './december/quest';
+import { questEpisode } from './december/calendar';
 import { clearBests, loadBests, saveScore } from './games/scores';
 import AdventCalendar from './components/AdventCalendar';
 import Gags from './components/Gags';
@@ -31,9 +33,11 @@ const HOUR = 3600000;
 const TestPanel = __TEST_MODE__ ? lazy(() => import('./components/TestPanel')) : null;
 // La cave sous la page : chargée seulement quand on y descend
 const EnversGame = lazy(() => import('./envers/EnversGame'));
+// La carte de la grande quête de décembre : chargée à l'ouverture
+const QuestModal = lazy(() => import('./components/QuestModal'));
 
 // Adresses directes, pratiques pour tester : /aventure, /bougies, /quiz
-const PATH_GAMES = { '/aventure': ADVENTURE.id, '/bougies': CANDLES.id, '/quiz': QUIZ.id };
+const PATH_GAMES = { '/aventure': ADVENTURE.id, '/monts': MONTS.id, '/bougies': CANDLES.id, '/quiz': QUIZ.id };
 function pathGame() {
     return PATH_GAMES[window.location.pathname.replace(/\/+$/, '')] || null;
 }
@@ -63,6 +67,7 @@ function App() {
     const advent = adventState(now);
 
     const [view, setView] = useState(null);
+    const [questOpen, setQuestOpen] = useState(false);
     const [disco, setDisco] = useState(false);
     const [shake, setShake] = useState(false);
     const [toast, setToast] = useState('');
@@ -284,11 +289,34 @@ function App() {
     const openGame = (id) => {
         const g = getGame(id);
         if (!g) return;
-        if (!isUnlocked(g, advent, now, { isBirthday: isToday })) {
+        if (!__TEST_MODE__ && !isUnlocked(g, advent, now, { isBirthday: isToday })) {
+            if (g.quest) {
+                const ep = questEpisode(g.quest);
+                flash(episodeState(g.quest, now) === 'locked-prev'
+                    ? `Épisode ${ep.ep} : termine d’abord l’épisode ${ep.ep - 1} (ou attends deux jours).`
+                    : `Épisode ${ep.ep} : ouverture le ${g.door} décembre.`);
+                return;
+            }
             flash(g.birthdayOnly ? 'Ce jeu n’apparaît que le jour d’un anniversaire.' : `${g.title} : disponible le ${g.door} décembre.`);
             return;
         }
+        setQuestOpen(false);
         setGameId(id);
+    };
+
+    // Les jeux de la quête reçoivent la date (graine du jour) et un retour vers la carte de la quête
+    const gameProps = (id) => {
+        if (id === CANDLES.id) return { people: isToday ? group : [] };
+        if (getGame(id)?.quest) {
+            return {
+                now,
+                onExit: () => {
+                    closeGame();
+                    setQuestOpen(true);
+                }
+            };
+        }
+        return undefined;
     };
 
     const onWish = () => {
@@ -333,12 +361,12 @@ function App() {
                     onHome={onHome}
                     onAvent={onAvent}
                     onLogo={onLogo}
-                    onAdventure={isUnlocked(ADVENTURE, advent, now) ? () => openGame(ADVENTURE.id) : null}
+                    onQuest={advent.isDecember ? () => setQuestOpen(true) : null}
                 />
 
                 <main className={`main${isAvent ? ' main--avent' : ''}`}>
                     {isAvent
-                        ? <AdventCalendar now={now} bests={bests} onPlay={openGame} />
+                        ? <AdventCalendar now={now} bests={bests} onPlay={openGame} onQuest={() => setQuestOpen(true)} />
                         : <Countdown group={group} now={now} play={play} onWish={onWish} onCandles={() => openGame(CANDLES.id)} />}
                     <aside className="side">
                         <UpcomingList
@@ -398,8 +426,13 @@ function App() {
                     best={bests[gameId]}
                     onScore={onGameScore}
                     onClose={closeGame}
-                    gameProps={gameId === CANDLES.id ? { people: isToday ? group : [] } : undefined}
+                    gameProps={gameProps(gameId)}
                 />
+            )}
+            {questOpen && !gameId && (
+                <Suspense fallback={null}>
+                    <QuestModal now={now} onPlay={openGame} onClose={() => setQuestOpen(false)} available={(id) => !!getGame(id)} />
+                </Suspense>
             )}
             {envers && (
                 <Suspense fallback={<div className="envers envers--loading" />}>

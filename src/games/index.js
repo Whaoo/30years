@@ -1,7 +1,9 @@
 import { lazy } from 'react';
+import { QUEST, questEpisode } from '../december/calendar';
+import { episodeState } from '../december/quest';
 
-// Les 14 mini-jeux du calendrier de l'Avent, presque un par jour ouvré,
-// tous avant le 19 décembre (début des vacances : les jeux suivants passeraient inaperçus).
+// Les mini-jeux du calendrier de l'Avent : un par jour ouvré, jamais le week-end
+// (le calendrier complet est dans src/december/calendar.js).
 // door : jour de décembre où le jeu se débloque (il reste jouable ensuite).
 // Chaque jeu est chargé à la demande pour garder la page d'accueil légère.
 export const GAMES = [
@@ -89,21 +91,11 @@ export const GAMES = [
         id: 'collegue',
         title: 'Où est mon collègue ?',
         short: 'Foule',
-        door: 12,
+        door: 14,
         icon: 'search',
         unit: 'pts',
         help: 'Retrouve le pingouin habillé comme la personne demandée avant la fin du chrono. Mauvais pingouin : 2 secondes de pénalité. 5 manches. P pour la pause.',
         component: lazy(() => import('./CrowdGame'))
-    },
-    {
-        id: 'slide',
-        title: 'Banquise glissante',
-        short: 'Glisse',
-        door: 14,
-        icon: 'slide',
-        unit: 'pts',
-        help: 'Flèches ou clic : le pingouin glisse jusqu’au prochain obstacle. La neige l’arrête, l’eau le renvoie au départ. 8 niveaux retournés au hasard à chaque partie : moins de coups et plus vite = plus de points. R pour recommencer un niveau.',
-        component: lazy(() => import('./SlidePuzzleGame'))
     },
     {
         id: 'memory',
@@ -116,10 +108,20 @@ export const GAMES = [
         component: lazy(() => import('./MemoryGame'))
     },
     {
+        id: 'slide',
+        title: 'Banquise glissante',
+        short: 'Glisse',
+        door: 17,
+        icon: 'slide',
+        unit: 'pts',
+        help: 'Flèches ou clic : le pingouin glisse jusqu’au prochain obstacle. La neige l’arrête, l’eau le renvoie au départ. 8 niveaux retournés au hasard à chaque partie : moins de coups et plus vite = plus de points. R pour recommencer un niveau.',
+        component: lazy(() => import('./SlidePuzzleGame'))
+    },
+    {
         id: 'tower',
         title: 'Tour de bonhommes de neige',
         short: 'Tour',
-        door: 16,
+        door: 18,
         icon: 'tower',
         unit: 'pts',
         help: 'Clic ou Espace pour lâcher la boule pile au-dessus de la tour. Un « parfait » rapporte un bonus. 3 essais. P pour la pause.',
@@ -129,7 +131,7 @@ export const GAMES = [
         id: 'sled',
         title: 'Descente en luge',
         short: 'Luge',
-        door: 17,
+        door: 21,
         icon: 'sled',
         unit: 'pts',
         help: 'Guide la luge à la souris ou avec ← →. Poissons +10, portes +5, et attention aux sapins et aux rochers : 3 vies. P pour la pause.',
@@ -139,7 +141,7 @@ export const GAMES = [
         id: 'ice',
         title: 'Empilage de glaçons',
         short: 'Glaçons',
-        door: 18,
+        door: 22,
         icon: 'cube',
         unit: 'pts',
         help: '← → pour déplacer, ↑ pour tourner, ↓ pour accélérer, Espace pour lâcher, P pour la pause. Complète des lignes avant que ça déborde !',
@@ -147,20 +149,39 @@ export const GAMES = [
     }
 ];
 
-// Le grand jeu : il apparaît le 10 décembre 2026 (porte 10 du calendrier et bouton « Aventure »
-// dans l'en-tête), puis reste disponible. L'adresse /aventure l'ouvre à tout moment, pour tester.
+// La grande quête de décembre (src/december/) : 4 épisodes débloqués par date ET par réussite du précédent.
+// quest : identifiant de l'épisode (voir QUEST dans calendar.js). Les jeux reçoivent { now, onExit }.
+export const MONTS = {
+    id: 'monts',
+    quest: 'monts',
+    title: 'Les Monts Givrés',
+    short: 'Monts',
+    eyebrow: 'La quête · épisode 1',
+    door: 1,
+    icon: 'mountain',
+    unit: 'pts',
+    help: '← → pour courir, Espace pour sauter (deux fois : double saut ; maintenir : saut plus haut), ↓ ou Maj pour glisser. Au niveau 3, maintiens Espace en l’air pour planer. Saute sur la tête du yéti quand il reprend son souffle. P pour la pause.',
+    component: lazy(() => import('./monts/MontsGame'))
+};
+
+// Le grand final : le jeu d'aventure, épisode 4 de la quête (bouton de l'en-tête une fois ouvert).
+// L'adresse /aventure l'ouvre à tout moment, pour tester.
+const FINAL = questEpisode('aventure');
 export const ADVENTURE = {
     id: 'aventure',
+    quest: 'aventure',
     title: 'L’aventure de Flocon',
     short: 'Aventure',
-    eyebrow: 'Nouveau · jeu d’aventure',
-    door: 10,
-    from: new Date(2026, 11, 10),
+    eyebrow: 'La quête · grand final',
+    door: FINAL.from.getDate(),
+    from: FINAL.from,
     icon: 'gift',
     unit: 'pts',
     help: 'ZQSD ou flèches pour bouger, clic pour lancer une boule de neige (maintenir 1 s : boule glacée), Espace pour la canne à sucre, P pour la pause. Le feu de camp soigne.',
     component: lazy(() => import('./adventure/AdventureGame'))
 };
+
+export const QUEST_GAMES = [MONTS, ADVENTURE];
 
 // Quiz sur les anniversaires : disponible toute l'année (liste « Ensuite » et tuile des mini-jeux)
 export const QUIZ = {
@@ -189,17 +210,19 @@ export const CANDLES = {
     component: lazy(() => import('./CandlesGame'))
 };
 
-export const ALL_GAMES = [...GAMES, QUIZ, CANDLES, ADVENTURE];
+export const ALL_GAMES = [...GAMES, QUIZ, CANDLES, ...QUEST_GAMES];
 
 export function getGame(id) {
     return ALL_GAMES.find((g) => g.id === id) || null;
 }
 
+export { QUEST };
+
 export function isUnlocked(game, advent, now = new Date(), ctx = {}) {
     if (!game) return false;
     if (game.always) return true;
     if (game.birthdayOnly) return !!ctx.isBirthday;
-    if (game.from) return now >= game.from;
+    if (game.quest) return ['open', 'done'].includes(episodeState(game.quest, now));
     return advent.isDecember && advent.openCount >= game.door;
 }
 

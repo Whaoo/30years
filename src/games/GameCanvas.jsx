@@ -7,9 +7,15 @@ import { drawOverlay } from './draw';
 // La logique travaille toujours dans un repère fixe (width × height).
 // pausable : P met en pause (et la partie se fige si la fenêtre perd le focus). Le jeu peut fournir
 // canPause() pour n'autoriser la pause que pendant une partie en cours, et blur() pour relâcher ses touches.
+// fixedStep : update() est appelé à pas fixe (1/120 s), quelle que soit la fréquence de l'écran (60, 120, 144 Hz…).
+// Indispensable aux jeux du « scénario du jour » (src/december/) : même partie et même difficulté pour tout le monde.
+// Les gestionnaires pointer* reçoivent aussi l'identifiant du doigt (multi-touch : courir et sauter en même temps).
 const BLOCKED_KEYS = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 
-export default function GameCanvas({ create, onScore, width = 800, height = 450, controls = null, label = 'Mini-jeu', pausable = false }) {
+const STEP = 1 / 120;
+const MAX_PIXELS = 2.1e6;
+
+export default function GameCanvas({ create, onScore, width = 800, height = 450, controls = null, label = 'Mini-jeu', pausable = false, fixedStep = false }) {
     const wrapRef = useRef(null);
     const canvasRef = useRef(null);
     const controlsRef = useRef(null);
@@ -57,7 +63,8 @@ export default function GameCanvas({ create, onScore, width = 800, height = 450,
                 cw = (ch * width) / height;
             }
             // Résolution plafonnée : au-delà, l'œil ne voit pas la différence mais la carte graphique si
-            const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+            // et un plafond de pixels pour les grands écrans (1440p plein écran : sinon 3,7 millions de pixels par image)
+            const dpr = Math.min(window.devicePixelRatio || 1, 1.5, Math.sqrt(MAX_PIXELS / Math.max(1, cw * ch)));
             canvas.style.width = `${Math.floor(cw)}px`;
             canvas.style.height = `${Math.floor(ch)}px`;
             canvas.width = Math.max(1, Math.round(cw * dpr));
@@ -68,14 +75,31 @@ export default function GameCanvas({ create, onScore, width = 800, height = 450,
         if (ro) ro.observe(wrap);
         else window.addEventListener('resize', resize);
 
+        let acc = 0;
         const frame = (now) => {
-            const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
-            last = now;
-            if (!paused && !userPaused) game.update(dt);
+            raf = requestAnimationFrame(frame);
+            if (paused) {
+                last = now;
+                return;
+            }
+            if (fixedStep) {
+                acc += Math.min(0.25, Math.max(0, (now - last) / 1000));
+                last = now;
+                let steps = 0;
+                while (acc >= STEP && steps < 8) {
+                    if (!userPaused) game.update(STEP);
+                    acc -= STEP;
+                    steps += 1;
+                }
+                if (steps === 8) acc = 0; // machine trop lente : on ralentit plutôt que d'accumuler du retard
+            } else {
+                const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
+                last = now;
+                if (!userPaused) game.update(dt);
+            }
             ctx.setTransform(canvas.width / width, 0, 0, canvas.height / height, 0, 0);
             game.render(ctx);
             if (userPaused) drawOverlay(ctx, width, height, 'Pause', ['Appuie sur P ou clique pour reprendre.']);
-            raf = requestAnimationFrame(frame);
         };
         raf = requestAnimationFrame(frame);
 
@@ -94,16 +118,16 @@ export default function GameCanvas({ create, onScore, width = 800, height = 450,
                 return;
             }
             const [x, y] = toLocal(e);
-            if (game.pointerDown) game.pointerDown(x, y);
+            if (game.pointerDown) game.pointerDown(x, y, e.pointerId);
         };
         const onMove = (e) => {
             if (userPaused) return;
             const [x, y] = toLocal(e);
-            if (game.pointerMove) game.pointerMove(x, y);
+            if (game.pointerMove) game.pointerMove(x, y, e.pointerId);
         };
         const onUp = (e) => {
             const [x, y] = toLocal(e);
-            if (game.pointerUp) game.pointerUp(x, y);
+            if (game.pointerUp) game.pointerUp(x, y, e.pointerId);
         };
         const onKeyDown = (e) => {
             if (e.key === 'Escape') return;
@@ -154,7 +178,7 @@ export default function GameCanvas({ create, onScore, width = 800, height = 450,
             gameRef.current = null;
             pauseRef.current = null;
         };
-    }, [create, width, height, pausable]);
+    }, [create, width, height, pausable, fixedStep]);
 
     const press = (code, down) => {
         const game = gameRef.current;
