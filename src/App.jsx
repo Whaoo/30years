@@ -43,7 +43,7 @@ const FilmPromo = lazy(() => import('./components/FilmPromo'));
 const laterKey = (now) => `30years:filmLater:${parisDay(now)}`;
 
 // Adresses directes, pratiques pour tester : /aventure, /bougies, /quiz
-const PATH_GAMES = { '/aventure': ADVENTURE.id, '/monts': MONTS.id, '/bougies': CANDLES.id, '/quiz': QUIZ.id };
+const PATH_GAMES = { '/aventure': ADVENTURE.id, '/monts': MONTS.id, '/reveillon': 'reveillon', '/bougies': CANDLES.id, '/quiz': QUIZ.id };
 function pathGame() {
     return PATH_GAMES[window.location.pathname.replace(/\/+$/, '')] || null;
 }

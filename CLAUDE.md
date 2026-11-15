@@ -53,10 +53,13 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
   - `GAMES` : les mini-jeux de l'Avent, débloqués porte par porte en décembre (jours ouvrés : 1-4, 7-9, 11, 14, 15, 17, 18, 21, 22).
   - `MONTS` (« Les Monts Givrés », `src/games/monts/`) : épisode 1 de la quête, le 1er décembre. Plateforme en 3 niveaux + yéti (~4 min),
     tronçons de niveaux tirés par la graine du jour, mode tranquille, contrôles tactiles. `/monts` l'ouvre pour tester ; console : `window.monts`.
+  - `REVEILLON` (« Opération Réveillon », `src/games/reveillon/`) : épisode 2, le 4 décembre. Défense du sapin (~4 min) : une carte par jour (graine),
+    8 vagues (nuit : mimiques révélées par le phare, blizzard, monstres pressés), boss qui se coupe en trois, 10 cadeaux, 4 tours × 3 niveaux.
+    Score = 500/cadeau + monstres + 20/s d'avance (« Vague suivante ») + poissons restants. Réglage global : `HP_SCALE`. `/reveillon` ; console : `window.reveillon`.
   - `ADVENTURE` (« L'aventure de Flocon », `src/games/adventure/`) : le grand final, épisode 4 de la quête (date dans `calendar.js`).
   - `QUIZ` (« Qui fête quand ? », `always`) : ouvert toute l'année depuis la liste des anniversaires.
   - `CANDLES` (« Souffle les bougies », `birthdayOnly`) : bouton du compte à rebours, uniquement le jour J.
-  - Les adresses `/aventure`, `/monts`, `/quiz` et `/bougies` ouvrent ces jeux à tout moment pour tester.
+  - Les adresses `/aventure`, `/monts`, `/reveillon`, `/quiz` et `/bougies` ouvrent ces jeux à tout moment pour tester.
 - `src/games/GameCanvas.jsx` : moteur commun des jeux canvas (boucle, mise à l'échelle, clavier, souris, tactile).
   `fixedStep` : mise à jour à pas fixe de 1/120 s (obligatoire pour les jeux de décembre, sinon la partie dépend de la fréquence de l'écran).
   Les gestionnaires `pointer*` reçoivent l'identifiant du doigt (multi-touch).

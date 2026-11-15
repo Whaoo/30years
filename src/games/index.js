@@ -164,6 +164,21 @@ export const MONTS = {
     component: lazy(() => import('./monts/MontsGame'))
 };
 
+const REV = questEpisode('reveillon');
+export const REVEILLON = {
+    id: 'reveillon',
+    quest: 'reveillon',
+    title: 'Opération Réveillon',
+    short: 'Réveillon',
+    eyebrow: 'La quête · épisode 2',
+    door: REV.from.getDate(),
+    from: REV.from,
+    icon: 'gift',
+    unit: 'pts',
+    help: 'Clique sur un emplacement (+) pour construire une tour (touches 1 à 4), clique sur une tour pour l’améliorer (U) ou la vendre. Espace : vague suivante tout de suite (bonus), F : vitesse ×2, P : pause. Protège les 10 cadeaux du sapin.',
+    component: lazy(() => import('./reveillon/ReveillonGame'))
+};
+
 // Le grand final : le jeu d'aventure, épisode 4 de la quête (bouton de l'en-tête une fois ouvert).
 // L'adresse /aventure l'ouvre à tout moment, pour tester.
 const FINAL = questEpisode('aventure');
@@ -181,7 +196,7 @@ export const ADVENTURE = {
     component: lazy(() => import('./adventure/AdventureGame'))
 };
 
-export const QUEST_GAMES = [MONTS, ADVENTURE];
+export const QUEST_GAMES = [MONTS, REVEILLON, ADVENTURE];
 
 // Quiz sur les anniversaires : disponible toute l'année (liste « Ensuite » et tuile des mini-jeux)
 export const QUIZ = {
