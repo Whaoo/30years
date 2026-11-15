@@ -210,7 +210,7 @@ export const CHRONO = {
     from: CHR.from,
     icon: 'sled',
     unit: 'pts',
-    help: 'Glisse d’une île à l’autre pour ouvrir une liaison (train sur les ponts de banquise, bateau sur les chenaux, avion entre les pistes) ; recommence sur la même liaison pour y ajouter un véhicule (3 au plus), clique sur une liaison pour en retirer un. Clique sur un véhicule en panne pour le réparer, trois fois sur un iceberg pour le briser. T : traîneau joker, P : pause.',
+    help: 'Glisse d’une île à l’autre (ou clique deux îles) pour ouvrir une liaison : train sur les ponts de banquise, bateau sur les chenaux, avion entre les pistes. Clique Trains, Bateaux ou Avions en bas (touches 1, 2, 3) pour choisir le véhicule et voir où il peut aller ; recommence sur la même liaison pour y ajouter un véhicule (3 au plus), clique sur une liaison pour en retirer un. Clique sur un véhicule en panne pour le réparer, trois fois sur un iceberg pour le briser. T : traîneau joker, P : pause.',
     component: lazy(() => import('./chrono/ChronoGame'))
 };
 

@@ -59,7 +59,8 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
     9 emplacements dont 2 près du sapin ; les chauves-souris volent en ligne droite vers le sapin, les biscuits sprintent quand on les touche.
     Score = 500/cadeau + monstres + 20/s d'avance (« Vague suivante ») + poissons restants. Réglage global : `HP_SCALE`. `/reveillon` ; console : `window.reveillon`.
   - `CHRONO` (« Chronoflocon », `src/games/chrono/`) : épisode 3, le 9 décembre. Gestion du centre de tri (~4 min) : glisser d'une île à l'autre
-    ouvre une liaison (train sur les ponts de banquise dessinés entre les îles, bateau sur les chenaux, avion entre les pistes : `LINKS`), cliquer dessus
+    (ou deux clics) ouvre une liaison (train sur les ponts de banquise dessinés entre les îles, bateau sur les chenaux, avion entre les pistes : `LINKS`) ;
+    cliquer Trains/Bateaux/Avions dans le dépôt (touches 1-3) choisit le véhicule et allume ses trajets possibles ; cliquer une liaison
     en retire un véhicule (jusqu'à 3 par liaison) ; les colis suivent le plus court chemin tout seuls. Tutoriel guidé en 4 étapes au premier Matin,
     îles « À relier » signalées en rouge. Événements qui demandent d'agir : panne (cliquer le véhicule), iceberg (3 clics), pont fendu (ses trains
     reviennent au dépôt, 18 s sans pont), plus brouillard, tempête, rush de 10 colis et aurore.
