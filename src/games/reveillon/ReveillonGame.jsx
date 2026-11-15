@@ -22,9 +22,9 @@ import { GIFT_COLORS, drawGift, drawSprite, makeBackground, makeHalo, makeMonste
 const ID = 'reveillon';
 const GIFTS = 10;
 const GAP = 14; // secondes entre deux vagues
-const START_FISH = 200;
+const START_FISH = 170;
 const HUD_H = 44;
-const HP_SCALE = 1.45; // réglage global de la difficulté (points de vie des monstres)
+const HP_SCALE = 1.3; // réglage global de la difficulté (points de vie des monstres)
 
 const MAIRE_LINES = {
     intro: 'Flocon, te voilà enfin ! Les monstres de Noël veulent renverser notre grand sapin. Prends le commandement de la défense.',
@@ -32,7 +32,7 @@ const MAIRE_LINES = {
     night: 'La nuit tombe : les cadeaux mimiques sont invisibles. Seul le phare peut les révéler !',
     blizzard: 'Blizzard ! Les tours voient moins loin pendant cette vague.',
     rush: 'Ils sont pressés ! Les monstres de cette vague courent plus vite.',
-    bats: 'Des chauves-souris ! Le canon à neige ne peut pas les toucher.',
+    bats: 'Des chauves-souris ! Elles volent tout droit vers le sapin, et le canon ne peut pas les toucher.',
     givre: 'Les boules de givre sont costaudes et se laissent à peine ralentir.',
     boss: 'Le Gros Bonhomme ! Quand il faiblit, il se coupe en trois. Tenez bon !'
 };
@@ -132,6 +132,8 @@ function createReveillon(api, props) {
         const hpMul = (1 + 0.12 * Math.max(0, s.wave)) * HP_SCALE;
         const hp = Math.round(def.hp * (type === 'boss' || type === 'petit' ? HP_SCALE : hpMul));
         const p = pointAt(PM, d);
+        // les chauves-souris volent tout droit vers le sapin : elles coupent les virages
+        if (def.flying) extra = { fly: Math.hypot(map.tree[0] - map.path[0][0], map.tree[1] - 40 - map.path[0][1]), ...extra };
         s.mobs.push({ type, def, d, x: p.x, y: p.y, dir: p.dx || 1, hp, max: hp, slowT: 0, slowK: 1, stunT: 0, flash: 0, anim: Math.random() * 6, split: false, night: s.wave === nightWave, ...extra });
     }
 
@@ -212,6 +214,11 @@ function createReveillon(api, props) {
         if (m.dead) return;
         m.hp -= dmg;
         m.flash = 0.12;
+        // un biscuit touché pour la première fois pique un sprint
+        if (m.type === 'biscuit' && !m.sprinted) {
+            m.sprinted = true;
+            m.sprintT = 1.6;
+        }
         if (m.type === 'boss' && !m.split && m.hp <= m.max / 2) {
             // à mi-vie, le Gros Bonhomme se coupe en trois petits bonshommes qui foncent
             m.split = true;
@@ -228,6 +235,7 @@ function createReveillon(api, props) {
 
     function steal(m) {
         m.dead = true;
+        if (__TEST_MODE__) (s.stolenBy ||= {})[m.type] = ((s.stolenBy || {})[m.type] || 0) + 1;
         const n = m.def.steal || 1;
         if (s.tranquil) s.gifts = Math.max(1, s.gifts - n);
         else s.gifts = Math.max(0, s.gifts - n);
@@ -403,8 +411,8 @@ function createReveillon(api, props) {
                 s.spawning = false;
                 if (s.wave < WAVES.length - 1) {
                     s.countdown = GAP;
-                    s.fish += 25 + 5 * s.wave;
-                    popup(140, 60, `+${25 + 5 * s.wave} poissons`, '#ffd36e');
+                    s.fish += 20 + 4 * s.wave;
+                    popup(140, 60, `+${20 + 4 * s.wave} poissons`, '#ffd36e');
                 }
             }
         } else if (s.countdown > 0) {
@@ -424,11 +432,23 @@ function createReveillon(api, props) {
             }
             if (m.slowT > 0) m.slowT -= dt;
             else m.slowK = 1;
-            m.d += m.def.speed * rush * (m.slowT > 0 ? m.slowK : 1) * dt;
+            if (m.sprintT > 0) m.sprintT -= dt;
+            m.d += m.def.speed * rush * (m.slowT > 0 ? m.slowK : 1) * (m.sprintT > 0 ? 1.8 : 1) * dt;
+            if (m.fly) {
+                const k = Math.min(1, m.d / m.fly);
+                const [x0, y0] = map.path[0];
+                const tx = map.tree[0];
+                const ty = map.tree[1] - 40;
+                m.x = x0 + (tx - x0) * k;
+                m.y = y0 + (ty - y0) * k + Math.sin(m.anim * 0.5) * 3;
+                m.dir = tx >= x0 ? 1 : -1;
+                if (m.d >= m.fly) steal(m);
+                continue;
+            }
             const p = pointAt(PM, m.d);
             if (p.dx) m.dir = p.dx;
             m.x = p.x;
-            m.y = p.y + (m.def.flying ? -10 + Math.sin(m.anim * 0.5) * 3 : 0);
+            m.y = p.y;
             if (m.d >= PM.total) steal(m);
         }
         if (s.phase !== 'play') return;

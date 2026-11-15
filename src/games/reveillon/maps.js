@@ -94,8 +94,34 @@ export function makeSlots(map) {
     cands.sort((a, b) => b.cover - a.cover);
     const slots = [];
     for (const c of cands) {
-        if (slots.length >= 11) break;
+        if (slots.length >= 7) break;
         if (slots.every((s) => Math.hypot(s.x - c.x, s.y - c.y) >= 76)) slots.push({ x: c.x, y: c.y });
+    }
+    // deux emplacements de dernière ligne près du sapin, sur la trajectoire des chauves-souris
+    // (elles volent en ligne droite de l'entrée du chemin jusqu'au sapin)
+    const [x0, y0] = map.path[0];
+    const [tx, ty] = map.tree;
+    const lineDist = (x, y) => {
+        const vx = tx - x0;
+        const vy = ty - 40 - y0;
+        const k = Math.max(0, Math.min(1, ((x - x0) * vx + (y - y0) * vy) / (vx * vx + vy * vy)));
+        return Math.hypot(x - x0 - vx * k, y - y0 - vy * k);
+    };
+    const near = [];
+    for (let y = 70; y <= 420; y += 7) {
+        for (let x = 30; x <= 770; x += 7) {
+            const dt = Math.hypot(x - tx, y - ty + 20);
+            if (dt < 66 || dt > 120) continue;
+            if (distToPath(map.path, x, y) < 40) continue;
+            if (map.pines.some(([px, py]) => Math.hypot(px - x, py - y) < 26)) continue;
+            if (map.houses.some(([hx, hy]) => Math.abs(hx - x) < 44 && y > hy - 60 && y < hy + 20)) continue;
+            near.push({ x, y, score: lineDist(x, y) });
+        }
+    }
+    near.sort((a, b) => a.score - b.score);
+    for (const c of near) {
+        if (slots.length >= 9) break;
+        if (slots.every((sl) => Math.hypot(sl.x - c.x, sl.y - c.y) >= 70)) slots.push({ x: c.x, y: c.y });
     }
     return slots;
 }
@@ -103,11 +129,11 @@ export function makeSlots(map) {
 // ---------------------------------------------------------------- monstres et tours
 // hp : points de vie de base (multipliés par la vague), speed en px/s, pts : score, fish : butin
 export const MONSTERS = {
-    grognon: { name: 'Bonhomme grognon', hp: 46, speed: 46, pts: 10, fish: 6, r: 13 },
-    biscuit: { name: 'Biscuit en colère', hp: 20, speed: 88, pts: 8, fish: 4, r: 11 },
-    mimique: { name: 'Cadeau mimique', hp: 36, speed: 60, pts: 15, fish: 7, r: 12 },
-    givre: { name: 'Boule de givre', hp: 130, speed: 36, pts: 25, fish: 12, r: 15, slowResist: 0.5 },
-    chauve: { name: 'Chauve-souris', hp: 26, speed: 74, pts: 12, fish: 6, r: 11, flying: true },
+    grognon: { name: 'Bonhomme grognon', hp: 46, speed: 46, pts: 10, fish: 5, r: 13 },
+    biscuit: { name: 'Biscuit en colère', hp: 20, speed: 88, pts: 8, fish: 3, r: 11 },
+    mimique: { name: 'Cadeau mimique', hp: 36, speed: 60, pts: 15, fish: 5, r: 12 },
+    givre: { name: 'Boule de givre', hp: 130, speed: 36, pts: 25, fish: 9, r: 15, slowResist: 0.5 },
+    chauve: { name: 'Chauve-souris', hp: 24, speed: 58, pts: 12, fish: 5, r: 11, flying: true },
     boss: { name: 'Le Gros Bonhomme', hp: 1600, speed: 24, pts: 300, fish: 0, r: 26, steal: 3, slowResist: 0.6 },
     petit: { name: 'Petit bonhomme', hp: 130, speed: 62, pts: 40, fish: 10, r: 12 }
 };
@@ -139,12 +165,12 @@ export const TOWER_ORDER = ['lanceur', 'canon', 'phare', 'guirlande'];
 // Les 8 vagues : groupes [type, nombre, intervalle (s), départ (s)]. Le jour ajoute ses événements (voir le jeu) :
 // la vague de nuit (5e ou 6e) reçoit en plus 8 cadeaux mimiques, invisibles sauf à la lumière d'un phare.
 export const WAVES = [
-    { groups: [['grognon', 7, 1.7, 0]] },
-    { groups: [['grognon', 6, 1.8, 0], ['biscuit', 6, 1.1, 4]] },
-    { groups: [['biscuit', 10, 0.7, 0], ['grognon', 5, 1.6, 3]] },
-    { groups: [['grognon', 6, 1.5, 0], ['chauve', 5, 1.2, 4], ['givre', 3, 3.2, 6]] },
-    { groups: [['grognon', 7, 1.4, 0], ['biscuit', 7, 0.9, 4], ['givre', 2, 3, 8]] },
-    { groups: [['givre', 4, 2.6, 0], ['chauve', 7, 1.0, 3], ['biscuit', 8, 0.7, 7]] },
-    { groups: [['grognon', 8, 1.2, 0], ['biscuit', 10, 0.6, 2], ['mimique', 5, 1.4, 6], ['givre', 3, 2.8, 8], ['chauve', 5, 1.1, 10]] },
-    { groups: [['boss', 1, 1, 2], ['grognon', 6, 1.6, 0], ['biscuit', 8, 0.9, 6]], boss: true }
+    { groups: [['grognon', 8, 1.5, 0]] },
+    { groups: [['grognon', 7, 1.6, 0], ['biscuit', 8, 1.0, 4]] },
+    { groups: [['biscuit', 12, 0.6, 0], ['grognon', 7, 1.4, 3]] },
+    { groups: [['grognon', 8, 1.3, 0], ['chauve', 6, 1.1, 4], ['givre', 4, 2.8, 6]] },
+    { groups: [['grognon', 9, 1.2, 0], ['biscuit', 9, 0.8, 4], ['givre', 3, 2.6, 8]] },
+    { groups: [['givre', 5, 2.3, 0], ['chauve', 7, 1.0, 3], ['biscuit', 10, 0.6, 7]] },
+    { groups: [['grognon', 10, 1.0, 0], ['biscuit', 12, 0.5, 2], ['mimique', 6, 1.3, 6], ['givre', 4, 2.4, 8], ['chauve', 7, 1.0, 10]] },
+    { groups: [['boss', 1, 1, 2], ['grognon', 8, 1.4, 0], ['biscuit', 10, 0.8, 6], ['chauve', 5, 1.2, 14]], boss: true }
 ];

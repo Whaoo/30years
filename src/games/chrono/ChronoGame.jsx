@@ -32,7 +32,18 @@ function createChrono(api, props) {
     const PS = makeParcelSprites();
     const goldGlow = makeGlow('rgba(255,210,63,A)');
     const bgs = {};
-    const bgFor = (r, storm) => (bgs[`${r}${storm ? 's' : ''}`] ||= makeBackground(ISLE_KEYS.filter((k) => ISLES[k].from <= r), storm));
+    // décor de la tournée : îles visibles, ponts de banquise (où l'on peut poser des rails) et pistes d'avion
+    const bgFor = (r, storm) => {
+        const key = `${r}${storm ? 's' : ''}`;
+        if (!bgs[key]) {
+            const vis = ISLE_KEYS.filter((k) => ISLES[k].from <= r);
+            const ok = ([a, b]) => vis.includes(a) && vis.includes(b);
+            const bridges = LINKS.filter((l) => l[2] === 'rail' && ok(l));
+            const strips = [...new Set(LINKS.filter((l) => l[2] === 'air').flatMap(([a, b]) => [a, b]))].filter((k) => vis.includes(k));
+            bgs[key] = makeBackground(vis, storm, bridges, strips);
+        }
+        return bgs[key];
+    };
     const coarse = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
 
     // ---------------------------------------------------------------- le scénario du jour
@@ -106,7 +117,9 @@ function createChrono(api, props) {
             roundStats: [],
             results: null,
             dirty: true,
-            next: {}
+            next: {},
+            tuto: null,
+            tutoDone: 0
         });
     }
     newGame(false);
@@ -116,6 +129,7 @@ function createChrono(api, props) {
         s.toast = { text: str, t: 0, dur };
     };
     const popup = (x, y, str, color = '#ffd36e') => s.popups.push({ x, y, str, color, t: 0 });
+    const isleName = (k) => (k === 'tri' ? 'le Centre de tri' : `l’île ${ISLES[k].name.replace('Île ', '')}`);
     const visible = () => visibleIn(s.round);
     const waitingCount = () => ISLE_KEYS.reduce((a, k) => a + s.queues[k].length, 0);
     const activeEvent = (id) => s.events.some((e) => e.id === id && e.on);
@@ -195,6 +209,15 @@ function createChrono(api, props) {
         return order[0] || null;
     }
 
+    // Le tutoriel du premier Matin : une étape à la fois, les deux îles à relier clignotent
+    const TUTO = [
+        { isles: ['tri', 'poisson'], line: 'Glisse du Centre de tri jusqu’à l’île Poisson : un train part sur le pont de banquise.', done: () => s.links.some((L) => L.key === linkKey('tri', 'poisson', 'rail')) },
+        { isles: ['tri', 'sapin'], line: 'Bien ! Les colis à symbole de poisson partent déjà. Relie maintenant l’île Sapin.', done: () => s.links.some((L) => L.key === linkKey('tri', 'sapin', 'rail')) },
+        { isles: ['phoque', 'morse'], line: 'Le dernier train va sur le pont entre l’île Phoque et l’île Morse.', done: () => s.links.some((L) => L.key === linkKey('phoque', 'morse', 'rail')) },
+        { isles: ['sapin', 'phoque'], alt: ['poisson', 'morse'], line: 'Il reste un bateau : un chenal relie Phoque à Sapin (ou Morse à Poisson).', done: () => s.next.tri && s.next.tri.morse }
+    ];
+    const reachable = (from, to) => from === to || !!(s.next[from] && s.next[from][to]);
+
     function deliver(p, isle) {
         s.delivered++;
         const rapid = Math.max(0, Math.round(25 - p.age));
@@ -239,7 +262,7 @@ function createChrono(api, props) {
         s.roundStart = { delivered: s.delivered, basePts: s.basePts, expressOk: s.expressOk, expressTotal: s.expressTotal };
         s.phase = 'play';
         s.phaseT = 0;
-        if (r === 0) say('Glisse d’une île à l’autre pour ouvrir une liaison !', 6);
+        if (r === 0 && !s.retries) s.tuto = 0;
         if (r === 1) say('Deux nouvelles îles : Étoile et Cadeau. Un avion arrive au dépôt !', 5);
         if (r === 2) say('Rush du Réveillon ! L’île Aurore attend ses colis, et un bateau de plus est au dépôt.', 5);
     }
@@ -342,7 +365,7 @@ function createChrono(api, props) {
                     const [a, b] = e.target.split('-');
                     line = `La banquise se fend : ${ISLES[a].name.replace('Île ', '')} ↔ ${ISLES[b].name.replace('Île ', '')}`;
                 }
-                if (e.id === 'burst') line = `Rush sur l’${ISLES[e.target].name.toLowerCase()} : 6 colis d’un coup !`;
+                if (e.id === 'burst') line = `Rush sur ${isleName(e.target)} : 6 colis d’un coup !`;
                 s.radio = { line, t: 0, ev: e };
             }
             if (e.warned && !e.on && !e.done && s.rt >= e.t) {
@@ -419,6 +442,16 @@ function createChrono(api, props) {
         s.rt += dt;
         updateEvents(dt);
         if (s.dirty) computeRoutes();
+        if (s.tuto != null) {
+            if (s.tuto < TUTO.length && TUTO[s.tuto].done()) {
+                s.tuto++;
+                if (s.tuto >= TUTO.length) s.tutoDone = 5;
+            }
+            if (s.tuto >= TUTO.length) {
+                s.tutoDone -= dt;
+                if (s.tutoDone <= 0) s.tuto = null;
+            }
+        }
         const plan = spawnPlans[s.round];
         while (s.spawnIdx < plan.length && plan[s.spawnIdx].t <= s.rt) {
             const p = plan[s.spawnIdx];
@@ -489,7 +522,7 @@ function createChrono(api, props) {
         s.sleighs--;
         s.sleighArmed = false;
         const n = sleighDeliver(isle, 6);
-        say(`Le traîneau emporte ${n} colis de l’${ISLES[isle].name.toLowerCase()} !`, 3);
+        say(`Le traîneau emporte ${n} colis depuis ${isleName(isle)} !`, 3);
     }
 
     function update(dt) {
@@ -683,7 +716,7 @@ function createChrono(api, props) {
         return btns;
     }
     function drawToast(ctx) {
-        if (s.toast) {
+        if (s.toast && s.tuto == null) {
             const k = Math.min(1, s.toast.t / 0.25, (s.toast.dur - s.toast.t) / 0.3);
             if (k > 0) {
                 ctx.globalAlpha = k;
@@ -750,21 +783,33 @@ function createChrono(api, props) {
     function drawPlay(ctx) {
         const storm = activeEvent('storm');
         ctx.drawImage(bgFor(s.round, storm), 0, 0, W, H);
-        // les liaisons possibles (pointillés discrets) pendant le premier matin, pour apprendre
-        if (s.round === 0 || s.drag) {
-            ctx.save();
-            ctx.setLineDash([3, 7]);
-            ctx.strokeStyle = 'rgba(255,255,255,0.28)';
-            ctx.lineWidth = 1.5;
+        // les liaisons possibles : chenaux (bateaux) et routes aériennes (avions) en pointillés, avec un petit
+        // pictogramme du véhicule au milieu ; les ponts de banquise (trains) sont dessinés dans le décor
+        {
             const vis = visible();
             LINKS.forEach(([a, b, t]) => {
                 if (!vis.includes(a) || !vis.includes(b) || s.links.some((L) => L.key === linkKey(a, b, t))) return;
-                ctx.beginPath();
-                if (t === 'air') ctx.moveTo(ISLES[a].x, ISLES[a].y), ctx.quadraticCurveTo((ISLES[a].x + ISLES[b].x) / 2, Math.min(ISLES[a].y, ISLES[b].y) - 50, ISLES[b].x, ISLES[b].y);
-                else ctx.moveTo(ISLES[a].x, ISLES[a].y), ctx.lineTo(ISLES[b].x, ISLES[b].y);
-                ctx.stroke();
+                const avail = s.depot[t] > 0;
+                const near = s.drag && (s.drag.from === a || s.drag.from === b);
+                if (t !== 'rail') {
+                    ctx.save();
+                    ctx.setLineDash(t === 'air' ? [2, 7] : [4, 8]);
+                    ctx.strokeStyle = t === 'air' ? `rgba(255,150,150,${near ? 0.8 : 0.4})` : `rgba(190,235,255,${near ? 0.9 : 0.45})`;
+                    ctx.lineWidth = near ? 2.2 : 1.5;
+                    ctx.beginPath();
+                    if (t === 'air') ctx.moveTo(ISLES[a].x, ISLES[a].y), ctx.quadraticCurveTo((ISLES[a].x + ISLES[b].x) / 2, Math.min(ISLES[a].y, ISLES[b].y) - 50, ISLES[b].x, ISLES[b].y);
+                    else ctx.moveTo(ISLES[a].x, ISLES[a].y), ctx.lineTo(ISLES[b].x, ISLES[b].y);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+                const [mx, my] = linkPoint(a, b, t, 0.5);
+                ctx.globalAlpha = avail ? (near ? 1 : 0.8) : 0.35;
+                circle(ctx, mx, my, 10, t === 'rail' ? '#6b4a2e' : t === 'boat' ? '#1d4f78' : '#7a2433');
+                if (t === 'rail') trainIcon(ctx, mx + 3, my - 1, 0.32, 1);
+                else if (t === 'boat') boatIcon(ctx, mx, my, 0.36, 1, false);
+                else planeIcon(ctx, mx, my - 1, 0.42, 1);
+                ctx.globalAlpha = 1;
             });
-            ctx.restore();
         }
         // la cible d'une banquise qui va se fendre : hachures rouges
         s.events.forEach((e) => {
@@ -810,6 +855,28 @@ function createChrono(api, props) {
             });
             text(ctx, 'Clique sur une île : le traîneau emporte jusqu’à 6 colis', W / 2, BOTTOM - 12, { size: 13, weight: 800, align: 'center', color: '#ffd36e', shadow: true });
         }
+        // une île attend des colis qu'aucune liaison ne peut lui apporter : liseré rouge « À relier »
+        if (s.phase === 'play' && s.tuto == null) {
+            const need = new Set();
+            ISLE_KEYS.forEach((k) => s.queues[k].forEach((p) => {
+                if (!reachable(p.at, p.to)) need.add(p.to);
+            }));
+            need.forEach((k) => {
+                const I = ISLES[k];
+                ctx.strokeStyle = `rgba(255,95,95,${0.55 + 0.35 * Math.sin(s.t * 6)})`;
+                ctx.lineWidth = 3;
+                ctx.setLineDash([6, 5]);
+                ctx.beginPath();
+                ctx.ellipse(I.x, I.y, I.r * 1.2, I.r * 0.95, 0, 0, TAU);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                roundRect(ctx, I.x - 30, I.y - I.r - 30, 60, 16, 8);
+                ctx.fillStyle = 'rgba(160,30,40,0.92)';
+                ctx.fill();
+                text(ctx, 'À relier', I.x, I.y - I.r - 18, { size: 10, weight: 800, align: 'center' });
+            });
+        }
+        if (s.tuto != null) drawTuto(ctx);
         drawFx(ctx);
         for (const p of s.popups) {
             ctx.globalAlpha = 1 - p.t / 1.2;
@@ -830,6 +897,67 @@ function createChrono(api, props) {
         return hud;
     }
 
+    function drawTuto(ctx) {
+        const done = s.tuto >= TUTO.length;
+        const st = done ? null : TUTO[s.tuto];
+        if (st && !s.drag) {
+            // les deux îles à relier et une flèche fantôme animée
+            const pairs = [st.isles, ...(st.alt ? [st.alt] : [])];
+            pairs.forEach(([a, b]) => {
+                [a, b].forEach((k) => {
+                    const I = ISLES[k];
+                    ctx.strokeStyle = `rgba(255,211,110,${0.6 + 0.4 * Math.sin(s.t * 6)})`;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.ellipse(I.x, I.y, I.r * 1.2, I.r * 0.95, 0, 0, TAU);
+                    ctx.stroke();
+                });
+                const A = ISLES[a];
+                const B = ISLES[b];
+                const k = (s.t * 0.7) % 1;
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255,211,110,0.9)';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([8, 7]);
+                ctx.lineDashOffset = -s.t * 30;
+                ctx.beginPath();
+                ctx.moveTo(A.x, A.y);
+                ctx.lineTo(B.x, B.y);
+                ctx.stroke();
+                ctx.restore();
+                // la petite main qui glisse
+                const hx = A.x + (B.x - A.x) * k;
+                const hy = A.y + (B.y - A.y) * k;
+                circle(ctx, hx, hy, 9, 'rgba(255,211,110,0.45)');
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.moveTo(hx, hy);
+                ctx.lineTo(hx, hy + 16);
+                ctx.lineTo(hx + 4, hy + 12);
+                ctx.lineTo(hx + 8, hy + 20);
+                ctx.lineTo(hx + 10.5, hy + 18.5);
+                ctx.lineTo(hx + 7, hy + 11);
+                ctx.lineTo(hx + 12, hy + 10);
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = '#1d2542';
+                ctx.lineWidth = 1.2;
+                ctx.stroke();
+            });
+        }
+        const line = done ? 'Tout l’archipel est relié ! Les colis changent de véhicule aux escales, tout seuls.' : st.line;
+        ctx.font = '700 13px "DM Sans", system-ui, sans-serif';
+        const w = Math.min(W - 40, ctx.measureText(line).width + 120);
+        const x = (W - w) / 2;
+        const y = TOP + 8; // en haut : le bas de la carte reste visible
+        roundRect(ctx, x, y, w, 44, 14);
+        ctx.fillStyle = 'rgba(255,250,240,0.97)';
+        ctx.fill();
+        gull(ctx, x + 30, y + 26, 0.7, s.t * 6, 1);
+        text(ctx, done ? 'Bravo !' : `Étape ${s.tuto + 1} / ${TUTO.length}`, x + 62, y + 17, { size: 10, weight: 800, color: '#a5121f', font: DISPLAY });
+        text(ctx, line, x + 62, y + 34, { size: 13, weight: 700, color: '#1d2542' });
+    }
+
     function overlayPanel(ctx, x, y, w, h) {
         ctx.fillStyle = 'rgba(6,12,30,0.66)';
         ctx.fillRect(0, 0, W, H);
@@ -846,10 +974,25 @@ function createChrono(api, props) {
         gull(ctx, 205, 112, 1.5, s.t * 5, 1);
         text(ctx, 'Chronoflocon', 262, 100, { size: 28, weight: 800, font: DISPLAY });
         text(ctx, 'Épisode 3 · le centre de tri du Pôle', 264, 124, { size: 13, weight: 700, color: '#ffd36e' });
-        ['« L’éclat de givre a détraqué la Grande Trieuse.', 'Trois tournées avant le Réveillon : relie les îles,', 'les colis trouvent leur chemin tout seuls ! »'].forEach((l, i) => text(ctx, l, 182, 166 + i * 20, { size: 13, weight: 500, color: 'rgba(255,255,255,0.9)' }));
-        text(ctx, 'La météo du jour (la même pour tout le monde)', 182, 240, { size: 12, weight: 700, color: 'rgba(255,255,255,0.7)' });
+        // comment ça marche, en 4 lignes illustrées
+        const rules = [
+            ['parcel', 'Chaque colis porte le symbole de l’île où il doit aller.'],
+            ['rail', 'Glisse d’une île à l’autre pour ouvrir une liaison (en bas : véhicules libres).'],
+            ['route', 'Les véhicules font la navette ; les colis changent de véhicule aux escales.'],
+            ['mood', 'Des colis qui attendent trop font baisser l’humeur. Relie tout le monde !']
+        ];
+        rules.forEach(([ic, l], i) => {
+            const y = 152 + i * 24;
+            circle(ctx, 192, y - 4, 10, 'rgba(255,255,255,0.12)');
+            if (ic === 'parcel') drawParcel(ctx, PS, 192, y - 4, 'poisson', false);
+            else if (ic === 'rail') trainIcon(ctx, 194, y - 5, 0.38, 1);
+            else if (ic === 'route') boatIcon(ctx, 192, y - 4, 0.42, 1, false);
+            else text(ctx, '♥', 192, y + 1, { size: 13, weight: 800, align: 'center', color: '#7be0a3' });
+            text(ctx, l, 210, y, { size: 12, weight: 600, color: 'rgba(255,255,255,0.92)' });
+        });
+        text(ctx, 'La météo du jour (la même pour tout le monde)', 182, 262, { size: 12, weight: 700, color: 'rgba(255,255,255,0.7)' });
         ROUNDS.forEach((R, i) => {
-            const y = 266 + i * 26;
+            const y = 284 + i * 22;
             text(ctx, R.name, 182, y + 4, { size: 13, weight: 800, font: DISPLAY });
             text(ctx, `${R.dur} s`, 240, y + 4, { size: 12, weight: 600, color: 'rgba(255,255,255,0.6)' });
             const ev = eventPlans[i];
@@ -866,7 +1009,7 @@ function createChrono(api, props) {
                 text(ctx, `${EVENTS[e.id].short} ${m}:${sec}`, ex + 24, y + 4, { size: 10.5, weight: 600 });
             });
         });
-        const b = { id: 'go', label: 'C’est parti !', primary: true, x: 476, y: 344, w: 150, h: 40 };
+        const b = { id: 'go', label: 'C’est parti !', primary: true, x: 476, y: 352, w: 150, h: 38 };
         drawButton(ctx, b, s.hover === 'go');
         return [b];
     }
@@ -1084,7 +1227,7 @@ function createChrono(api, props) {
             } else if (d.target === null && isleAt(d.x, d.y, 10) && isleAt(d.x, d.y, 10) !== d.from) {
                 const k = isleAt(d.x, d.y, 10);
                 const any = LINKS.some(([a, b]) => (a === d.from && b === k) || (a === k && b === d.from));
-                say(any ? 'Plus de véhicule libre pour cette liaison : ferme une liaison pour en récupérer un.' : 'Pas de liaison possible entre ces deux îles.', 3);
+                say(any ? 'Plus de véhicule libre pour cette liaison : ferme une liaison pour en récupérer un.' : 'Pas de liaison ici : les trains roulent sur les ponts de banquise, les bateaux suivent les chenaux.', 3.5);
             }
         }
     };

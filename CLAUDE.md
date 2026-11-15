@@ -50,18 +50,22 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
   `FilmPromo.jsx` annonce le film débloqué le plus récent tant qu'il n'est pas vu ; `FilmPlayer.jsx` le joue en pleine page dans la fenêtre
   (pas de plein écran), vidéo aux bords arrondis ; la carte de la quête les liste tous.
 - `src/games/index.js` : le registre des jeux.
-  - `GAMES` : les mini-jeux de l'Avent, débloqués porte par porte en décembre (jours ouvrés : 1-4, 7-9, 11, 14, 15, 17, 18, 21, 22).
+  - `GAMES` : les mini-jeux de l'Avent, débloqués porte par porte en décembre (jours ouvrés : 1-4, 7-11, 14-18, 21, 22).
+    Dont `guirlande` (porte 10, `GarlandGame.jsx` : relier les ampoules, grilles du jour) et `relais` (porte 16, `RelayGame.jsx` : jeu de fusion au relais colis, 3 min).
   - `MONTS` (« Les Monts Givrés », `src/games/monts/`) : épisode 1 de la quête, le 1er décembre. Plateforme en 3 niveaux + yéti (~4 min),
     tronçons de niveaux tirés par la graine du jour, mode tranquille, contrôles tactiles. `/monts` l'ouvre pour tester ; console : `window.monts`.
   - `REVEILLON` (« Opération Réveillon », `src/games/reveillon/`) : épisode 2, le 4 décembre. Défense du sapin (~4 min) : une carte par jour (graine),
-    8 vagues (nuit : mimiques révélées par le phare, blizzard, monstres pressés), boss qui se coupe en trois, 10 cadeaux, 4 tours × 3 niveaux.
+    8 vagues (nuit : mimiques révélées par le phare, blizzard, monstres pressés), boss qui se coupe en trois, 10 cadeaux, 4 tours × 3 niveaux,
+    9 emplacements dont 2 près du sapin ; les chauves-souris volent en ligne droite vers le sapin, les biscuits sprintent quand on les touche.
     Score = 500/cadeau + monstres + 20/s d'avance (« Vague suivante ») + poissons restants. Réglage global : `HP_SCALE`. `/reveillon` ; console : `window.reveillon`.
   - `CHRONO` (« Chronoflocon », `src/games/chrono/`) : épisode 3, le 9 décembre. Gestion du centre de tri (~4 min) : glisser d'une île à l'autre
-    ouvre une liaison (train, bateau ou avion selon `LINKS`), cliquer dessus la ferme ; les colis suivent le plus court chemin tout seuls.
+    ouvre une liaison (train sur les ponts de banquise dessinés entre les îles, bateau sur les chenaux, avion entre les pistes : `LINKS`), cliquer dessus
+    la ferme ; les colis suivent le plus court chemin tout seuls. Tutoriel guidé en 4 étapes au premier Matin, îles « À relier » signalées en rouge.
     3 tournées (50/70/80 s, réseau conservé, un renfort à choisir entre deux), humeur (Mamie envoie un traîneau une fois, puis sursis de 8 s,
     puis on rejoue la tournée ; le Matin ne se perd pas), express dorés, Radio Banquise (événements annoncés 8 s avant), traîneau joker.
     Score = (colis × 15 + rapidité + express × 50) × (1 + 0,4 × humeur) + 150 si le joker est gardé. `/chrono` ; console : `window.chrono`.
-  - `ADVENTURE` (« L'aventure de Flocon », `src/games/adventure/`) : le grand final, épisode 4 de la quête (date dans `calendar.js`).
+  - `ADVENTURE` (« L'aventure de Flocon », `src/games/adventure/`) : le grand final, épisode 4 de la quête (15 décembre). 6 vagues au nombre de monstres fini,
+    puis le Golem (au plus 12 mini-golems), graine du jour, bonus de temps, écran de fin commun, « Reprendre la vague » après un K.O.
   - `QUIZ` (« Qui fête quand ? », `always`) : ouvert toute l'année depuis la liste des anniversaires.
   - `CANDLES` (« Souffle les bougies », `birthdayOnly`) : bouton du compte à rebours, uniquement le jour J.
   - Les adresses `/aventure`, `/monts`, `/reveillon`, `/chrono`, `/quiz` et `/bougies` ouvrent ces jeux à tout moment pour tester.
@@ -90,6 +94,6 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
 - Git depuis le PC du commanditaire (Windows, fins de ligne CRLF) : committer avec `git -c core.autocrlf=true`.
 - Le bouton « Souhaiter un joyeux anniversaire » n'est actif que le jour J.
 - Tester les jeux : en mode test, la console expose `window.flocon` (aventure, ex. `flocon.startWave(10)` pour le boss),
-  `window.fort`, `window.traineau`, `window.foule`, `window.chorale` et `window.bougies`.
+  `window.fort`, `window.traineau`, `window.foule`, `window.chorale`, `window.bougies`, `window.guirlande` (`solve()`) et `window.relais`.
 - Calendrier : les portes sans jeu ont un texte vide (`null` dans `src/utils/advent.js`) en attendant les vrais textes.
 - Ne pas committer `preview-local/` ni `design demos/`.

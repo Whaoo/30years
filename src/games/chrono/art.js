@@ -147,7 +147,63 @@ function warehouse(x, cx, cy) {
     x.fillRect(cx - 34, cy + 10, 20, 5);
     x.fillRect(cx + 14, cy + 10, 20, 5);
 }
-export function makeBackground(visible, storm = false) {
+// Pont de banquise : une bande de glace entre deux îles, sur laquelle on pose des rails (d'où le train sur la mer)
+function iceBridge(x, A, B, seed) {
+    const r = rngOf(seed);
+    const dx = B.x - A.x;
+    const dy = B.y - A.y;
+    const len = Math.hypot(dx, dy);
+    const nx = -dy / len;
+    const ny = dx / len;
+    const n = Math.max(6, Math.round(len / 14));
+    const left = [];
+    const right = [];
+    for (let i = 0; i <= n; i++) {
+        const k = i / n;
+        const px = A.x + dx * k;
+        const py = A.y + dy * k;
+        const w = 15 + Math.sin(k * Math.PI) * -3 + (r() - 0.5) * 6;
+        left.push([px + nx * w, py + ny * w]);
+        right.push([px - nx * (w + (r() - 0.5) * 4), py - ny * (w + (r() - 0.5) * 4)]);
+    }
+    const pts = [...left, ...right.reverse()];
+    x.save();
+    x.translate(2, 4);
+    poly(x, pts);
+    x.fillStyle = 'rgba(5,25,45,0.25)';
+    x.fill();
+    x.restore();
+    poly(x, pts);
+    x.fillStyle = '#e4f1fa';
+    x.fill();
+    x.strokeStyle = 'rgba(150,195,230,0.9)';
+    x.lineWidth = 1.5;
+    x.stroke();
+    // fissures et reflets sur la glace
+    x.strokeStyle = 'rgba(150,195,230,0.7)';
+    x.lineWidth = 1;
+    for (let i = 0; i < n / 2; i++) {
+        const k = r();
+        const px = A.x + dx * k + nx * (r() - 0.5) * 18;
+        const py = A.y + dy * k + ny * (r() - 0.5) * 18;
+        x.beginPath();
+        x.moveTo(px, py);
+        x.lineTo(px + (r() - 0.5) * 10, py + (r() - 0.5) * 10);
+        x.stroke();
+    }
+}
+function airstrip(x, I) {
+    x.save();
+    x.translate(I.x - I.r * 0.5, I.y + I.r * 0.42);
+    x.rotate(-0.22);
+    x.fillStyle = '#8a9bb5';
+    roundRect(x, -16, -4.5, 32, 9, 3);
+    x.fill();
+    x.fillStyle = '#ffffff';
+    for (let i = -12; i < 14; i += 6) x.fillRect(i, -0.8, 3, 1.6);
+    x.restore();
+}
+export function makeBackground(visible, storm = false, bridges = [], strips = []) {
     const [c, x] = offscreen(W, H);
     const g = x.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, storm ? '#2b4a66' : '#2a6d97');
@@ -165,6 +221,7 @@ export function makeBackground(visible, storm = false) {
         x.quadraticCurveTo(px + 5, py - 2, px + 12 + r() * 12, py);
         x.stroke();
     }
+    bridges.forEach(([a, b], i) => iceBridge(x, ISLES[a], ISLES[b], 40 + i * 7));
     Object.keys(ISLES).forEach((k) => {
         if (!visible.includes(k)) return;
         const I = ISLES[k];
@@ -188,6 +245,7 @@ export function makeBackground(visible, storm = false) {
         x.strokeStyle = 'rgba(120,160,200,0.7)';
         x.lineWidth = 1.5;
         x.stroke();
+        if (strips.includes(k)) airstrip(x, I);
         if (k === 'tri') warehouse(x, I.x, I.y + 2);
         else {
             x.fillStyle = '#d7263d';
