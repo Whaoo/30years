@@ -6,6 +6,8 @@ import { markFilmSeen } from '../december/quest';
 // Mode cinéma : le prologue de la quête en plein écran, sur fond noir.
 // Ouvert depuis un clic (grande annonce du 1er décembre ou carte de la quête) : ce geste autorise
 // le plein écran et le son. Échap ou la croix referment ; à la fin, « À toi de jouer ! » ouvre la quête.
+const clampTime = (v, t) => Math.max(0, Math.min((v.duration || t) - 0.1, t));
+
 export default function FilmPlayer({ onClose, onPlay }) {
     const wrapRef = useRef(null);
     const videoRef = useRef(null);
@@ -27,12 +29,38 @@ export default function FilmPlayer({ onClose, onPlay }) {
         if (play && play.catch) play.catch(() => {});
         const onKey = (e) => {
             if (e.key === 'Escape') onClose();
-            if (e.code === 'Space' && v) {
+            if (!v) return;
+            if (e.code === 'Space') {
                 e.preventDefault();
                 if (v.paused) v.play();
                 else v.pause();
             }
+            // ← → : reculer / avancer de 5 secondes
+            if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+                e.preventDefault();
+                v.currentTime = clampTime(v, v.currentTime + (e.code === 'ArrowLeft' ? -5 : 5));
+            }
         };
+        // Avancer et reculer dans la vidéo demande que le serveur sache envoyer un morceau du fichier
+        // (requêtes « Range »). Si ce n'est pas le cas, on télécharge le film entier en arrière-plan,
+        // puis on bascule sur cette copie locale à l'endroit exact où on en est : la barre de lecture marche partout.
+        const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        let blobUrl = '';
+        const fullySeekable = () => v.seekable.length > 0 && v.seekable.start(0) <= 0.5 && v.seekable.end(0) >= (v.duration || 0) - 1;
+        fetch(FILM.sources[0].src, ctrl ? { signal: ctrl.signal } : undefined)
+            .then((r) => (r.ok ? r.blob() : null))
+            .then((blob) => {
+                if (!blob || !videoRef.current || fullySeekable()) return;
+                blobUrl = URL.createObjectURL(blob);
+                const at = v.currentTime;
+                const wasPlaying = !v.paused;
+                v.addEventListener('loadedmetadata', () => {
+                    v.currentTime = at;
+                    if (wasPlaying) v.play().catch(() => {});
+                }, { once: true });
+                v.src = blobUrl;
+            })
+            .catch(() => { /* hors ligne ou fenêtre fermée : on garde la lecture en continu */ });
         // Sortie du plein écran par le navigateur (Échap natif) : on referme aussi le mode cinéma
         let entered = false;
         const onFs = () => {
@@ -45,6 +73,8 @@ export default function FilmPlayer({ onClose, onPlay }) {
             window.removeEventListener('keydown', onKey);
             document.removeEventListener('fullscreenchange', onFs);
             clearTimeout(hideTimer.current);
+            if (ctrl) ctrl.abort();
+            if (blobUrl) URL.revokeObjectURL(blobUrl);
             if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
         };
     }, [onClose]);
