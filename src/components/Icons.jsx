@@ -199,7 +199,19 @@ const PATHS = {
             <path d="M10 9.5v5l4.5-2.5Z" />
         </>
     ),
-    shard: <path d="M12 2.5 17 12l-5 9.5L7 12Z" />
+    shard: <path d="M12 2.5 17 12l-5 9.5L7 12Z" />,
+    bulb: (
+        <>
+            <path d="M9 18h6M10 21h4" />
+            <path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3Z" />
+        </>
+    ),
+    parcel: (
+        <>
+            <path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5Z" />
+            <path d="M3.5 7.5 12 12l8.5-4.5M12 12v9" />
+        </>
+    )
 };
 
 export default function Icon({ name, size = 18 }) {

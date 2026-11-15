@@ -1,10 +1,19 @@
+import { useCallback, useRef, useState } from 'react';
 import GameCanvas from '../GameCanvas';
 import { BODY, DISPLAY, TAU, clamp, rand, circle, ellipse, roundRect, text, drawPenguin, drawOverlay } from '../draw';
 import { getSprites, drawSprite, ICONS } from './sprites';
 import { WORLD, BOUNDS, FIRE, LAKE, IGLOO, buildWorld, onLake, pushOut, hitsObstacle, clampToBounds } from './world';
+import { getBest } from '../scores';
+import { dailyRng, scoreCode } from '../../december/seed';
+import { drawResults, gradeFor, hitButton, drawButton } from '../../december/results';
+import { firstTryOfDay, markFail, markSkipped, markWon, passCode, SKIP_AFTER_FAILS } from '../../december/quest';
 
 // L'aventure de Flocon : on explore une carte enneigée pour récupérer les cadeaux de chaque vague,
-// en repoussant les monstres de Noël à coups de boules de neige et de canne à sucre. 10 vagues, boss à la fin.
+// en repoussant les monstres de Noël à coups de boules de neige et de canne à sucre.
+// Grand final de la quête (épisode 4) : 6 vagues puis le Golem de givre, environ 5 minutes.
+// Chaque vague a un nombre fini de monstres (plus d'apparitions sans fin), le Golem appelle au plus 12 mini-golems.
+// Scénario du jour (graine) pour les apparitions, cadeaux et bonus. Score = monstres + cadeaux + bonus de vague
+// + victoire 500 + PV × 3 + bonus de temps (5 points par seconde sous 6 minutes).
 // Tout tourne dans le navigateur (aucun serveur) : compatible Cloudflare Pages en gratuit.
 
 const VW = 960;
@@ -14,7 +23,9 @@ const MINI_H = 112;
 const PLAYER_R = 15;
 const PLAYER_H = 62;
 const AIM_DY = 30; // on vise le corps des monstres, la boule suit le sol : décalage de hauteur
-const LAST_WAVE = 10;
+const LAST_WAVE = 7; // 6 vagues + le Golem
+const TIME_BUDGET = 360;
+const ID = 'aventure';
 const CANE_CD = 6;
 const CANE_R = 135;
 const CHARGE_TIME = 1;
@@ -69,7 +80,8 @@ const easeOutBack = (k) => {
 
 const plural = (n, word) => `${n} ${word}${n > 1 ? 'x' : ''}`;
 
-function createAdventure(api) {
+function createAdventure(api, props = {}) {
+    const { day, rng: R } = dailyRng(ID, props.now || new Date());
     const sp = getSprites();
     const SPAWN = { x: IGLOO.x + 20, y: IGLOO.y + 84 };
     const world = buildWorld(MINI_W, MINI_H, SPAWN);
@@ -92,7 +104,7 @@ function createAdventure(api) {
             player, monsters: [], balls: [], cones: [], drops: [], items: [], bonuses: [], parts: [], popups: [],
             rings: [], effects: [], spawnT: 0, giftT: 0, goldDone: false, cfg: waveCfg(1), shake: 0,
             toast: null, toasts: [], banner: null, overT: 0, record: false, boss: null, clearT: 0,
-            clearNext: 'wave', winBonus: 0,
+            clearNext: 'wave', winBonus: 0, time: 0, killPts: 0, giftPts: 0, waveBonus: 0, budget: 0, retries: 0, results: null, buttons: [], hover: null, snap: null,
             cam: { x: clamp(player.x - VW / 2, 0, WORLD.w - VW), y: clamp(player.y - 40 - VH / 2, 0, WORLD.h - VH) }
         });
     }
@@ -133,13 +145,13 @@ function createAdventure(api) {
             let x;
             let y;
             if (o.lake) {
-                const a = Math.random() * TAU;
-                const k = Math.sqrt(Math.random()) * 0.78;
+                const a = R.next() * TAU;
+                const k = Math.sqrt(R.next()) * 0.78;
                 x = LAKE.x + Math.cos(a) * LAKE.rx * k;
                 y = LAKE.y + Math.sin(a) * LAKE.ry * k;
             } else {
-                x = rand(BOUNDS.x0 + 40, BOUNDS.x1 - 40);
-                y = rand(BOUNDS.y0 + 40, BOUNDS.y1 - 40);
+                x = R.range(BOUNDS.x0 + 40, BOUNDS.x1 - 40);
+                y = R.range(BOUNDS.y0 + 40, BOUNDS.y1 - 40);
             }
             if (Math.hypot(x - p.x, y - p.y) < minFromPlayer) continue;
             if (o.offscreen && x > s.cam.x - 60 && x < s.cam.x + VW + 60 && y > s.cam.y - 90 && y < s.cam.y + VH + 60) continue;
@@ -227,7 +239,7 @@ function createAdventure(api) {
             return [t, w];
         });
         const total = weights.reduce((a, [, w]) => a + w, 0);
-        let r = Math.random() * total;
+        let r = R.next() * total;
         for (const [t, w] of weights) {
             r -= w;
             if (r <= 0) return t;
@@ -236,7 +248,7 @@ function createAdventure(api) {
     }
 
     function pickGiftKind() {
-        const r = Math.random();
+        const r = R.next();
         const traps = s.items.filter((g) => g.kind === 'trap').length;
         if (s.wave >= 2 && traps < 2 && r < 0.14) return 'trap';
         if (r < 0.34) return 'blue';
@@ -245,7 +257,7 @@ function createAdventure(api) {
 
     function spawnGift(kind) {
         let pos = null;
-        if (kind === 'gold') pos = (Math.random() < 0.6 && freeSpot(16, 520, { lake: true })) || freeSpot(16, 650, { noFire: true });
+        if (kind === 'gold') pos = (R.next() < 0.6 && freeSpot(16, 520, { lake: true })) || freeSpot(16, 650, { noFire: true });
         else pos = freeSpot(16, 260, { noFire: true });
         if (!pos) return null;
         const g = { kind, x: pos.x, y: pos.y, t: Math.random() * 10, born: 0, carrier: null };
@@ -254,7 +266,7 @@ function createAdventure(api) {
     }
 
     function randomBonus() {
-        const r = Math.random();
+        const r = R.next();
         if (r < 0.34) return 'cocoa';
         if (r < 0.56) return 'hat';
         if (r < 0.78) return 'skates';
@@ -273,9 +285,11 @@ function createAdventure(api) {
 
     function startWave(n) {
         Object.assign(s, {
-            wave: n, gifts: 0, target: waveTarget(n), goldDone: false, cfg: waveCfg(Math.min(n, 9)),
-            spawnT: 1.6, giftT: 0, phase: 'play', clearT: 0
+            wave: n, gifts: 0, target: waveTarget(n), goldDone: false, cfg: waveCfg(Math.min(9, Math.round(1 + (n - 1) * 1.6))),
+            spawnT: 1.6, giftT: 0, phase: 'play', clearT: 0, budget: 8 + 4 * n
         });
+        // instantané pour « Reprendre la vague » après un K.O.
+        s.snap = { score: s.score, kills: s.kills, killPts: s.killPts, giftPts: s.giftPts, waveBonus: s.waveBonus, time: s.time };
         // Les conseils de la vague précédente ne sont plus d'actualité
         s.toast = null;
         s.toasts = [];
@@ -283,7 +297,7 @@ function createAdventure(api) {
             startBoss();
             return;
         }
-        banner(`Vague ${n}`, `Récupère ${s.target} cadeaux`);
+        banner(`Vague ${n} / ${LAST_WAVE - 1}`, `Récupère ${s.target} cadeaux`);
         const first = Math.min(3, 1 + Math.floor(n / 2));
         for (let i = 0; i < first; i++) spawnMonster(pickType());
         for (let i = 0; i < s.cfg.gifts; i++) spawnGift(pickGiftKind());
@@ -321,6 +335,7 @@ function createAdventure(api) {
         p.cheerT = 1.2;
         const bonus = 25 * s.wave;
         s.score += bonus;
+        s.waveBonus += bonus;
         banner(`Vague ${s.wave} terminée !`, `+20 PV · +${bonus} points`);
         for (const m of s.monsters) {
             if (m.dead) continue;
@@ -357,16 +372,65 @@ function createAdventure(api) {
         const p = s.player;
         s.phase = 'win';
         s.overT = 0;
-        s.winBonus = 500 + Math.round(p.hp) * 3;
+        const hpPts = Math.round(p.hp) * 3;
+        const timeBonus = Math.max(0, Math.round(TIME_BUDGET - s.time)) * 5;
+        s.winBonus = 500 + hpPts + timeBonus;
         s.score += s.winBonus;
+        const best = getBest(ID);
         s.record = api.reportScore(s.score);
+        const official = firstTryOfDay(ID, day, s.score);
+        markWon(ID, s.score);
+        const mm = Math.floor(s.time / 60);
+        const ss = String(Math.floor(s.time % 60)).padStart(2, '0');
+        s.results = {
+            title: 'Noël est sauvé !',
+            subtitle: `Le Golem de givre est vaincu · ${day.split('-').reverse().slice(0, 2).join('/')}${s.retries ? ` · ${s.retries} reprise${s.retries > 1 ? 's' : ''}` : ''}`,
+            score: s.score,
+            stars: 1 + (p.hp >= 50 ? 1 : 0) + (s.time <= TIME_BUDGET - 60 && !s.retries ? 1 : 0),
+            grade: gradeFor(s.score, { S: 4200, A: 3300, B: 2400 }),
+            rows: [
+                ['Monstres', `${s.kills}  ·  ${s.killPts}`],
+                ['Cadeaux', `+ ${s.giftPts}`],
+                ['Vagues terminées', `${LAST_WAVE - 1}  ·  + ${s.waveBonus}`],
+                ['Victoire et PV restants', `+ 500  ·  ${Math.round(p.hp)} PV  ·  + ${hpPts}`],
+                ['Temps', `${mm}:${ss}  ·  + ${timeBonus}`]
+            ],
+            best,
+            isRecord: s.record,
+            official,
+            code: `${scoreCode(ID, day, s.score)} · passage ${passCode(ID)}`,
+            buttons: [{ id: 'replay', label: 'Rejouer' }, { id: 'exit', label: 'Quête ▸', primary: true }]
+        };
         burst(p.x, p.y - 60, 70, ['#ff5fa2', '#ffd36e', '#3b82f6', '#6ee7b7', '#ffffff'], { speed: 320, life: 1.4, g: 240, up: 120 });
     }
 
     function gameOver() {
         s.phase = 'over';
         s.overT = 0;
-        s.record = api.reportScore(s.score);
+        const fails = markFail(ID);
+        const btns = [{ id: 'retry', label: `Reprendre la vague ${s.wave >= LAST_WAVE ? 'finale' : s.wave}`, primary: true }, { id: 'restart', label: 'Recommencer' }];
+        if (fails >= SKIP_AFTER_FAILS) btns.push({ id: 'skip', label: 'Passer l’épisode' });
+        s.overBtns = btns;
+    }
+    // Reprendre la vague perdue avec les PV au maximum et le score du début de vague
+    function retryWave() {
+        const n = s.wave;
+        const keep = { ...s.snap, retries: s.retries + 1 };
+        const player = freshPlayer();
+        Object.assign(s, { player, monsters: [], balls: [], cones: [], drops: [], items: [], bonuses: [], boss: null, overT: 0, results: null });
+        Object.assign(s, keep);
+        startWave(n);
+    }
+    function press(id) {
+        if (id === 'retry') retryWave();
+        else if (id === 'restart' || id === 'replay') startGame();
+        else if (id === 'skip') {
+            markSkipped(ID);
+            if (props.onExit) props.onExit();
+        } else if (id === 'exit') {
+            if (props.onExit) props.onExit();
+            else startGame();
+        }
     }
 
     // ---------- Combat ----------
@@ -475,6 +539,7 @@ function createAdventure(api) {
         m.hp = 0;
         if (m.carry) dropGift(m);
         s.score += DEFS[m.type].pts;
+        s.killPts += DEFS[m.type].pts;
         s.kills++;
         burst(m.x, m.y - spriteOf(m).ay * 0.5, 14, ['#ffffff', '#e3f0fb', '#cfe0f2'], { speed: 190, life: 0.6, r: [3, 6] });
         if (m.type === 'boss') {
@@ -504,6 +569,7 @@ function createAdventure(api) {
         const def = GIFTS[g.kind];
         s.gifts += def.value;
         s.score += def.pts;
+        s.giftPts += def.pts;
         p.cheerT = 0.45;
         popup(g.x, g.y - 44, `+${plural(def.value, 'cadeau')}`, g.kind === 'gold' ? '#e0a020' : '#2f9e6e', g.kind === 'gold' ? 24 : 18);
         burst(g.x, g.y - 16, g.kind === 'gold' ? 34 : 14, ['#ff5fa2', '#ffd36e', '#3b82f6', '#6ee7b7'], { speed: 200, life: 0.8, g: 200, up: 80 });
@@ -792,8 +858,10 @@ function createAdventure(api) {
     };
 
     function summonMinis(boss, n) {
+        n = Math.max(0, Math.min(n, 12 - (boss.summoned || 0))); // au plus 12 mini-golems en tout
+        boss.summoned = (boss.summoned || 0) + n;
         for (let i = 0; i < n; i++) {
-            const a = Math.random() * TAU;
+            const a = R.next() * TAU;
             const pt = { x: boss.x + Math.cos(a) * 110, y: boss.y + Math.sin(a) * 85 };
             clampToBounds(pt, 20);
             if (hitsObstacle(pt.x, pt.y, 30, obstacles)) continue;
@@ -955,8 +1023,9 @@ function createAdventure(api) {
         s.spawnT -= dt;
         const count = s.monsters.reduce((n, m) => n + (m.dead ? 0 : 1), 0);
         if (s.spawnT <= 0) {
-            if (count < s.cfg.max) spawnMonster(pickType());
-            s.spawnT = s.cfg.every * rand(0.7, 1.3);
+            // chaque vague a un nombre fini de monstres
+            if (count < s.cfg.max && s.budget > 0 && spawnMonster(pickType())) s.budget--;
+            s.spawnT = s.cfg.every * R.range(0.7, 1.3);
         }
         s.giftT -= dt;
         const real = s.items.reduce((n, g) => n + (g.kind === 'red' || g.kind === 'blue' ? 1 : 0), 0);
@@ -1659,7 +1728,7 @@ function createAdventure(api) {
 
         // Vague
         ctx.font = `800 17px ${DISPLAY}`;
-        const wlabel = s.wave >= LAST_WAVE ? 'Vague finale' : `Vague ${s.wave} / ${LAST_WAVE}`;
+        const wlabel = s.wave >= LAST_WAVE ? 'Vague finale' : `Vague ${s.wave} / ${LAST_WAVE - 1}`;
         const ww = ctx.measureText(wlabel).width + 20 + LAST_WAVE * 13 + 16;
         const wx = (VW - ww) / 2;
         panel(ctx, wx, 12, ww, 38, 19);
@@ -1857,7 +1926,7 @@ function createAdventure(api) {
     }
 
     // En mode test uniquement (npm run dev, préversion dev) : accès à l'état depuis la console pour tester une vague précise
-    if (__TEST_MODE__) window.flocon = { s, world, startWave, spawnMonster, spawnGift, spawnBonus, hitMonster, waveClear };
+    if (__TEST_MODE__) window.flocon = { s, world, startWave, spawnMonster, spawnGift, spawnBonus, hitMonster, waveClear, finishWin, gameOver };
 
     return {
         update(dt) {
@@ -1878,6 +1947,7 @@ function createAdventure(api) {
                 return;
             }
             updatePlayer(dt);
+            s.time += dt;
             if (s.phase === 'play') {
                 spawning(dt);
                 updateMonsters(dt);
@@ -1938,26 +2008,25 @@ function createAdventure(api) {
                     'Récupère les cadeaux de chaque vague et repousse les monstres de Noël.',
                     'ZQSD ou flèches : bouger · Clic : boule de neige',
                     'Clic maintenu 1 s : boule glacée · Espace : canne à sucre',
-                    '10 vagues, un boss à la fin. P : pause, Échap : quitter.',
+                    '6 vagues, puis le Golem de givre. P : pause, Échap : quitter.',
                     { text: 'Clique ou appuie sur Espace pour commencer', color: '#ffd36e', weight: 700 }
                 ], 640);
             } else if (s.paused) {
                 drawOverlay(ctx, VW, VH, 'Pause', ['Appuie sur P pour reprendre.'], 600);
             } else if (s.phase === 'over' && s.overT > 0.9) {
                 drawOverlay(ctx, VW, VH, 'Flocon est K.O.', [
-                    { text: `${s.score} points`, size: 24, weight: 800 },
-                    `Vague ${s.wave} · ${s.kills} monstre${s.kills > 1 ? 's' : ''} vaincu${s.kills > 1 ? 's' : ''}`,
-                    s.record ? { text: 'Nouveau record !', color: '#ffd36e', weight: 700 } : 'Le feu de camp soigne, pense à y repasser.',
-                    { text: s.overT > 1.6 ? 'Clique ou Espace pour rejouer' : ' ', color: 'rgba(255,255,255,0.75)' }
-                ], 600);
-            } else if (s.phase === 'win' && s.overT > 0.6) {
-                drawOverlay(ctx, VW, VH, 'Noël est sauvé !', [
-                    { text: `${s.score} points`, size: 24, weight: 800 },
-                    `Bonus de victoire +${s.winBonus} · ${s.kills} monstres vaincus`,
-                    s.record ? { text: 'Nouveau record !', color: '#ffd36e', weight: 700 } : 'Bravo Flocon.',
-                    { text: s.overT > 1.6 ? 'Clique ou Espace pour rejouer' : ' ', color: 'rgba(255,255,255,0.75)' }
-                ], 600);
-            }
+                    `Vague ${s.wave >= LAST_WAVE ? 'finale' : s.wave} · ${s.kills} monstre${s.kills > 1 ? 's' : ''} vaincu${s.kills > 1 ? 's' : ''} · ${s.score} points`,
+                    'On reprend la vague avec tous ses PV, ou on recommence ?',
+                    ' '
+                ], 640);
+                const bs = s.overBtns || [];
+                const bw = 200;
+                const total = bs.length * bw + (bs.length - 1) * 12;
+                s.buttons = bs.map((b, i) => ({ ...b, x: VW / 2 - total / 2 + i * (bw + 12), y: VH / 2 + 48, w: bw, h: 40 }));
+                s.buttons.forEach((b) => drawButton(ctx, b, s.hover === b.id));
+            } else if (s.phase === 'win' && s.overT > 0.6 && s.results) {
+                s.buttons = drawResults(ctx, VW, VH, s.results, s.overT - 0.6, s.hover);
+            } else s.buttons = [];
             drawReticle(ctx);
         },
 
@@ -1970,7 +2039,8 @@ function createAdventure(api) {
                 return;
             }
             if (s.phase === 'over' || s.phase === 'win') {
-                if (s.overT > 1.6) startGame();
+                const b = hitButton(s.buttons, x, y);
+                if (b && s.overT > 1.4) press(b.id);
                 return;
             }
             if (s.paused) return;
@@ -1982,6 +2052,8 @@ function createAdventure(api) {
             s.pointer.x = x;
             s.pointer.y = y;
             s.pointer.used = true;
+            const b = s.phase === 'over' || s.phase === 'win' ? hitButton(s.buttons, x, y) : null;
+            s.hover = b ? b.id : null;
         },
 
         pointerUp() {
@@ -2001,7 +2073,8 @@ function createAdventure(api) {
                 return;
             }
             if ((s.phase === 'over' || s.phase === 'win') && start) {
-                if (s.overT > 1.6) startGame();
+                const primary = (s.buttons || []).find((b) => b.primary);
+                if (primary && s.overT > 1.6) press(primary.id);
                 return;
             }
             if (code === 'KeyP' && (s.phase === 'play' || s.phase === 'clear')) {
@@ -2024,11 +2097,17 @@ function createAdventure(api) {
     };
 }
 
-export default function AdventureGame({ onScore }) {
+export default function AdventureGame({ onScore, now, onExit }) {
+    // Date figée à l'ouverture : l'horloge du site avance chaque minute, la partie ne doit pas redémarrer
+    const [start] = useState(() => now || new Date());
+    const exitRef = useRef(onExit);
+    exitRef.current = onExit;
+    const create = useCallback((api) => createAdventure(api, { now: start, onExit: exitRef.current ? () => exitRef.current && exitRef.current() : null }), [start]);
     return (
         <div className="adventure">
             <GameCanvas
-                create={createAdventure}
+                create={create}
+                fixedStep
                 onScore={onScore}
                 width={VW}
                 height={VH}

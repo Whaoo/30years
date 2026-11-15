@@ -78,6 +78,16 @@ export const GAMES = [
         component: lazy(() => import('./CurlingGame'))
     },
     {
+        id: 'guirlande',
+        title: 'Guirlande express',
+        short: 'Guirlande',
+        door: 10,
+        icon: 'bulb',
+        unit: 'pts',
+        help: 'Glisse depuis une ampoule pour tirer le fil jusqu’à l’ampoule de la même couleur. Les fils ne se croisent pas (passer sur un fil le coupe). Chaque guirlande rallume le sapin ; grille pleine = bonus. P pour la pause.',
+        component: lazy(() => import('./GarlandGame'))
+    },
+    {
         id: 'runner',
         title: 'Saut sur la banquise',
         short: 'Saut',
@@ -106,6 +116,16 @@ export const GAMES = [
         unit: 'pts',
         help: 'Retourne les cartes et retrouve les paires de pingouins de l’équipe. Moins de coups et plus vite = plus de points, et deux paires d’affilée rapportent un bonus de série.',
         component: lazy(() => import('./MemoryGame'))
+    },
+    {
+        id: 'relais',
+        title: 'Relais Express',
+        short: 'Relais',
+        door: 16,
+        icon: 'parcel',
+        unit: 'pièces',
+        help: 'Touche le sac postal pour sortir un objet (1 ⚡). Glisse deux objets identiques l’un sur l’autre pour obtenir le niveau suivant, puis glisse l’objet demandé sur le client. Poubelle pour libérer une case. 3 clients partis = journée ratée. P pour la pause.',
+        component: lazy(() => import('./RelayGame'))
     },
     {
         id: 'slide',
@@ -207,7 +227,7 @@ export const ADVENTURE = {
     from: FINAL.from,
     icon: 'gift',
     unit: 'pts',
-    help: 'ZQSD ou flèches pour bouger, clic pour lancer une boule de neige (maintenir 1 s : boule glacée), Espace pour la canne à sucre, P pour la pause. Le feu de camp soigne.',
+    help: 'ZQSD ou flèches pour bouger, clic pour lancer une boule de neige (maintenir 1 s : boule glacée), Espace pour la canne à sucre, P pour la pause. Le feu de camp soigne. 6 vagues, puis le Golem de givre : vise son cœur rose quand il brille.',
     component: lazy(() => import('./adventure/AdventureGame'))
 };
 
