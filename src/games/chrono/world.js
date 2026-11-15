@@ -8,14 +8,14 @@ export const BOTTOM = H - 46;
 
 // Les îles. from : tournée où l'île apparaît (0 matin, 1 midi, 2 soir). weight : part des colis qui en partent.
 export const ISLES = {
-    tri: { x: 400, y: 222, r: 46, name: 'Centre de tri', sym: 'tri', col: '#7fe8ff', from: 0, weight: 3 },
-    poisson: { x: 290, y: 150, r: 34, name: 'Île Poisson', sym: 'fish', col: '#ff9f43', from: 0, weight: 1 },
-    sapin: { x: 300, y: 300, r: 34, name: 'Île Sapin', sym: 'tree', col: '#2bb673', from: 0, weight: 1 },
-    phoque: { x: 150, y: 338, r: 31, name: 'Île Phoque', sym: 'seal', col: '#9fa8ff', from: 0, weight: 1 },
-    morse: { x: 112, y: 222, r: 29, name: 'Île Morse', sym: 'moon', col: '#c9b6ff', from: 0, weight: 1 },
-    etoile: { x: 572, y: 128, r: 36, name: 'Île Étoile', sym: 'star', col: '#ffd23f', from: 1, weight: 1.2 },
-    cadeau: { x: 630, y: 280, r: 34, name: 'Île Cadeau', sym: 'gift', col: '#ff6fa8', from: 1, weight: 1.2 },
-    aurore: { x: 190, y: 80, r: 26, name: 'Île Aurore', sym: 'aurora', col: '#7be0a3', from: 2, weight: 1 }
+    tri: { x: 400, y: 228, r: 50, name: 'Centre de tri', sym: 'tri', col: '#7fe8ff', from: 0, weight: 3 },
+    poisson: { x: 255, y: 122, r: 36, name: 'Île Poisson', sym: 'fish', col: '#ff9f43', from: 0, weight: 1 },
+    sapin: { x: 275, y: 332, r: 36, name: 'Île Sapin', sym: 'tree', col: '#2bb673', from: 0, weight: 1 },
+    phoque: { x: 118, y: 345, r: 32, name: 'Île Phoque', sym: 'seal', col: '#9fa8ff', from: 0, weight: 1 },
+    morse: { x: 92, y: 196, r: 30, name: 'Île Morse', sym: 'moon', col: '#c9b6ff', from: 0, weight: 1 },
+    etoile: { x: 598, y: 112, r: 38, name: 'Île Étoile', sym: 'star', col: '#ffd23f', from: 1, weight: 1.2 },
+    cadeau: { x: 680, y: 300, r: 36, name: 'Île Cadeau', sym: 'gift', col: '#ff6fa8', from: 1, weight: 1.2 },
+    aurore: { x: 440, y: 72, r: 27, name: 'Île Aurore', sym: 'aurora', col: '#7be0a3', from: 2, weight: 1 }
 };
 export const ISLE_KEYS = Object.keys(ISLES);
 
@@ -29,9 +29,9 @@ export const LINKS = [
 
 // Véhicules : vitesse (px/s) et capacité. Le type de la liaison décide du véhicule.
 export const VEHICLES = {
-    rail: { name: 'Trains', one: 'train', speed: 78, cap: 4 },
-    boat: { name: 'Bateaux', one: 'bateau', speed: 54, cap: 3 },
-    air: { name: 'Avions', one: 'avion', speed: 140, cap: 2 }
+    rail: { name: 'Trains', one: 'train', speed: 96, cap: 4 },
+    boat: { name: 'Bateaux', one: 'bateau', speed: 66, cap: 3 },
+    air: { name: 'Avions', one: 'avion', speed: 170, cap: 2 }
 };
 
 // Les trois tournées. spawn : secondes entre deux colis (au début → à la fin de la tournée).

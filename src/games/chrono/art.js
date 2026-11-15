@@ -98,8 +98,8 @@ export function makeParcelSprites() {
     });
     return out;
 }
-export function drawParcel(ctx, spr, x, y, k, ex) {
-    ctx.drawImage(spr[k + (ex ? '!' : '')], x - 7, y - 7, 14, 14);
+export function drawParcel(ctx, spr, x, y, k, ex, size = 14) {
+    ctx.drawImage(spr[k + (ex ? '!' : '')], x - size / 2, y - size / 2, size, size);
 }
 
 // ---------------------------------------------------------------- le décor de la tournée

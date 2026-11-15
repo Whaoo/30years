@@ -255,7 +255,7 @@ function createChrono(api, props) {
         s.spawned++;
         if (ex) {
             s.expressTotal++;
-            say(`Un colis express pour ${ISLES[to].name} : ${EXPRESS_T} s pour le livrer !`, 3.2);
+            say(`Un colis express pour ${isleName(to)} : ${EXPRESS_T} s pour le livrer !`, 3.2);
         }
     }
 
@@ -661,10 +661,24 @@ function createChrono(api, props) {
                 ctx.globalAlpha = 1;
             }
         }
-        if (L.type === 'rail') trainIcon(ctx, x + 4, y - 4, 0.9, dir);
-        else if (L.type === 'boat') boatIcon(ctx, x, y - 2, 0.9, dir, L.moving);
-        else planeIcon(ctx, x, y - (L.moving ? 0 : 0), L.moving ? 1 : 0.9, dir);
-        L.load.forEach((p, i) => drawParcel(ctx, PS, x - dir * (6 + i * 11) + (L.type === 'rail' ? -8 * dir : 0), y - (L.type === 'air' ? 12 : 14), p.to, p.ex));
+        if (L.type === 'rail') trainIcon(ctx, x + 5, y - 4, 1.15, dir);
+        else if (L.type === 'boat') boatIcon(ctx, x, y - 2, 1.2, dir, L.moving);
+        else planeIcon(ctx, x, y, 1.3, dir);
+        // les colis transportés : en grand, dans une étiquette au-dessus du véhicule
+        if (L.load.length) {
+            const n = L.load.length;
+            const sz = 17;
+            const w = n * (sz + 3) + 6;
+            const by = y - (L.type === 'air' ? 30 : 34);
+            roundRect(ctx, x - w / 2, by - sz / 2 - 4, w, sz + 8, 8);
+            ctx.fillStyle = 'rgba(255,255,255,0.88)';
+            ctx.fill();
+            L.load.forEach((p, i) => {
+                const px = x - w / 2 + 3 + sz / 2 + i * (sz + 3) + 1.5;
+                if (p.ex) ctx.drawImage(goldGlow, px - 16, by - 16, 32, 32);
+                drawParcel(ctx, PS, px, by, p.to, p.ex, sz);
+            });
+        }
         if (L.broken > 0) {
             const pulse = 1 + 0.08 * Math.sin(s.t * 10);
             ctx.save();
@@ -728,16 +742,16 @@ function createChrono(api, props) {
             const I = ISLES[k];
             const q = s.queues[k];
             if (!q.length) return;
-            const side = I.x > 400 ? 1 : k === 'tri' ? 1 : -1;
-            const x0 = I.x + side * (I.r * 0.4 + 8);
+            const side = I.x < 200 || I.x > 400 || k === 'tri' ? 1 : -1;
+            const x0 = I.x + side * (I.r * 0.4 + 10);
             const y0 = I.y + I.r * 0.42;
             q.slice(0, 8).forEach((p, i) => {
-                const px = x0 + side * (i % 4) * 11;
-                const py = y0 + Math.floor(i / 4) * 11;
-                if (p.ex) ctx.drawImage(goldGlow, px - 14, py - 14, 28, 28);
-                drawParcel(ctx, PS, px, py, p.to, p.ex);
+                const px = x0 + side * (i % 4) * 16;
+                const py = y0 + Math.floor(i / 4) * 16;
+                if (p.ex) ctx.drawImage(goldGlow, px - 16, py - 16, 32, 32);
+                drawParcel(ctx, PS, px, py, p.to, p.ex, 16);
             });
-            if (q.length > 8) text(ctx, `+${q.length - 8}`, x0 + side * 48, y0 + 9, { size: 11, weight: 800, align: side > 0 ? 'left' : 'right', color: '#1d2542' });
+            if (q.length > 8) text(ctx, `+${q.length - 8}`, x0 + side * 66, y0 + 12, { size: 12, weight: 800, align: side > 0 ? 'left' : 'right', color: '#ffffff', shadow: true });
             // le client de l'île râle quand ses colis traînent
             const old = q.filter((p) => p.age > OLD).length;
             if (k !== 'tri' && (old >= 1 || q.length >= 5)) client(ctx, I.x + I.r * 0.3 * -side, I.y + I.r * 0.55, old >= 3 || q.length >= 7 ? 2 : 1, k === 'phoque' || k === 'morse' ? 'seal' : 'penguin', s.t);
@@ -1016,8 +1030,10 @@ function createChrono(api, props) {
         // une île attend des colis qu'aucune liaison ne peut lui apporter : liseré rouge « À relier »
         if (s.phase === 'play' && s.tuto == null) {
             const need = new Set();
+            // c'est l'île isolée qu'il faut relier : le départ s'il est coupé du centre de tri, sinon l'arrivée
             ISLE_KEYS.forEach((k) => s.queues[k].forEach((p) => {
-                if (!reachable(p.at, p.to)) need.add(p.to);
+                if (reachable(p.at, p.to)) return;
+                need.add(p.at !== 'tri' && !reachable(p.at, 'tri') ? p.at : p.to);
             }));
             need.forEach((k) => {
                 const I = ISLES[k];
@@ -1028,10 +1044,11 @@ function createChrono(api, props) {
                 ctx.ellipse(I.x, I.y, I.r * 1.2, I.r * 0.95, 0, 0, TAU);
                 ctx.stroke();
                 ctx.setLineDash([]);
-                roundRect(ctx, I.x - 30, I.y - I.r - 30, 60, 16, 8);
+                const ly = I.y - I.r - 30 < TOP + 4 ? I.y + I.r * 0.8 + 6 : I.y - I.r - 30; // sous l'île si elle touche le bandeau
+                roundRect(ctx, I.x - 30, ly, 60, 16, 8);
                 ctx.fillStyle = 'rgba(160,30,40,0.92)';
                 ctx.fill();
-                text(ctx, 'À relier', I.x, I.y - I.r - 18, { size: 10, weight: 800, align: 'center' });
+                text(ctx, 'À relier', I.x, ly + 12, { size: 10, weight: 800, align: 'center' });
             });
         }
         if (s.tuto != null) drawTuto(ctx);
