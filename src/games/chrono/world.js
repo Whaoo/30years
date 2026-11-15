@@ -38,17 +38,19 @@ export const VEHICLES = {
 // gift : véhicules ajoutés au dépôt au début de la tournée.
 export const ROUNDS = [
     { name: 'Matin', dur: 50, spawn: [2.6, 1.9], gift: { rail: 3, boat: 1, air: 0 }, express: 0, canLose: false },
-    { name: 'Midi', dur: 70, spawn: [1.9, 1.35], gift: { rail: 1, boat: 0, air: 1 }, express: 4, canLose: true },
-    { name: 'Soir', dur: 80, spawn: [1.5, 1.05], gift: { rail: 0, boat: 1, air: 0 }, express: 6, canLose: true }
+    { name: 'Midi', dur: 70, spawn: [1.8, 1.3], gift: { rail: 1, boat: 0, air: 1 }, express: 4, canLose: true },
+    { name: 'Soir', dur: 80, spawn: [1.45, 1.0], gift: { rail: 0, boat: 1, air: 0 }, express: 6, canLose: true }
 ];
 
 // Les événements de Radio Banquise (annoncés 8 s avant, visibles sur la frise de la tournée)
 export const EVENTS = {
-    fog: { name: 'Brouillard', short: 'Brouillard', line: 'Brouillard sur les chenaux : les bateaux ralentissent', dur: 12 },
-    crack: { name: 'Banquise fendue', short: 'Banquise', line: 'La banquise se fend : un pont de rail est coupé', dur: 14 },
-    storm: { name: 'Tempête', short: 'Tempête', line: 'Tempête : les avions restent au sol', dur: 10 },
+    fog: { name: 'Brouillard', short: 'Brouillard', line: 'Brouillard sur les chenaux : les bateaux avancent trois fois moins vite', dur: 14 },
+    crack: { name: 'Banquise fendue', short: 'Banquise', line: 'La banquise se fend : un pont de rail est coupé', dur: 18 },
+    storm: { name: 'Tempête', short: 'Tempête', line: 'Tempête : les avions restent au sol, les bateaux peinent', dur: 12 },
     aurora: { name: 'Aurore', short: 'Aurore', line: 'Aurore boréale : livraisons qui comptent double', dur: 10 },
-    burst: { name: 'Rush', short: 'Rush', line: 'Rush ! Une île déborde de colis', dur: 0 }
+    burst: { name: 'Rush', short: 'Rush', line: 'Rush ! Une île déborde de colis', dur: 0 },
+    breakdown: { name: 'Panne', short: 'Panne', line: 'Panne en vue : un véhicule va caler, clique dessus pour le réparer', dur: 0 },
+    iceberg: { name: 'Iceberg', short: 'Iceberg', line: 'Un iceberg dérive vers un chenal', dur: 999 } // reste jusqu'à ce qu'on le brise
 };
 
 // Les renforts proposés entre deux tournées (deux cartes tirées par la graine)

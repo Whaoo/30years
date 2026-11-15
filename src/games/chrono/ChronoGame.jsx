@@ -22,9 +22,10 @@ import { boatIcon, client, drawParcel, evIcon, gull, makeBackground, makeGlow, m
 const ID = 'chrono';
 const WARN = 8;
 const MAX_WAIT = 40;
-const OLD = 14; // secondes : au-delà, un colis qui attend fait baisser l'humeur
+const OLD = 13; // secondes : au-delà, un colis qui attend fait baisser l'humeur
 const EXPRESS_T = 20;
 const DWELL = 0.45;
+const MAX_PER_LINK = 3; // jusqu'à 3 véhicules sur la même liaison
 
 function createChrono(api, props) {
     const now = props.now || new Date();
@@ -77,14 +78,16 @@ function createChrono(api, props) {
     });
     const eventPlans = ROUNDS.map((R, r) => {
         if (r === 0) return [];
-        const pool = r === 1 ? rng.shuffle(['fog', 'crack', 'storm', 'burst']).slice(0, 2) : ['aurora', ...rng.shuffle(['crack', 'fog', 'storm', 'burst']).slice(0, 2)];
-        const slots = r === 1 ? [[24, 32], [44, 54]] : [[18, 26], [38, 46], [56, 64]];
+        // chaque tournée a au moins un événement qui demande d'intervenir (panne à réparer, iceberg à briser, pont fendu)
+        const pool = r === 1 ? ['breakdown', ...rng.shuffle(['fog', 'crack', 'iceberg', 'burst']).slice(0, 2)] : ['aurora', ...rng.shuffle(['crack', 'storm', 'breakdown', 'iceberg', 'burst']).slice(0, 3)];
+        const slots = r === 1 ? [[16, 22], [34, 42], [52, 60]] : [[12, 18], [28, 36], [44, 52], [60, 68]];
         return rng.shuffle(pool).map((id, i) => ({ id, t: rng.range(slots[i][0], slots[i][1]), seed: rng.next() }));
     });
     const cardPlans = [rng.shuffle(['boat', 'train', 'wagons', 'cocoa']).slice(0, 2), rng.shuffle(['boat', 'plane', 'wagons', 'cocoa']).slice(0, 2)];
 
     const s = { phase: 'title', phaseT: 0, t: 0, hover: null, buttons: [] };
     let pid = 0;
+    let lid = 0;
 
     function newGame(tranquil) {
         Object.assign(s, {
@@ -119,7 +122,9 @@ function createChrono(api, props) {
             dirty: true,
             next: {},
             tuto: null,
-            tutoDone: 0
+            tutoDone: 0,
+            broken: {},
+            iceberg: null
         });
     }
     newGame(false);
@@ -134,7 +139,9 @@ function createChrono(api, props) {
     const waitingCount = () => ISLE_KEYS.reduce((a, k) => a + s.queues[k].length, 0);
     const activeEvent = (id) => s.events.some((e) => e.id === id && e.on);
     const capOf = (type) => VEHICLES[type].cap + (type === 'rail' ? s.capRail : 0);
-    const isCut = (L) => s.events.some((e) => e.id === 'crack' && e.on && e.target === L.key);
+    // liaison bloquée : pont de banquise fendu, ou iceberg dans le chenal
+    const blocked = (L) => s.broken[L.key] > s.rt || (s.iceberg && s.iceberg.key === L.key);
+    const countOn = (key) => s.links.filter((L) => L.key === key).length;
 
     // Prochaine étape de chaque colis : plus court chemin (en temps de trajet) sur les liaisons ouvertes
     function computeRoutes() {
@@ -144,11 +151,11 @@ function createChrono(api, props) {
         const D = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (i === j ? 0 : Infinity)));
         const NX = Array.from({ length: n }, () => Array(n).fill(-1));
         s.links.forEach((L) => {
-            if (L.closing || isCut(L)) return;
+            if (L.closing || blocked(L)) return;
             const i = idx[L.a];
             const j = idx[L.b];
             if (i == null || j == null) return;
-            const w = L.len / VEHICLES[L.type].speed + 2;
+            const w = L.len / VEHICLES[L.type].speed / (1 + 0.6 * (countOn(L.key) - 1)) + 2;
             if (w < D[i][j]) {
                 D[i][j] = D[j][i] = w;
                 NX[i][j] = j;
@@ -176,12 +183,18 @@ function createChrono(api, props) {
         const def = LINKS.find(([x, y, t]) => t === type && ((x === a && y === b) || (x === b && y === a)));
         if (!def || s.depot[type] <= 0) return false;
         const key = linkKey(a, b, type);
-        if (s.links.some((L) => L.key === key)) return false;
+        if (s.broken[key] > s.rt) {
+            say(`Le pont est fendu : il sera réparé dans ${Math.ceil(s.broken[key] - s.rt)} s.`, 2.5);
+            return false;
+        }
+        const same = countOn(key);
+        if (same >= MAX_PER_LINK) return false;
         const vis = visible();
         if (!vis.includes(a) || !vis.includes(b)) return false;
         s.depot[type]--;
         const [x, y] = def;
-        s.links.push({ key, a: x, b: y, type, len: linkLength(x, y, type), pos: 0, dir: 1, at: x, moving: false, wait: 0.3, load: [], closing: false });
+        s.links.push({ key, id: lid++, slot: same, a: x, b: y, type, len: linkLength(x, y, type), pos: 0, dir: 1, at: x, moving: false, wait: 0.3 + same * 0.8, load: [], closing: false, broken: 0 });
+        if (same) say(`Un ${VEHICLES[type].one} de plus sur cette liaison (${same + 1} au total) : elle débite plus.`, 2.6);
         s.dirty = true;
         const [mx, my] = linkPoint(x, y, type, 0.5);
         s.fx.push({ kind: 'open', x: mx, y: my, t: 0 });
@@ -205,7 +218,9 @@ function createChrono(api, props) {
     // Le premier mode disponible entre deux îles (le plus rapide d'abord)
     function bestType(a, b) {
         const types = LINKS.filter(([x, y]) => (x === a && y === b) || (x === b && y === a)).map((l) => l[2]);
-        const order = ['air', 'rail', 'boat'].filter((t) => types.includes(t) && s.depot[t] > 0 && !s.links.some((L) => L.key === linkKey(a, b, t)));
+        // d'abord un mode pas encore ouvert, sinon un véhicule de plus sur une liaison existante
+        const order = ['air', 'rail', 'boat'].filter((t) => types.includes(t) && s.depot[t] > 0 && countOn(linkKey(a, b, t)) < MAX_PER_LINK && !(s.broken[linkKey(a, b, t)] > s.rt));
+        order.sort((x, y) => countOn(linkKey(a, b, x)) - countOn(linkKey(a, b, y)));
         return order[0] || null;
     }
 
@@ -252,10 +267,13 @@ function createChrono(api, props) {
         const R = ROUNDS[r];
         Object.entries(R.gift).forEach(([k, v]) => (s.depot[k] += v));
         s.events = eventPlans[r].map((e) => ({ ...e, warned: false, on: false, done: false, target: null }));
+        s.broken = {};
+        s.iceberg = null;
+        s.links.forEach((L) => (L.broken = 0));
         s.dirty = true;
         s.sursis = 0;
         s.snapshot = JSON.parse(JSON.stringify({
-            depot: s.depot, capRail: s.capRail, links: s.links.map((L) => ({ ...L, load: [], pos: 0, dir: 1, at: L.a, moving: false, wait: 0.3 })),
+            depot: s.depot, capRail: s.capRail, links: s.links.map((L) => ({ ...L, load: [], pos: 0, dir: 1, at: L.a, moving: false, wait: 0.3, broken: 0 })),
             queues: s.queues, humeur: s.humeur, delivered: s.delivered, spawned: s.spawned, rapid: s.rapid, expressOk: s.expressOk,
             expressTotal: s.expressTotal, basePts: s.basePts, sleighs: s.sleighs, mamieUsed: s.mamieUsed, roundStats: s.roundStats
         }));
@@ -356,6 +374,11 @@ function createChrono(api, props) {
                     const any = LINKS.filter(([a, b, t]) => t === 'rail' && visible().includes(a) && visible().includes(b)).map(([a, b, t]) => linkKey(a, b, t));
                     const pool = open.length ? open.map((L) => L.key) : any;
                     e.target = pool[Math.floor(e.seed * pool.length)];
+                } else if (e.id === 'iceberg') {
+                    const open = [...new Set(s.links.filter((L) => L.type === 'boat').map((L) => L.key))];
+                    const any = LINKS.filter(([a, b, t]) => t === 'boat' && visible().includes(a) && visible().includes(b)).map(([a, b, t]) => linkKey(a, b, t));
+                    const pool = open.length ? open : any;
+                    e.target = pool[Math.floor(e.seed * pool.length)];
                 } else if (e.id === 'burst') {
                     const pool = visible().filter((k) => k !== 'tri');
                     e.target = pool[Math.floor(e.seed * pool.length)];
@@ -365,7 +388,11 @@ function createChrono(api, props) {
                     const [a, b] = e.target.split('-');
                     line = `La banquise se fend : ${ISLES[a].name.replace('Île ', '')} ↔ ${ISLES[b].name.replace('Île ', '')}`;
                 }
-                if (e.id === 'burst') line = `Rush sur ${isleName(e.target)} : 6 colis d’un coup !`;
+                if (e.id === 'burst') line = `Rush sur ${isleName(e.target)} : 10 colis d’un coup !`;
+                if (e.id === 'iceberg' && e.target) {
+                    const [a, b] = e.target.split('-');
+                    line = `Un iceberg dérive vers le chenal ${ISLES[a].name.replace('Île ', '')} ↔ ${ISLES[b].name.replace('Île ', '')}`;
+                }
                 s.radio = { line, t: 0, ev: e };
             }
             if (e.warned && !e.on && !e.done && s.rt >= e.t) {
@@ -374,7 +401,27 @@ function createChrono(api, props) {
                 s.dirty = true;
                 if (e.id === 'burst') {
                     const dests = visible().filter((k) => k !== e.target);
-                    for (let i = 0; i < 6; i++) spawnParcel(e.target, dests[Math.floor(((e.seed * 997 + i * 0.37) % 1) * dests.length)], false);
+                    for (let i = 0; i < 10; i++) spawnParcel(e.target, dests[Math.floor(((e.seed * 997 + i * 0.37) % 1) * dests.length)], false);
+                    e.on = false;
+                    e.done = true;
+                } else if (e.id === 'crack' && e.target) {
+                    // le pont casse : ses trains reviennent au dépôt, on ne peut pas le reposer avant la réparation
+                    s.broken[e.target] = e.end;
+                    s.links.filter((L) => L.key === e.target).forEach((L) => closeLink(L));
+                    const [a, b, t] = e.target.split('-');
+                    const [mx, my] = linkPoint(a, b, t, 0.5);
+                    popup(mx, my - 10, 'Pont fendu !', '#ff8f8f');
+                    say('Le pont est fendu : ses trains reviennent au dépôt. Trouve un autre chemin !', 4);
+                } else if (e.id === 'iceberg' && e.target) {
+                    s.iceberg = { key: e.target, hits: 0 };
+                    say('Un iceberg bloque le chenal : clique trois fois dessus pour le briser !', 4);
+                } else if (e.id === 'breakdown') {
+                    const pool = s.links.filter((L) => !L.broken && !L.closing).sort((x, y) => x.id - y.id);
+                    if (pool.length) {
+                        const L = pool[Math.floor(e.seed * pool.length)];
+                        L.broken = 999; // pas de réparation toute seule : il faut cliquer
+                        say(`Le ${VEHICLES[L.type].one} ${ISLES[L.a].name.replace('Île ', '')} ↔ ${ISLES[L.b].name.replace('Île ', '')} est en panne : clique dessus pour le réparer !`, 4.5);
+                    }
                     e.on = false;
                     e.done = true;
                 }
@@ -383,6 +430,7 @@ function createChrono(api, props) {
                 e.on = false;
                 e.done = true;
                 s.dirty = true;
+                if (e.id === 'iceberg' && s.iceberg && s.iceberg.key === e.target) s.iceberg = null;
             }
         }
         if (s.radio) {
@@ -393,8 +441,14 @@ function createChrono(api, props) {
 
     function updateLink(L, dt) {
         const def = VEHICLES[L.type];
+        // en panne : le véhicule s'arrête jusqu'à ce qu'on clique dessus
+        if (L.broken > 0) {
+            L.broken -= dt;
+            if (L.broken <= 0) L.broken = 0;
+            return;
+        }
         if (L.moving) {
-            const slow = L.type === 'boat' && activeEvent('fog') ? 0.5 : 1;
+            const slow = L.type === 'boat' ? (activeEvent('fog') ? 0.35 : activeEvent('storm') ? 0.7 : 1) : 1;
             L.pos += (def.speed * slow * dt) / L.len;
             if (L.pos >= 1) {
                 L.pos = 0;
@@ -419,7 +473,7 @@ function createChrono(api, props) {
         L.wait -= dt;
         if (L.wait > 0) return;
         const other = L.at === L.a ? L.b : L.a;
-        if ((L.type === 'air' && activeEvent('storm')) || isCut(L)) {
+        if ((L.type === 'air' && activeEvent('storm')) || blocked(L)) {
             L.wait = 0.25;
             return;
         }
@@ -537,7 +591,7 @@ function createChrono(api, props) {
 
     // ---------------------------------------------------------------- dessin
     function drawLinkLine(ctx, L) {
-        const cut = isCut(L);
+        const cut = false;
         ctx.save();
         ctx.lineCap = 'round';
         ctx.beginPath();
@@ -580,24 +634,94 @@ function createChrono(api, props) {
             evIcon(ctx, 'crack', mx, my, 1);
         }
     }
-    function drawVehicle(ctx, L) {
+    function vehiclePos(L) {
         let k;
         let dir;
         if (L.moving) {
             k = L.dir > 0 ? L.pos : 1 - L.pos;
             dir = (L.dir > 0 ? ISLES[L.b].x >= ISLES[L.a].x : ISLES[L.a].x >= ISLES[L.b].x) ? 1 : -1;
         } else {
-            k = L.at === L.a ? 0.22 : 0.78;
+            const off = (L.slot || 0) * 0.12;
+            k = L.at === L.a ? 0.22 + off : 0.78 - off;
             dir = (L.at === L.a ? ISLES[L.b].x >= ISLES[L.a].x : ISLES[L.a].x >= ISLES[L.b].x) ? 1 : -1;
         }
         // on reste au bord des îles
         const ra = (ISLES[L.a].r * 0.6) / (L.len + ISLES[L.a].r * 1.2);
         const kk = ra + k * (1 - 2 * ra);
         const [x, y] = linkPoint(L.a, L.b, L.type, kk);
+        return [x, y, dir];
+    }
+    function drawVehicle(ctx, L) {
+        const [x, y, dir] = vehiclePos(L);
+        if (L.broken > 0) {
+            for (let i = 0; i < 3; i++) {
+                const k = (s.t * 0.8 + i / 3) % 1;
+                ctx.globalAlpha = 0.6 * (1 - k);
+                circle(ctx, x + Math.sin(k * 6 + i) * 4, y - 14 - k * 26, 4 + k * 6, '#6b7280');
+                ctx.globalAlpha = 1;
+            }
+        }
         if (L.type === 'rail') trainIcon(ctx, x + 4, y - 4, 0.9, dir);
         else if (L.type === 'boat') boatIcon(ctx, x, y - 2, 0.9, dir, L.moving);
         else planeIcon(ctx, x, y - (L.moving ? 0 : 0), L.moving ? 1 : 0.9, dir);
         L.load.forEach((p, i) => drawParcel(ctx, PS, x - dir * (6 + i * 11) + (L.type === 'rail' ? -8 * dir : 0), y - (L.type === 'air' ? 12 : 14), p.to, p.ex));
+        if (L.broken > 0) {
+            const pulse = 1 + 0.08 * Math.sin(s.t * 10);
+            ctx.save();
+            ctx.translate(x, y - 34);
+            ctx.scale(pulse, pulse);
+            roundRect(ctx, -44, -11, 88, 22, 11);
+            ctx.fillStyle = '#d7263d';
+            ctx.fill();
+            ctx.restore();
+            text(ctx, 'Panne ! Clique', x, y - 30, { size: 11, weight: 800, align: 'center' });
+        }
+    }
+    function drawIceberg(ctx) {
+        if (!s.iceberg) return;
+        const [a, b, t] = s.iceberg.key.split('-');
+        const [mx, my] = linkPoint(a, b, t, 0.5);
+        const h = s.iceberg.hits;
+        ctx.save();
+        ctx.translate(mx, my + Math.sin(s.t * 2) * 2);
+        ctx.fillStyle = 'rgba(10,40,70,0.3)';
+        ctx.beginPath();
+        ctx.ellipse(2, 12, 26, 6, 0, 0, TAU);
+        ctx.fill();
+        ctx.fillStyle = '#eaf6ff';
+        ctx.beginPath();
+        ctx.moveTo(-24, 10);
+        ctx.lineTo(-16, -8);
+        ctx.lineTo(-6, -4);
+        ctx.lineTo(2, -22);
+        ctx.lineTo(12, -6);
+        ctx.lineTo(22, -10);
+        ctx.lineTo(26, 10);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#b9dcf5';
+        ctx.beginPath();
+        ctx.moveTo(2, -22);
+        ctx.lineTo(12, -6);
+        ctx.lineTo(22, -10);
+        ctx.lineTo(26, 10);
+        ctx.lineTo(6, 10);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#5b8fbf';
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < h; i++) {
+            ctx.beginPath();
+            ctx.moveTo(-8 + i * 9, -12 + i * 3);
+            ctx.lineTo(-4 + i * 9, -2);
+            ctx.lineTo(-9 + i * 9, 8);
+            ctx.stroke();
+        }
+        ctx.restore();
+        roundRect(ctx, mx - 40, my + 18, 80, 18, 9);
+        ctx.fillStyle = 'rgba(8,14,34,0.88)';
+        ctx.fill();
+        text(ctx, `Clique ! ${h} / 3`, mx, my + 31, { size: 11, weight: 800, align: 'center', color: '#bfe9ff' });
     }
     function drawQueues(ctx) {
         ISLE_KEYS.forEach((k) => {
@@ -828,7 +952,41 @@ function createChrono(api, props) {
                 ctx.restore();
             }
         });
-        s.links.forEach((L) => drawLinkLine(ctx, L));
+        // ponts fendus : hachures rouges et compte à rebours de la réparation
+        Object.entries(s.broken).forEach(([key, until]) => {
+            if (until <= s.rt) return;
+            const [a, b, t] = key.split('-');
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255,80,80,0.75)';
+            ctx.lineWidth = 12;
+            ctx.setLineDash([4, 6]);
+            ctx.beginPath();
+            const [x1, y1] = linkPoint(a, b, t, 0.25);
+            const [x2, y2] = linkPoint(a, b, t, 0.75);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.restore();
+            const [mx, my] = linkPoint(a, b, t, 0.5);
+            circle(ctx, mx, my, 11, '#ffffff');
+            evIcon(ctx, 'crack', mx, my, 1);
+            text(ctx, `${Math.ceil(until - s.rt)} s`, mx, my + 24, { size: 11, weight: 800, align: 'center', color: '#ffd0d0', shadow: true });
+        });
+        const seen = new Set();
+        s.links.forEach((L) => {
+            if (seen.has(L.key)) return;
+            seen.add(L.key);
+            drawLinkLine(ctx, L);
+            const n = countOn(L.key);
+            if (n > 1) {
+                const [mx, my] = linkPoint(L.a, L.b, L.type, 0.5);
+                roundRect(ctx, mx - 13, my - 9, 26, 18, 9);
+                ctx.fillStyle = 'rgba(8,14,34,0.9)';
+                ctx.fill();
+                text(ctx, `×${n}`, mx, my + 4, { size: 11, weight: 800, align: 'center', color: '#ffd36e' });
+            }
+        });
+        drawIceberg(ctx);
         drawDrag(ctx);
         drawQueues(ctx);
         s.links.forEach((L) => drawVehicle(ctx, L));
@@ -998,15 +1156,15 @@ function createChrono(api, props) {
             const ev = eventPlans[i];
             if (!ev.length) text(ctx, 'calme : on apprend', 290, y + 4, { size: 11, weight: 600, color: 'rgba(255,255,255,0.6)' });
             ev.forEach((e, j) => {
-                const ex = 286 + j * 118;
-                roundRect(ctx, ex, y - 10, 112, 20, 10);
+                const ex = 262 + j * 96;
+                roundRect(ctx, ex, y - 10, 92, 20, 10);
                 ctx.fillStyle = 'rgba(255,255,255,0.1)';
                 ctx.fill();
                 circle(ctx, ex + 11, y, 8, '#ffffff');
                 evIcon(ctx, e.id, ex + 11, y, 0.8);
                 const m = Math.floor(e.t / 60);
                 const sec = String(Math.floor(e.t % 60)).padStart(2, '0');
-                text(ctx, `${EVENTS[e.id].short} ${m}:${sec}`, ex + 24, y + 4, { size: 10.5, weight: 600 });
+                text(ctx, `${EVENTS[e.id].short} ${m}:${sec}`, ex + 22, y + 4, { size: 10, weight: 600 });
             });
         });
         const b = { id: 'go', label: 'C’est parti !', primary: true, x: 476, y: 352, w: 150, h: 38 };
@@ -1182,6 +1340,31 @@ function createChrono(api, props) {
                 return;
             }
             if (s.phase !== 'play') return;
+            const broke = s.links.find((L) => {
+                if (!(L.broken > 0)) return false;
+                const [vx, vy] = vehiclePos(L);
+                return Math.hypot(vx - x, vy - 8 - y) < 30;
+            });
+            if (broke) {
+                broke.broken = 0;
+                const [vx, vy] = vehiclePos(broke);
+                popup(vx, vy - 30, 'Réparé !', '#7be0a3');
+                return;
+            }
+            if (s.iceberg) {
+                const [a, b, t] = s.iceberg.key.split('-');
+                const [mx, my] = linkPoint(a, b, t, 0.5);
+                if (Math.hypot(mx - x, my - y) < 32) {
+                    s.iceberg.hits++;
+                    s.fx.push({ kind: 'open', x: mx, y: my, t: 0 });
+                    if (s.iceberg.hits >= 3) {
+                        s.iceberg = null;
+                        s.dirty = true;
+                        popup(mx, my - 20, 'Chenal dégagé !', '#7be0a3');
+                    }
+                    return;
+                }
+            }
             const k = isleAt(x, y);
             if (s.sleighArmed) {
                 if (k && s.queues[k].length) useSleigh(k);
@@ -1192,8 +1375,10 @@ function createChrono(api, props) {
                 s.drag = { from: k, x, y, target: null, type: null };
                 return;
             }
-            const L = linkAt(x, y);
-            if (L) {
+            const hit = linkAt(x, y);
+            if (hit) {
+                const group = s.links.filter((x2) => x2.key === hit.key);
+                const L = group.find((x2) => !x2.moving && !x2.load.length) || group.find((x2) => !x2.moving) || group[group.length - 1];
                 closeLink(L);
                 say(`Liaison fermée : le ${VEHICLES[L.type].one} revient au dépôt.`, 2.4);
             }

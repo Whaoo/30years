@@ -60,7 +60,9 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
     Score = 500/cadeau + monstres + 20/s d'avance (« Vague suivante ») + poissons restants. Réglage global : `HP_SCALE`. `/reveillon` ; console : `window.reveillon`.
   - `CHRONO` (« Chronoflocon », `src/games/chrono/`) : épisode 3, le 9 décembre. Gestion du centre de tri (~4 min) : glisser d'une île à l'autre
     ouvre une liaison (train sur les ponts de banquise dessinés entre les îles, bateau sur les chenaux, avion entre les pistes : `LINKS`), cliquer dessus
-    la ferme ; les colis suivent le plus court chemin tout seuls. Tutoriel guidé en 4 étapes au premier Matin, îles « À relier » signalées en rouge.
+    en retire un véhicule (jusqu'à 3 par liaison) ; les colis suivent le plus court chemin tout seuls. Tutoriel guidé en 4 étapes au premier Matin,
+    îles « À relier » signalées en rouge. Événements qui demandent d'agir : panne (cliquer le véhicule), iceberg (3 clics), pont fendu (ses trains
+    reviennent au dépôt, 18 s sans pont), plus brouillard, tempête, rush de 10 colis et aurore.
     3 tournées (50/70/80 s, réseau conservé, un renfort à choisir entre deux), humeur (Mamie envoie un traîneau une fois, puis sursis de 8 s,
     puis on rejoue la tournée ; le Matin ne se perd pas), express dorés, Radio Banquise (événements annoncés 8 s avant), traîneau joker.
     Score = (colis × 15 + rapidité + express × 50) × (1 + 0,4 × humeur) + 150 si le joker est gardé. `/chrono` ; console : `window.chrono`.

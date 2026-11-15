@@ -528,6 +528,26 @@ export function evIcon(ctx, id, x, y, s = 1) {
         ctx.quadraticCurveTo(-3, -7, 0, 0);
         ctx.quadraticCurveTo(3, 7, 7, -3);
         ctx.stroke();
+    } else if (id === 'breakdown') {
+        ctx.strokeStyle = '#6b7280';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(-5, 5);
+        ctx.lineTo(3, -3);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(4, -4, 3.2, -2.4, 1.6);
+        ctx.stroke();
+    } else if (id === 'iceberg') {
+        ctx.fillStyle = '#8fc9ef';
+        ctx.beginPath();
+        ctx.moveTo(-7, 5);
+        ctx.lineTo(-3, -2);
+        ctx.lineTo(0, -7);
+        ctx.lineTo(4, -1);
+        ctx.lineTo(7, 5);
+        ctx.closePath();
+        ctx.fill();
     } else if (id === 'burst') {
         ctx.fillStyle = '#c99a5b';
         ctx.fillRect(-4, -2, 8, 7);
