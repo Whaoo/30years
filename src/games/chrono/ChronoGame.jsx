@@ -197,6 +197,7 @@ function createChrono(api, props) {
         const [x, y] = def;
         s.links.push({ key, id: lid++, slot: same, a: x, b: y, type, len: linkLength(x, y, type), pos: 0, dir: 1, at: x, moving: false, wait: 0.3 + same * 0.8, load: [], closing: false, broken: 0 });
         if (same) say(`Un ${VEHICLES[type].one} de plus sur cette liaison (${same + 1} au total) : elle débite plus.`, 2.6);
+        s.mode = null; // le bandeau d'aide disparaît une fois la liaison posée
         s.dirty = true;
         const [mx, my] = linkPoint(x, y, type, 0.5);
         s.fx.push({ kind: 'open', x: mx, y: my, t: 0 });
@@ -336,8 +337,12 @@ function createChrono(api, props) {
             s.lastStat = st;
         }
     }
+    // les deux renforts proposés ; le chocolat chaud ne sert à rien si l'humeur est déjà haute : un véhicule à la place
+    function cardsNow() {
+        return cardPlans[s.round].map((id) => (id === 'cocoa' && s.humeur > 0.85 ? (cardPlans[s.round].includes('train') ? 'plane' : 'train') : id));
+    }
     function pickCard(i) {
-        const c = CARDS[cardPlans[s.round][i]];
+        const c = CARDS[cardsNow()[i]];
         if (c.give) Object.entries(c.give).forEach(([k, v]) => (s.depot[k] += v));
         if (c.capRail) s.capRail += c.capRail;
         if (c.mood) s.humeur = Math.min(1, s.humeur + c.mood);
@@ -669,7 +674,7 @@ function createChrono(api, props) {
             dir = (L.dir > 0 ? ISLES[L.b].x >= ISLES[L.a].x : ISLES[L.a].x >= ISLES[L.b].x) ? 1 : -1;
         } else {
             const off = (L.slot || 0) * 0.12;
-            k = L.at === L.a ? 0.22 + off : 0.78 - off;
+            k = L.at === L.a ? 0.3 + off : 0.7 - off;
             dir = (L.at === L.a ? ISLES[L.b].x >= ISLES[L.a].x : ISLES[L.a].x >= ISLES[L.b].x) ? 1 : -1;
         }
         // on reste au bord des îles
@@ -917,11 +922,18 @@ function createChrono(api, props) {
     function drawModeHelp(ctx) {
         if (s.pick) {
             const I = ISLES[s.pick];
-            ctx.strokeStyle = '#ffd36e';
-            ctx.lineWidth = 3.5;
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([7, 5]);
+            ctx.lineDashOffset = -s.t * 20;
             ctx.beginPath();
-            ctx.ellipse(I.x, I.y, I.r * 1.18, I.r * 0.92, 0, 0, TAU);
+            ctx.ellipse(I.x, I.y, I.r * 1.22, I.r * 0.95, 0, 0, TAU);
             ctx.stroke();
+            ctx.setLineDash([]);
+            roundRect(ctx, I.x - 26, I.y + I.r * 0.95 + 2, 52, 16, 8);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            text(ctx, 'Départ', I.x, I.y + I.r * 0.95 + 14, { size: 10, weight: 800, align: 'center', color: '#1d2542' });
             visible().forEach((k) => {
                 if (k === s.pick || !bestType(s.pick, k)) return;
                 const J = ISLES[k];
@@ -1031,23 +1043,6 @@ function createChrono(api, props) {
                 ctx.globalAlpha = 1;
             });
         }
-        // la cible d'une banquise qui va se fendre : hachures rouges
-        s.events.forEach((e) => {
-            if (e.id === 'crack' && e.warned && !e.done && e.target && !e.on) {
-                const [a, b, t] = e.target.split('-');
-                ctx.save();
-                ctx.strokeStyle = `rgba(255,80,80,${0.5 + 0.4 * Math.sin(s.t * 8)})`;
-                ctx.lineWidth = 12;
-                ctx.setLineDash([4, 6]);
-                ctx.beginPath();
-                const [x1, y1] = linkPoint(a, b, t, 0.3);
-                const [x2, y2] = linkPoint(a, b, t, 0.7);
-                ctx.moveTo(x1, y1);
-                ctx.lineTo(x2, y2);
-                ctx.stroke();
-                ctx.restore();
-            }
-        });
         // ponts fendus : hachures rouges et compte à rebours de la réparation
         Object.entries(s.broken).forEach(([key, until]) => {
             if (until <= s.rt) return;
@@ -1080,6 +1075,23 @@ function createChrono(api, props) {
                 ctx.fillStyle = 'rgba(8,14,34,0.9)';
                 ctx.fill();
                 text(ctx, `×${n}`, mx, my + 4, { size: 11, weight: 800, align: 'center', color: '#ffd36e' });
+            }
+        });
+        // la cible d'une banquise qui va se fendre : hachures rouges (par-dessus les rails)
+        s.events.forEach((e) => {
+            if (e.id === 'crack' && e.warned && !e.done && e.target && !e.on) {
+                const [a, b, t] = e.target.split('-');
+                ctx.save();
+                ctx.strokeStyle = `rgba(255,80,80,${0.5 + 0.4 * Math.sin(s.t * 8)})`;
+                ctx.lineWidth = 12;
+                ctx.setLineDash([4, 6]);
+                ctx.beginPath();
+                const [x1, y1] = linkPoint(a, b, t, 0.3);
+                const [x2, y2] = linkPoint(a, b, t, 0.7);
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+                ctx.restore();
             }
         });
         drawIceberg(ctx);
@@ -1137,8 +1149,15 @@ function createChrono(api, props) {
         if (s.tuto != null) drawTuto(ctx);
         drawFx(ctx);
         for (const p of s.popups) {
-            ctx.globalAlpha = 1 - p.t / 1.2;
-            text(ctx, p.str, p.x, p.y - p.t * 24, { size: 12, weight: 800, align: 'center', color: p.color, shadow: true });
+            ctx.globalAlpha = 1 - (p.t / 1.2) ** 2;
+            ctx.font = `800 14px ${DISPLAY}`;
+            ctx.textAlign = 'center';
+            ctx.lineWidth = 3.5;
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = 'rgba(8,14,34,0.85)';
+            ctx.strokeText(p.str, p.x, p.y - p.t * 24);
+            ctx.fillStyle = p.color;
+            ctx.fillText(p.str, p.x, p.y - p.t * 24);
             ctx.globalAlpha = 1;
         }
         if (s.sursis > 0) {
@@ -1252,19 +1271,19 @@ function createChrono(api, props) {
         ROUNDS.forEach((R, i) => {
             const y = 284 + i * 22;
             text(ctx, R.name, 182, y + 4, { size: 13, weight: 800, font: DISPLAY });
-            text(ctx, `${R.dur} s`, 240, y + 4, { size: 12, weight: 600, color: 'rgba(255,255,255,0.6)' });
+            text(ctx, `${R.dur} s`, 232, y + 4, { size: 12, weight: 600, color: 'rgba(255,255,255,0.6)' });
             const ev = eventPlans[i];
             if (!ev.length) text(ctx, 'calme : on apprend', 290, y + 4, { size: 11, weight: 600, color: 'rgba(255,255,255,0.6)' });
             ev.forEach((e, j) => {
-                const ex = 262 + j * 96;
-                roundRect(ctx, ex, y - 10, 92, 20, 10);
+                const ex = 272 + j * 93;
+                roundRect(ctx, ex, y - 10, 89, 20, 10);
                 ctx.fillStyle = 'rgba(255,255,255,0.1)';
                 ctx.fill();
                 circle(ctx, ex + 11, y, 8, '#ffffff');
                 evIcon(ctx, e.id, ex + 11, y, 0.8);
                 const m = Math.floor(e.t / 60);
                 const sec = String(Math.floor(e.t % 60)).padStart(2, '0');
-                text(ctx, `${EVENTS[e.id].short} ${m}:${sec}`, ex + 22, y + 4, { size: 10, weight: 600 });
+                text(ctx, `${EVENTS[e.id].short} ${m}:${sec}`, ex + 21, y + 4, { size: 9.5, weight: 600 });
             });
         });
         const b = { id: 'go', label: 'C’est parti !', primary: true, x: 476, y: 352, w: 150, h: 38 };
@@ -1279,7 +1298,7 @@ function createChrono(api, props) {
         text(ctx, `${st.delivered} colis livrés · humeur ${Math.round(st.humeur * 100)} % · express ${st.express} · +${st.pts.toLocaleString('fr-FR')} points`, W / 2, 112, { size: 13, weight: 600, align: 'center', color: 'rgba(255,255,255,0.8)' });
         text(ctx, `Choisis un renfort pour le ${ROUNDS[s.round + 1].name}`, W / 2, 148, { size: 15, weight: 800, align: 'center', color: '#ffd36e', font: DISPLAY });
         const btns = [];
-        cardPlans[s.round].forEach((id, i) => {
+        cardsNow().forEach((id, i) => {
             const c = CARDS[id];
             const x = 150 + i * 270;
             const b = { id: `card${i}`, x, y: 164, w: 230, h: 190 };
@@ -1313,7 +1332,7 @@ function createChrono(api, props) {
             text(ctx, c.l1, x + 115, 312, { size: 12, weight: 500, align: 'center', color: 'rgba(255,255,255,0.8)' });
             text(ctx, c.l2, x + 115, 330, { size: 12, weight: 500, align: 'center', color: 'rgba(255,255,255,0.8)' });
         });
-        const nxt = s.round === 0 ? 'Le Midi : deux îles de plus, un avion au dépôt et deux événements. Ton réseau est conservé.' : 'Le Soir : l’île Aurore, le rush et trois événements. Ton réseau est conservé.';
+        const nxt = s.round === 0 ? `Le Midi : deux îles de plus, un avion au dépôt et ${eventPlans[1].length} événements. Ton réseau est conservé.` : `Le Soir : l’île Aurore, le rush et ${eventPlans[2].length} événements. Ton réseau est conservé.`;
         text(ctx, nxt, W / 2, 384, { size: 12, weight: 600, align: 'center', color: 'rgba(255,255,255,0.65)' });
         return btns;
     }

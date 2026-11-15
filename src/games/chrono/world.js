@@ -9,13 +9,13 @@ export const BOTTOM = H - 46;
 // Les îles. from : tournée où l'île apparaît (0 matin, 1 midi, 2 soir). weight : part des colis qui en partent.
 export const ISLES = {
     tri: { x: 400, y: 228, r: 50, name: 'Centre de tri', sym: 'tri', col: '#7fe8ff', from: 0, weight: 3 },
-    poisson: { x: 255, y: 122, r: 36, name: 'Île Poisson', sym: 'fish', col: '#ff9f43', from: 0, weight: 1 },
+    poisson: { x: 250, y: 142, r: 36, name: 'Île Poisson', sym: 'fish', col: '#ff9f43', from: 0, weight: 1 },
     sapin: { x: 275, y: 332, r: 36, name: 'Île Sapin', sym: 'tree', col: '#2bb673', from: 0, weight: 1 },
     phoque: { x: 118, y: 345, r: 32, name: 'Île Phoque', sym: 'seal', col: '#9fa8ff', from: 0, weight: 1 },
     morse: { x: 92, y: 196, r: 30, name: 'Île Morse', sym: 'moon', col: '#c9b6ff', from: 0, weight: 1 },
-    etoile: { x: 598, y: 112, r: 38, name: 'Île Étoile', sym: 'star', col: '#ffd23f', from: 1, weight: 1.2 },
+    etoile: { x: 612, y: 145, r: 38, name: 'Île Étoile', sym: 'star', col: '#ffd23f', from: 1, weight: 1.2 },
     cadeau: { x: 680, y: 300, r: 36, name: 'Île Cadeau', sym: 'gift', col: '#ff6fa8', from: 1, weight: 1.2 },
-    aurore: { x: 440, y: 72, r: 27, name: 'Île Aurore', sym: 'aurora', col: '#7be0a3', from: 2, weight: 1 }
+    aurore: { x: 482, y: 138, r: 27, name: 'Île Aurore', sym: 'aurora', col: '#7be0a3', from: 2, weight: 1 }
 };
 export const ISLE_KEYS = Object.keys(ISLES);
 
