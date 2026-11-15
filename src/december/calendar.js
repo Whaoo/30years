@@ -30,8 +30,16 @@ export const QUEST = [
     { id: 'monts', ep: 1, title: 'Les Monts Givrés', kind: 'Plateforme', from: day(1), place: [22, 70], shard: true },
     { id: 'reveillon', ep: 2, title: 'Opération Réveillon', kind: 'Défense du sapin', from: day(8), place: [42, 38], shard: true },
     { id: 'chrono', ep: 3, title: 'Chronoflocon', kind: 'Gestion', from: day(15), place: [66, 44], shard: true },
-    { id: 'aventure', ep: 4, title: 'Le fort du Golem', kind: 'Aventure', from: day(24), place: [84, 68], shard: false }
+    { id: 'aventure', ep: 4, title: 'Le fort du Golem', kind: 'Aventure', from: day(18), place: [84, 68], shard: false }
 ];
+
+// Le grand final ouvre le vendredi 18 (beaucoup de collègues sont en congés la semaine de Noël) ;
+// la quête reste jouable pendant les vacances, jusqu'au 8 janvier inclus.
+export const QUEST_UNTIL = new Date(YEAR + 1, 0, 9);
+
+export function isQuestSeason(now) {
+    return now >= day(1) && now < QUEST_UNTIL;
+}
 
 export function questEpisode(id) {
     return QUEST.find((q) => q.id === id) || null;

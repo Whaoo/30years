@@ -9,7 +9,7 @@ import GamesTile from './components/GamesTile';
 import GameModal from './components/GameModal';
 import { ADVENTURE, ALL_GAMES, CANDLES, MONTS, QUIZ, getGame, isUnlocked } from './games';
 import { episodeState } from './december/quest';
-import { questEpisode } from './december/calendar';
+import { isQuestSeason, questEpisode } from './december/calendar';
 import { clearBests, loadBests, saveScore } from './games/scores';
 import AdventCalendar from './components/AdventCalendar';
 import Gags from './components/Gags';
@@ -361,7 +361,7 @@ function App() {
                     onHome={onHome}
                     onAvent={onAvent}
                     onLogo={onLogo}
-                    onQuest={advent.isDecember ? () => setQuestOpen(true) : null}
+                    onQuest={isQuestSeason(now) ? () => setQuestOpen(true) : null}
                 />
 
                 <main className={`main${isAvent ? ' main--avent' : ''}`}>

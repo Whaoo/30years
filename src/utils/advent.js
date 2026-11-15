@@ -24,13 +24,13 @@ export const ADVENT_TEASERS = [
     { kind: 'Jeu', title: 'Memory des pingouins', text: 'Nouveau mini-jeu : retrouve les paires de pingouins de l’équipe. Enchaîne les paires pour le bonus de série.', game: 'memory', quest: 'chrono' },
     { kind: 'Jeu', title: 'Relais Express', text: 'Nouveau mini-jeu : fusionne les objets pour servir les clients du relais colis avant qu’ils s’impatientent.', game: 'relais' },
     { kind: 'Jeu', title: 'Banquise glissante', text: 'Nouveau mini-jeu : un casse-tête de glisse en 8 niveaux, retournés à chaque partie. Le moins de coups, le plus vite possible.', game: 'slide' },
-    { kind: 'Jeu', title: 'Tour de bonhommes de neige', text: 'Nouveau mini-jeu : lâche la boule au bon moment et empile le plus haut possible.', game: 'tower' },
+    { kind: 'Jeu', title: 'Tour de bonhommes de neige', text: 'Nouveau mini-jeu : lâche la boule au bon moment et empile le plus haut possible. Et c’est aussi le jour du grand final de la quête !', game: 'tower', quest: 'aventure' },
     null, // porte 19 : samedi
     null, // porte 20 : dimanche
     { kind: 'Jeu', title: 'Descente en luge', text: 'Nouveau mini-jeu : slalom entre les sapins, poissons à ramasser, portes à passer.', game: 'sled' },
     { kind: 'Jeu', title: 'Empilage de glaçons', text: 'Dernier mini-jeu avant les vacances : empile les glaçons et complète des lignes avant que ça déborde.', game: 'ice' },
     { kind: 'Rattrapage', title: 'Le jour du rattrapage', text: 'Pas de nouveau jeu aujourd’hui : tous les jeux et la quête restent ouverts. C’est le moment de battre tes records.' },
-    { kind: 'Grand final', title: 'Le fort du Golem', text: 'Le dernier épisode de la quête : les trois éclats de givre ouvrent le fort du Golem. Le grand final est ouvert à tous.', game: 'aventure', quest: 'aventure' },
+    { kind: 'Bonus', title: 'Joyeux Réveillon !', text: 'Les pingouins te souhaitent un joyeux Noël. Tous les jeux et la quête restent ouverts pendant les vacances, jusqu’au 8 janvier.', quest: 'aventure' },
     null // porte 25 : texte à écrire
 ];
 
