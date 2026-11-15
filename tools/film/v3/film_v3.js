@@ -247,36 +247,174 @@ function v3title(ctx, tv) {
     vignette(ctx, 0.55);
 }
 
-// ---------------------------------------------------------------- montage
-const V3 = [
-    { a: 7, b: 17.4, f: v3fort }, { a: 17, b: 21.4, f: v2shot2b }, { a: 21, b: 25.6, f: v2shot3 }, { a: 25, b: 48.4, f: v2shot4, warm: 1 },
-    { a: 48, b: 64.4, f: v2shot5, warm: 1 }, { a: 64, b: 76.4, f: v2shot6 }, { a: 76, b: 86.4, f: v3route }, { a: 86, b: 98.4, f: v3monts }, { a: 98, b: 108.1, f: v3title }
+// ---------------------------------------------------------------- montage (temps du film ; off = décalage vers le temps de la v2)
+const S2 = 32.4; // après les trois méchants, la v2 (à partir de l'igloo, 21 s) reprend à 53.4 s
+const MONTAGE = [
+    { a: 0, b: 14.6, f: v3book, off: 0 }, { a: 14, b: 30.6, f: v3map, off: 0 }, { a: 30, b: 40.4, f: v3fort, off: SHIFT },
+    { a: 40, b: 44.9, f: v3villainYeti, off: 0 }, { a: 44.5, b: 49.4, f: v3villainSnowman, off: 0 }, { a: 49, b: 53.9, f: v3villainTrieuse, off: 0 },
+    { a: 53.4, b: 58, f: v2shot3, off: S2 }, { a: 57.4, b: 80.8, f: v2shot4, off: S2, warm: 1 }, { a: 80.4, b: 96.8, f: v2shot5, off: S2, warm: 1 },
+    { a: 96.4, b: 108.8, f: v2shot6, off: S2 }, { a: 108.4, b: 118.8, f: v3route, off: S2 }, { a: 118.4, b: 130.8, f: v3monts, off: S2 }, { a: 130.4, b: 140.6, f: v3title, off: S2 }
 ];
-const DURATION3 = 108 + SHIFT;
-function drawShot(ctx, s, tv) { s.f(ctx, tv); if (s.warm) grade(ctx, 0.85); }
+const DURATION3 = 140.4;
+function drawShot(ctx, s, t) { s.f(ctx, t - s.off); if (s.warm) grade(ctx, 0.85); }
 function renderFilm3(ctx, t, buf) {
     ctx.save(); ctx.setTransform(ctx.canvas.width / W, 0, 0, ctx.canvas.height / H, 0, 0);
-    if (t < INTRO + 0.6) {
-        if (t < 14.6) {
-            v3book(ctx, t);
-            if (t > 14) { const b = buf.getContext('2d'); b.setTransform(buf.width / W, 0, 0, buf.height / H, 0, 0); v3map(b, t); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = ease.sine(seg(t, 14, 14.6)); ctx.drawImage(buf, 0, 0, ctx.canvas.width, ctx.canvas.height); ctx.globalAlpha = 1; }
-        } else {
-            v3map(ctx, t);
-            if (t > INTRO) { const b = buf.getContext('2d'); b.setTransform(buf.width / W, 0, 0, buf.height / H, 0, 0); v3fort(b, t - SHIFT); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = ease.sine(seg(t, INTRO, INTRO + 0.6)); ctx.drawImage(buf, 0, 0, ctx.canvas.width, ctx.canvas.height); ctx.globalAlpha = 1; }
-        }
-    } else {
-        const tv = t - SHIFT;
-        const active = V3.filter((s) => tv >= s.a && tv < s.b);
-        if (!active.length) active.push(V3[V3.length - 1]);
-        drawShot(ctx, active[0], tv);
-        if (active[1]) {
-            const s = active[1], k = seg(tv, s.a, active[0].b);
-            const b = buf.getContext('2d'); b.setTransform(buf.width / W, 0, 0, buf.height / H, 0, 0); b.clearRect(0, 0, W, H);
-            drawShot(b, s, tv);
-            ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = ease.sine(k); ctx.drawImage(buf, 0, 0, ctx.canvas.width, ctx.canvas.height); ctx.globalAlpha = 1;
-        }
+    const active = MONTAGE.filter((s) => t >= s.a && t < s.b);
+    if (!active.length) active.push(MONTAGE[MONTAGE.length - 1]);
+    drawShot(ctx, active[0], t);
+    if (active[1]) {
+        const s = active[1], k = seg(t, s.a, active[0].b);
+        const b = buf.getContext('2d'); b.setTransform(buf.width / W, 0, 0, buf.height / H, 0, 0); b.clearRect(0, 0, W, H);
+        drawShot(b, s, t);
+        ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = ease.sine(k); ctx.drawImage(buf, 0, 0, ctx.canvas.width, ctx.canvas.height); ctx.globalAlpha = 1;
     }
     ctx.setTransform(ctx.canvas.width / W, 0, 0, ctx.canvas.height / H, 0, 0);
     filmGrain(ctx, t);
     ctx.restore();
+}
+
+// ================================================================ les trois méchants, chacun en gros plan
+// L'éclat de givre tombe du ciel et leur est « remis » : le regard change, ils deviennent méchants.
+function shardFall(ctx, lt, tx, ty, t0 = 1.0, t1 = 2.0, from = [W * 0.78, -80]) {
+    const k = seg(lt, t0, t1);
+    if (k <= 0) return;
+    if (k < 1) {
+        const e = ease.in(k), x = lerp(from[0], tx, e), y = lerp(from[1], ty, e);
+        const g = ctx.createLinearGradient(x, y, lerp(from[0], tx, Math.max(0, e - 0.35)), lerp(from[1], ty, Math.max(0, e - 0.35)));
+        g.addColorStop(0, 'rgba(200,250,255,0.95)'); g.addColorStop(1, 'rgba(200,250,255,0)');
+        ctx.strokeStyle = g; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(lerp(from[0], tx, Math.max(0, e - 0.35)), lerp(from[1], ty, Math.max(0, e - 0.35))); ctx.stroke();
+        glowAt(ctx, x, y, 60, 0.8); shard(ctx, x, y, 1.6, e * 8, 1);
+    }
+    const f = seg(lt, t1, t1 + 0.45);
+    if (f > 0 && f < 1) { ctx.fillStyle = `rgba(210,250,255,${0.6 * (1 - f)})`; ctx.fillRect(0, 0, W, H); for (let i = 0; i < 10; i++) { const a = (i / 10) * TAU; const r = 40 + f * 220; ctx.strokeStyle = `rgba(200,250,255,${0.7 * (1 - f)})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(tx + Math.cos(a) * r * 0.5, ty + Math.sin(a) * r * 0.5); ctx.lineTo(tx + Math.cos(a) * r, ty + Math.sin(a) * r); ctx.stroke(); } }
+}
+function evilEyes(ctx, pts, r, lt, t, lookUp, evil, lidCol) {
+    pts.forEach(([x, y], i) => {
+        const side = i ? 1 : -1;
+        if (evil > 0) glowAt(ctx, x, y, r * 4, 0.55 * evil);
+        circle(ctx, x, y, r, evil > 0.5 ? '#d8fbff' : '#ffffff');
+        ctx.strokeStyle = 'rgba(29,37,66,0.55)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.stroke();
+        const px = x + (evil > 0.5 ? -side * r * 0.15 : 0), py = y - lookUp * r * 0.45 + evil * r * 0.1;
+        circle(ctx, px, py, r * 0.5, evil > 0 ? mixc('1d2542', '19c6e6', evil) : '#1d2542');
+        circle(ctx, px + r * 0.15, py - r * 0.18, r * 0.16, '#ffffff');
+        if (evil > 0) { // paupière en biseau : le regard méchant
+            ctx.fillStyle = lidCol; ctx.beginPath();
+            ctx.moveTo(x - r * 1.3, y - r * 1.3); ctx.lineTo(x + r * 1.3, y - r * 1.3);
+            ctx.lineTo(x + r * 1.3, y - r * (1.1 - 0.95 * evil) - side * r * 0.55 * evil); ctx.lineTo(x - r * 1.3, y - r * (1.1 - 0.95 * evil) + side * r * 0.55 * evil); ctx.closePath(); ctx.fill();
+        }
+    });
+}
+
+// 1. le Yéti des Monts Givrés : l'éclat se plante sur son front
+function v3villainYeti(ctx, t) {
+    const lt = t - 40;
+    const push = 1 + 0.12 * ease.io(seg(lt, 2.0, 4.9)) + (lt > 2 && lt < 2.5 ? Math.sin(seg(lt, 2, 2.5) * Math.PI) * 0.02 : 0);
+    ctx.fillStyle = vgrad(ctx, 0, H, [[0, '#1b2550'], [0.55, '#5b4f8f'], [1, '#c8a7c9']]); ctx.fillRect(0, 0, W, H);
+    stars(ctx, t, 41, 120, 320);
+    ctx.save(); ctx.translate(W / 2, H * 0.62); ctx.scale(push, push); ctx.translate(-W / 2, -H * 0.62);
+    peaks(ctx, [[200, 560, 520, 260], [1080, 560, 560, 300]], 91, '#e7e2f2', '#7d6fa8', '#5d518a'); haze(ctx, 560, 140, '200,170,210', 0.5);
+    const evil = ease.out(seg(lt, 2.2, 3.0));
+    const roar = lt > 3.1 ? 0.25 + 0.2 * ease.out(seg(lt, 3.1, 3.5)) : 0;
+    yeti2(ctx, 640, 960, 4.3, { roar, t, eyes: 0, shard: lt > 2.0, arms: 0 });
+    const ex = (dx) => 640 - dx * 4.3, ey = 960 - 114 * 4.3;
+    evilEyes(ctx, [[ex(-12), ey], [ex(12), ey]], 24, lt, t, lt < 2.2 ? ease.io(seg(lt, 0.4, 1.0)) : 0, evil, '#8c86a8');
+    ctx.restore();
+    shardFall(ctx, lt, 640, (960 - 150 * 4.3 - H * 0.62) * push + H * 0.62);
+    snowLayer(ctx, t, 31, 70, 50, 2, 0.7, 26, -60);
+    caption(ctx, t, 40.4, 44.6, 'Le premier éclat tomba sur le Yéti des Monts Givrés…', 650, 28);
+    vignette(ctx, 0.6);
+}
+
+// 2. le Gros Bonhomme, aux portes du village : l'éclat devient sa couronne de glace
+function bigSnowman(ctx, x, y, s, o = {}) {
+    const { crown = 0, evil = 0, look = 0, arms = 0, t = 0 } = o;
+    ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+    const body = (cx, cy, r) => { const g = ctx.createRadialGradient(cx - r * 0.35, cy - r * 0.4, r * 0.1, cx, cy, r); g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#b9cbe3'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(90,120,170,0.45)'; ctx.lineWidth = 3; ctx.stroke(); };
+    // bras en branches
+    ctx.strokeStyle = '#5b3a22'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+    [-1, 1].forEach((d) => { ctx.beginPath(); ctx.moveTo(d * 60, -100); ctx.lineTo(d * 130, -140 - arms * 60); ctx.moveTo(d * 105, -127 - arms * 45); ctx.lineTo(d * 118, -160 - arms * 50); ctx.stroke(); });
+    body(0, -40, 90); body(0, -150, 66);
+    [-118, -150].forEach((by) => circle(ctx, 0, by + 10, 6, '#1d2542'));
+    // écharpe bleu nuit
+    ctx.fillStyle = '#26345e'; rrect(ctx, -50, -210, 100, 22, 10); ctx.fill(); ctx.fillRect(18, -200, 18, 50);
+    body(0, -262, 52);
+    // sourcils de charbon
+    ctx.strokeStyle = '#1d2542'; ctx.lineWidth = 9; ctx.beginPath();
+    ctx.moveTo(-36, -298 + evil * 4); ctx.lineTo(-10, -290 + evil * 10); ctx.moveTo(36, -298 + evil * 4); ctx.lineTo(10, -290 + evil * 10); ctx.stroke();
+    // nez carotte
+    ctx.fillStyle = '#ff9f43'; ctx.beginPath(); ctx.moveTo(-2, -262); ctx.lineTo(44, -255); ctx.lineTo(-2, -248); ctx.fill();
+    // bouche en cailloux : moue, puis sourire mauvais
+    for (let i = 0; i < 6; i++) { const k = (i - 2.5) / 2.5; circle(ctx, k * 24, -228 + (evil > 0 ? -k * k * 10 + 6 : k * k * 6), 4, '#1d2542'); }
+    // couronne de glace
+    if (crown > 0) { ctx.save(); ctx.globalAlpha = crown; ctx.fillStyle = '#bff4ff';
+        for (let i = 0; i < 5; i++) { const cx = -32 + i * 16, h = i === 2 ? 46 : 28 + (i % 2) * 8; ctx.beginPath(); ctx.moveTo(cx - 9, -306); ctx.lineTo(cx, -306 - h * crown); ctx.lineTo(cx + 9, -306); ctx.fill(); }
+        ctx.fillStyle = '#7fe8ff'; rrect(ctx, -40, -312, 80, 10, 4); ctx.fill(); ctx.restore(); }
+    ctx.restore();
+}
+function v3villainSnowman(ctx, t) {
+    const lt = t - 44.5;
+    const push = 1 + 0.12 * ease.io(seg(lt, 2.0, 4.9));
+    ctx.fillStyle = vgrad(ctx, 0, H, [[0, '#091633'], [0.7, '#203b6a'], [1, '#3b5f9a']]); ctx.fillRect(0, 0, W, H);
+    stars(ctx, t, 52, 120, 360);
+    // le village au loin, et son grand sapin
+    for (let i = 0; i < 6; i++) { const hx = 120 + i * 210, hy = 520 + (i % 2) * 14; ctx.fillStyle = '#16284b'; ctx.fillRect(hx - 30, hy - 30, 60, 34); ctx.beginPath(); ctx.moveTo(hx - 38, hy - 28); ctx.lineTo(hx, hy - 60); ctx.lineTo(hx + 38, hy - 28); ctx.fill(); ctx.fillStyle = '#ffcf7a'; ctx.fillRect(hx - 8, hy - 20, 14, 12); glow(ctx, hx, hy - 14, 40, 'rgba(255,190,100,A)', 0.4); }
+    ctx.save(); ctx.globalAlpha = 0.85; bigTreeIcon(ctx, 1000, 520, 150); ctx.restore(); glow(ctx, 1000, 360, 70, 'rgba(255,215,120,A)', 0.5);
+    ctx.fillStyle = '#dfeaf8'; ctx.beginPath(); ctx.moveTo(0, 560); ctx.quadraticCurveTo(640, 520, W, 560); ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.fill();
+    ctx.save(); ctx.translate(W / 2, H * 0.6); ctx.scale(push, push); ctx.translate(-W / 2, -H * 0.6);
+    const evil = ease.out(seg(lt, 2.2, 3.0));
+    bigSnowman(ctx, 600, 870, 1.9, { crown: ease.back(seg(lt, 2.0, 2.6)), evil, arms: ease.out(seg(lt, 3.0, 3.6)), t });
+    const eyY = 870 - 280 * 1.9;
+    evilEyes(ctx, [[600 - 20 * 1.9, eyY], [600 + 20 * 1.9, eyY]], 14, lt, t, lt < 2.2 ? ease.io(seg(lt, 0.4, 1.0)) : 0, evil, '#e8f0fa');
+    ctx.restore();
+    shardFall(ctx, lt, 600, (870 - 320 * 1.9 - H * 0.6) * push + H * 0.6, 1.0, 2.0, [W * 0.2, -80]);
+    snowLayer(ctx, t, 32, 60, 40, 2, 0.7, 26, -20);
+    caption(ctx, t, 44.9, 49.1, 'le deuxième sur le Gros Bonhomme, aux portes du village…', 650, 28);
+    vignette(ctx, 0.6);
+}
+
+// 3. la Grande Trieuse du centre de tri : l'éclat tombe dans sa trémie, la machine s'éveille
+function trieuse(ctx, x, y, s, o = {}) {
+    const { awake = 0, jaw = 0, t = 0 } = o;
+    ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+    // tapis roulants de chaque côté
+    [-1, 1].forEach((d) => { ctx.fillStyle = '#3b4a66'; ctx.fillRect(d > 0 ? 130 : -330, -60, 200, 22); ctx.fillStyle = '#5c6f8f'; for (let i = 0; i < 9; i++) circle(ctx, (d > 0 ? 140 : -320) + i * 22, -49, 6, '#2b3750');
+        for (let i = 0; i < 3; i++) { const bx = (d > 0 ? 150 : -310) + ((t * 50 * (1 + awake * 3) + i * 66) % 180); ctx.fillStyle = '#c99a5b'; ctx.fillRect(bx, -86, 26, 26); ctx.strokeStyle = '#8a6434'; ctx.lineWidth = 2; ctx.strokeRect(bx, -86, 26, 26); } });
+    // corps
+    ctx.fillStyle = '#d7263d'; rrect(ctx, -140, -260, 280, 260, 18); ctx.fill();
+    ctx.fillStyle = '#a5121f'; ctx.fillRect(-140, -40, 280, 40);
+    ctx.fillStyle = '#ffd36e'; for (let i = 0; i < 7; i++) { ctx.beginPath(); ctx.moveTo(-140 + i * 44, -40); ctx.lineTo(-118 + i * 44, -40); ctx.lineTo(-140 + i * 44 + 8, 0); ctx.lineTo(-140 + i * 44 - 14, 0); ctx.fill(); }
+    // trémie
+    ctx.fillStyle = '#8a9bb5'; ctx.beginPath(); ctx.moveTo(-120, -260); ctx.lineTo(-170, -360); ctx.lineTo(170, -360); ctx.lineTo(120, -260); ctx.fill();
+    ctx.fillStyle = '#6b7c96'; ctx.beginPath(); ctx.moveTo(0, -260); ctx.lineTo(120, -260); ctx.lineTo(170, -360); ctx.lineTo(60, -360); ctx.fill();
+    ctx.fillStyle = '#2b3750'; rrect(ctx, -150, -368, 300, 14, 6); ctx.fill();
+    // cadrans (les yeux) dans leurs cerclages
+    [-60, 60].forEach((ex) => { circle(ctx, ex, -175, 46, '#2b3750'); circle(ctx, ex, -175, 38, awake > 0 ? mixc('f4f7fb', 'd8fbff', awake) : '#f4f7fb'); });
+    // bouche : fente à grille, qui s'ouvre en mâchoire
+    const open = 14 + jaw * 30;
+    ctx.fillStyle = '#1a2033'; rrect(ctx, -90, -100 - open / 2, 180, open, 8); ctx.fill();
+    ctx.fillStyle = '#e6edf7'; for (let i = 0; i < 8; i++) { const tx = -80 + i * 22; ctx.beginPath(); ctx.moveTo(tx, -100 - open / 2); ctx.lineTo(tx + 9, -100 - open / 2 + 10 * (0.4 + jaw)); ctx.lineTo(tx + 18, -100 - open / 2); ctx.fill(); ctx.beginPath(); ctx.moveTo(tx, -100 + open / 2); ctx.lineTo(tx + 9, -100 + open / 2 - 10 * (0.4 + jaw)); ctx.lineTo(tx + 18, -100 + open / 2); ctx.fill(); }
+    // voyants
+    ['#7be0a3', '#ffd36e', '#ff5d5d'].forEach((c, i) => circle(ctx, -110 + i * 22, -235, 6, awake > 0.3 ? (Math.sin(t * 20 + i) > 0 ? '#7fe8ff' : '#1d6a80') : c));
+    ctx.restore();
+}
+function v3villainTrieuse(ctx, t) {
+    const lt = t - 49;
+    const push = 1 + 0.1 * ease.io(seg(lt, 2.0, 4.9));
+    const shake = lt > 2 && lt < 3.2 ? (1 - seg(lt, 2, 3.2)) * 6 : 0;
+    ctx.fillStyle = vgrad(ctx, 0, H, [[0, '#1a1f33'], [1, '#3a3346']]); ctx.fillRect(0, 0, W, H);
+    // l'entrepôt : étagères de colis, lampes suspendues
+    for (let i = 0; i < 5; i++) { const sx = 40 + i * 260; ctx.fillStyle = '#2a2f45'; ctx.fillRect(sx, 120, 200, 380); for (let r = 0; r < 4; r++) { ctx.fillStyle = '#3d4460'; ctx.fillRect(sx, 200 + r * 90, 200, 8); for (let b = 0; b < 4; b++) { ctx.fillStyle = ['#c99a5b', '#b88a4f', '#d7a96a'][(i + r + b) % 3]; ctx.fillRect(sx + 12 + b * 46, 160 + r * 90, 36, 40); } } }
+    [300, 980].forEach((lx) => { ctx.strokeStyle = '#555'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(lx, 0); ctx.lineTo(lx, 70); ctx.stroke(); ctx.fillStyle = '#2b3750'; ctx.beginPath(); ctx.moveTo(lx - 30, 90); ctx.lineTo(lx, 66); ctx.lineTo(lx + 30, 90); ctx.fill(); glow(ctx, lx, 120, 260, 'rgba(255,210,140,A)', 0.25); });
+    ctx.fillStyle = '#2b2a38'; ctx.fillRect(0, 560, W, 160);
+    const awake = ease.out(seg(lt, 2.2, 3.0));
+    ctx.save(); ctx.translate(W / 2 + Math.sin(t * 60) * shake, H * 0.6); ctx.scale(push, push); ctx.translate(-W / 2, -H * 0.6);
+    trieuse(ctx, 640, 640, 1.45, { awake, jaw: lt > 3.0 ? ease.out(seg(lt, 3.0, 3.5)) * (0.7 + 0.3 * Math.sin(t * 9)) : 0, t });
+    evilEyes(ctx, [[640 - 60 * 1.45, 640 - 175 * 1.45], [640 + 60 * 1.45, 640 - 175 * 1.45]], 32, lt, t, lt < 2.2 ? ease.io(seg(lt, 0.4, 1.0)) : 0, awake, '#d7263d');
+    // les colis s'envolent quand elle s'éveille
+    if (lt > 3.0) { const r = rng(77); for (let i = 0; i < 9; i++) { const k = seg(lt, 3.0 + r() * 0.8, 4.9); if (k <= 0) continue; const dir = r() < 0.5 ? -1 : 1; const px = 640 + dir * (100 + k * (300 + r() * 300)), py = 520 - Math.sin(k * Math.PI) * (160 + r() * 140) + k * 120; ctx.save(); ctx.translate(px, py); ctx.rotate(k * 6 * dir); ctx.fillStyle = '#c99a5b'; ctx.fillRect(-16, -16, 32, 32); ctx.strokeStyle = '#8a6434'; ctx.lineWidth = 2; ctx.strokeRect(-16, -16, 32, 32); ctx.restore(); } }
+    if (awake > 0) glow(ctx, 640, 640 - 330 * 1.45, 180, 'rgba(127,232,255,A)', 0.35 * awake);
+    ctx.restore();
+    shardFall(ctx, lt, 640, (640 - 350 * 1.45 - H * 0.6) * push + H * 0.6, 1.0, 2.0, [W * 0.62, -80]);
+    caption(ctx, t, 49.4, 53.6, 'et le troisième dans la Grande Trieuse du centre de tri.', 650, 28);
+    vignette(ctx, 0.65);
 }

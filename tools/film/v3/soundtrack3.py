@@ -227,19 +227,45 @@ def reverb(x, d=2.4, seed=3, wet=0.22):
         out[c] = x[c] + wet * fftconvolve(x[c], ir)[:x.shape[1]]
     return out
 intro = reverb(music, 2.6, 3, 0.35) + reverb(sfx, 1.2, 5, 0.15)
+# ================================================================ LES TROIS MÉCHANTS (40 → 53.4), joués à part puis insérés
+V0 = 40.0
+def villain_bus():
+    global music, sfx
+    music = np.zeros((2, int(14.0 * SR))); sfx = np.zeros((2, int(14.0 * SR)))
+    chord(['D2', 'A2', 'D3', 'F3'], 0.0, 14.0, strings, 0.05, a=0.8)
+    for k, (t0, pan) in enumerate([(0.0, -0.3), (4.5, 0.3), (9.0, 0.0)]):
+        for i in range(5): place(music, t0 + 0.2 + i * 0.36, pluck(hz(['D3', 'F3', 'A3', 'C#4'][i % 4]) / 2, 0.3, bright=0.8, decay=8), 0.06, pan)
+        place(sfx, t0 + 1.0, whoosh(1.0, 3000, 600, 0.6), 0.2, pan)                   # l'éclat qui tombe
+        place(music, t0 + 2.0, timpani(hz('D2'), 2.0), 0.35, pan); place(sfx, t0 + 2.0, cymbal(1.5), 0.06, pan)
+        for j, n in enumerate(['D6', 'F6', 'A6', 'C#7']): place(music, t0 + 2.02 + j * 0.05, bell(hz(n), 1.8), 0.05, pan)
+        chord(['D2', 'G#2', 'D3'], t0 + 2.2, 2.4, brass, 0.05)                         # accord menaçant
+        if k == 0: place(sfx, t0 + 3.1, roar(1.4), 0.22, pan)                           # le yéti gronde
+        if k == 1:
+            for i in range(3): place(sfx, t0 + 3.0 + i * 0.32, blip(110 + i * 6, (500, 900), 0.22), 0.12, pan)  # « ho ho ho » mauvais
+        if k == 2:
+            for i in range(6): place(sfx, t0 + 2.4 + i * 0.18, thump(220 + (i % 2) * 90, 0.08), 0.12, pan)       # la machine claque
+            place(sfx, t0 + 3.0, filt(noise(1.6), 'bandpass', [180, 900]) * env_ar(int(1.6 * SR), 0.1, 0.6), 0.12, pan)  # broyage
+            for i in range(8): place(sfx, t0 + 2.6 + i * 0.12, pop(1200 + (i % 3) * 300, 0.06), 0.04, pan)
+    out = reverb(music, 2.6, 3, 0.35) + reverb(sfx, 1.2, 5, 0.15)
+    return out
+
+vil = villain_bus()
 w = wave.open('soundtrack2.wav'); v2 = np.frombuffer(w.readframes(w.getnframes()), np.int16).reshape(-1, 2).T / 32768.0
 # niveau de l'intro aligné sur la v2 (RMS de ses 20 premières secondes)
 ref = np.sqrt(np.mean(v2[:, int(7 * SR):int(27 * SR)] ** 2)); cur = np.sqrt(np.mean(intro[:, int(1 * SR):int(29 * SR)] ** 2))
 intro = np.tanh(intro * (ref / cur) * 0.8) * 0.92
-TOTAL = int(131.0 * SR)
-out = np.zeros((2, TOTAL))
-xf = int(0.6 * SR); start = int(30.0 * SR)
-out[:, :min(intro.shape[1], start + xf)] += intro[:, :min(intro.shape[1], start + xf)]
-fo = np.linspace(1, 0, xf); out[:, start:start + xf] *= fo
-seg_v2 = v2[:, int(7.0 * SR):]
-n = min(seg_v2.shape[1], TOTAL - start)
-fi = np.ones(n); fi[:xf] = np.linspace(0, 1, xf)
-out[:, start:start + n] += seg_v2[:, :n] * fi
+TOTAL = int(140.4 * SR)
+cur_v = np.sqrt(np.mean(vil ** 2)); vil = np.tanh(vil * (ref / cur_v) * 0.8) * 0.92
+out = np.zeros((2, TOTAL)); xf = int(0.5 * SR)
+def put(x, at, fade_in=True, fade_out=True):
+    i0 = int(at * SR); n = min(x.shape[1], TOTAL - i0); y = x[:, :n].copy()
+    if fade_in: y[:, :xf] *= np.linspace(0, 1, xf)
+    if fade_out: y[:, -xf:] *= np.linspace(1, 0, xf)
+    out[:, i0:i0 + n] += y
+put(intro[:, :int(30.5 * SR)], 0.0, fade_in=False)
+put(v2[:, int(7.0 * SR):int(17.9 * SR)], 30.0)
+put(vil[:, :int(13.9 * SR)], 40.0)
+put(v2[:, int(21.0 * SR):], 53.4, fade_out=False)
 fade = int(1.2 * SR); out[:, -fade:] *= np.linspace(1, 0, fade)
 pcm = (np.clip(out, -1, 1).T * 32767).astype(np.int16)
 with wave.open(sys.argv[1] if len(sys.argv) > 1 else 'soundtrack3.wav', 'wb') as wf:

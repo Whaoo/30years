@@ -19,7 +19,7 @@ export default function FilmPromo({ onWatch, onLater }) {
                 <button type="button" className="promo__poster" onClick={onWatch} aria-label="Regarder le film">
                     <img src={FILM.poster} alt="" />
                     <span className="promo__play"><Icon name="play" size={34} /></span>
-                    <span className="promo__time">2 min 11</span>
+                    <span className="promo__time">2 min 20</span>
                 </button>
                 <div className="promo__text">
                     <span className="eyebrow">Décembre · nouveau</span>

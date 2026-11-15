@@ -1,6 +1,6 @@
 # Le prologue de la quête (film du 1er décembre)
 
-Version en ligne : la v3 « conte » (2 min 11), dans `v3/` : livre à la bougie, carte du Royaume du Pôle avec zooms,
+Version en ligne : la v3 « conte » (2 min 20), dans `v3/` : livre à la bougie, carte du Royaume du Pôle avec zooms,
 puis le montage v2 (fichiers ci-dessous) décalé de 23 s et restylé (narration Crimson Pro, titre Gloock, montagnes peintes, grain).
 `v3/v3.html` expose `renderAt(t)` ; `v3/capture3.js` capture les 7 860 images ; `v3/soundtrack3.py` compose l'intro et raccorde la bande v2
 (il lit `soundtrack2.wav`, produit par `soundtrack2.py`). Polices : `v3/fonts/` (licence OFL).
