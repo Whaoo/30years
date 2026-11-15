@@ -3,12 +3,12 @@ import Icon from './Icons';
 import { FILM } from '../december/calendar';
 import { markFilmSeen } from '../december/quest';
 
-// Mode cinéma : le prologue de la quête en plein écran, sur fond noir.
+// Mode cinéma : un film de la quête (prologue ou cinématique d'épisode) en plein écran, sur fond noir.
 // Ouvert depuis un clic (grande annonce du 1er décembre ou carte de la quête) : ce geste autorise
 // le plein écran et le son. Échap ou la croix referment ; à la fin, « À toi de jouer ! » ouvre la quête.
 const clampTime = (v, t) => Math.max(0, Math.min((v.duration || t) - 0.1, t));
 
-export default function FilmPlayer({ onClose, onPlay }) {
+export default function FilmPlayer({ film = FILM, onClose, onPlay }) {
     const wrapRef = useRef(null);
     const videoRef = useRef(null);
     const hideTimer = useRef(0);
@@ -16,7 +16,7 @@ export default function FilmPlayer({ onClose, onPlay }) {
     const [chrome, setChrome] = useState(true);
 
     useEffect(() => {
-        markFilmSeen();
+        markFilmSeen(film.id);
         const wrap = wrapRef.current;
         try {
             const p = wrap.requestFullscreen ? wrap.requestFullscreen({ navigationUI: 'hide' }) : null;
@@ -47,7 +47,7 @@ export default function FilmPlayer({ onClose, onPlay }) {
         const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
         let blobUrl = '';
         const fullySeekable = () => v.seekable.length > 0 && v.seekable.start(0) <= 0.5 && v.seekable.end(0) >= (v.duration || 0) - 1;
-        fetch(FILM.sources[0].src, ctrl ? { signal: ctrl.signal } : undefined)
+        fetch(film.sources[0].src, ctrl ? { signal: ctrl.signal } : undefined)
             .then((r) => (r.ok ? r.blob() : null))
             .then((blob) => {
                 if (!blob || !videoRef.current || fullySeekable()) return;
@@ -77,7 +77,7 @@ export default function FilmPlayer({ onClose, onPlay }) {
             if (blobUrl) URL.revokeObjectURL(blobUrl);
             if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
         };
-    }, [onClose]);
+    }, [onClose, film]);
 
     // Les boutons s'effacent pendant la lecture et reviennent quand la souris bouge
     const wake = () => {
@@ -87,25 +87,25 @@ export default function FilmPlayer({ onClose, onPlay }) {
     };
 
     return (
-        <div ref={wrapRef} className={`cinema${chrome || ended ? ' is-chrome' : ''}`} role="dialog" aria-modal="true" aria-label="Le prologue de la quête" onMouseMove={wake} onTouchStart={wake} onWheel={(e) => e.stopPropagation()}>
+        <div ref={wrapRef} className={`cinema${chrome || ended ? ' is-chrome' : ''}`} role="dialog" aria-modal="true" aria-label={film.title} onMouseMove={wake} onTouchStart={wake} onWheel={(e) => e.stopPropagation()}>
             <video
                 ref={videoRef}
                 className="cinema__video"
                 controls
                 playsInline
                 preload="auto"
-                poster={FILM.poster}
+                poster={film.poster}
                 onPlay={wake}
                 onEnded={() => setEnded(true)}
             >
-                {FILM.sources.map((s) => <source key={s.src} src={s.src} type={s.type} />)}
+                {film.sources.map((s) => <source key={s.src} src={s.src} type={s.type} />)}
             </video>
             <button type="button" className="cinema__close" onClick={onClose} aria-label="Fermer le film (Échap)">
                 <Icon name="close" size={24} />
             </button>
             {ended && (
                 <div className="cinema__end">
-                    <p className="cinema__eyebrow">La Grande Quête de Flocon</p>
+                    <p className="cinema__eyebrow">{film.ep ? `Épisode ${film.ep} · la suite de la quête` : 'La Grande Quête de Flocon'}</p>
                     <button type="button" className="btn btn--primary btn--icon cinema__go" onClick={onPlay}>
                         <Icon name="play" size={20} />
                         À toi de jouer !

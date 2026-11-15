@@ -33,15 +33,17 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
 - `src/utils/theme.js` : saisons × moment de la journée × météo (Open-Meteo).
 - `src/december/` : décembre 2026, la source de vérité du calendrier et de la grande quête.
   - `calendar.js` : un mini-jeu par jour ouvré (jamais le week-end), les 4 épisodes de la quête (`QUEST` : 1er, 4, 9 et 15 décembre),
-    le film du 1er décembre et `NOEL_DAY` (18/12) : vidéo « Joyeux Noël en avance » à la place d'un jeu le 24.
+    les films (`FILMS`) et `NOEL_DAY` (18/12) : vidéo « Joyeux Noël en avance » à la place d'un jeu le 24.
   - `seed.js` : « scénario du jour » : graine = date de Paris + identifiant du jeu (même partie pour tout le monde le même jour).
     Tout l'aléatoire qui change une partie passe par `dailyRng` ; `Math.random` est réservé au cosmétique.
   - `quest.js` : progression (`30years:quest`), épisode ouvert à sa date ET après le précédent, ou de toute façon à J+2 ;
     final jamais verrouillé ; « Passer » après 3 échecs ; code de passage de 4 lettres pour un autre navigateur ; score officiel = premier essai du jour.
   - `results.js` : écran de fin commun (détail du score, mention S/A/B/C, record, code de vérification).
 - `src/components/QuestModal.jsx` : la carte de la quête (bouton « La quête » de l'en-tête en décembre), le film, les éclats de givre.
-- `public/film/prologue.mp4` : le film d'introduction (v3 « conte », 2 min 20). Sa source (dessinée en code) est dans `tools/film/` (v3 dans `tools/film/v3/`).
-  Le 1er décembre, `FilmPromo.jsx` propose de le lancer (tant qu'il n'est pas vu) ; `FilmPlayer.jsx` le joue en mode cinéma plein écran.
+- `public/film/` : les films de la quête (liste et dates : `FILMS` dans `calendar.js`). Le prologue (v3 « conte », 2 min 20, le 1er décembre)
+  puis une cinématique d'environ 1 min avant chaque épisode (`chapitre2` le 4, `chapitre3` le 9, `chapitre4` le 15) : le méchant précédent vaincu,
+  le dérèglement causé par le suivant, Flocon qui part l'affronter. Sources (dessinées en code) dans `tools/film/` (v3 et épisodes dans `tools/film/v3/`).
+  `FilmPromo.jsx` annonce le film le plus récent tant qu'il n'est pas vu ; `FilmPlayer.jsx` le joue en mode cinéma plein écran ; la carte de la quête les liste tous.
 - `src/games/index.js` : le registre des jeux.
   - `GAMES` : les mini-jeux de l'Avent, débloqués porte par porte en décembre (jours ouvrés : 1-4, 7-9, 11, 14, 15, 17, 18, 21, 22).
   - `MONTS` (« Les Monts Givrés », `src/games/monts/`) : épisode 1 de la quête, le 1er décembre. Plateforme en 3 niveaux + yéti (~4 min),

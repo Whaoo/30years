@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import Icon from './Icons';
 import Penguin from './Penguin';
-import { FILM, QUEST } from '../december/calendar';
+import { FILMS, QUEST } from '../december/calendar';
 import { SKIP_AFTER_FAILS, episodeState, loadQuest, markFilmSeen, markSkipped, redeemCode, shardCount } from '../december/quest';
 
-// La carte de la Grande Quête de Flocon : le film d'introduction, les 4 épisodes (débloqués par date
+// La carte de la Grande Quête de Flocon : les films (prologue et cinématiques), les 4 épisodes (débloqués par date
 // ET par la réussite du précédent), les éclats de givre récupérés et la saisie d'un code de passage
 // (pour continuer la quête dans un autre navigateur ou sur son téléphone).
 
@@ -71,12 +71,11 @@ export default function QuestModal({ now, onPlay, onClose, onFilm, available = (
         return () => window.removeEventListener('keydown', onKey);
     }, [onClose]);
 
-    const filmOpen = now >= FILM.from;
     const shards = shardCount(q);
 
-    const openFilm = () => {
-        setQ(markFilmSeen());
-        onFilm();
+    const openFilm = (id) => {
+        setQ(markFilmSeen(id));
+        onFilm(id);
     };
 
     const submitCode = (e) => {
@@ -162,14 +161,28 @@ export default function QuestModal({ now, onPlay, onClose, onFilm, available = (
                         <div className="quest__card">
                             <Penguin hat="beanie" scarf="#e94b4b" mood="happy" size="72px" />
                             <div>
-                                <strong>Le prologue</strong>
-                                <p>Deux minutes pour savoir pourquoi Flocon quitte l’igloo de Mamie.</p>
-                                <button type="button" className="btn btn--primary btn--icon" disabled={!filmOpen} onClick={openFilm}>
+                                <strong>{FILMS[0].title}</strong>
+                                <p>{FILMS[0].blurb}</p>
+                                <button type="button" className="btn btn--primary btn--icon" disabled={now < FILMS[0].from} onClick={() => openFilm(FILMS[0].id)}>
                                     <Icon name="film" size={18} />
-                                    {filmOpen ? (q.film ? 'Revoir le film' : 'Regarder le film') : `Le ${fmtDay(FILM.from)}`}
+                                    {now >= FILMS[0].from ? (q.films.prologue ? 'Revoir le film' : 'Regarder le film') : `Le ${fmtDay(FILMS[0].from)}`}
                                 </button>
                             </div>
                         </div>
+                        <ul className="quest__films" aria-label="Les cinématiques de la quête">
+                            {FILMS.slice(1).map((f) => {
+                                const out = now >= f.from;
+                                return (
+                                    <li key={f.id} className={`quest__film${out ? '' : ' is-locked'}${q.films[f.id] ? ' is-seen' : ''}`}>
+                                        <button type="button" disabled={!out} onClick={() => openFilm(f.id)} aria-label={out ? `Regarder : ${f.title}` : `${f.title}, le ${fmtDay(f.from)}`}>
+                                            <span className="quest__film-ico"><Icon name={out ? 'play' : 'film'} size={14} /></span>
+                                            <span className="quest__film-title">{f.title}</span>
+                                            <span className="quest__film-note">{out ? (q.films[f.id] ? 'Vu ✓' : f.length) : `Le ${fmtDay(f.from)}`}</span>
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                        </ul>
                         <p className="quest__rules">
                             Chaque épisode s’ouvre à sa date, une fois le précédent réussi. Pas de panique :
                             il s’ouvre de toute façon deux jours plus tard. Le grand final est ouvert à tous.

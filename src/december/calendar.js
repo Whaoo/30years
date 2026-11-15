@@ -15,14 +15,34 @@ export const MINI_GAMES = {
 // Jour de rattrapage : tout reste jouable (les jeux restent ouverts après leur jour)
 export const CATCH_UP_DAY = 23;
 
-// Le film d'introduction de la quête (le 1er décembre)
-export const FILM = {
-    from: day(1),
-    sources: [
-        { src: '/film/prologue.mp4', type: 'video/mp4' }
-    ],
-    poster: '/film/prologue.jpg'
-};
+// Les films de la quête : le prologue (1er décembre), puis une cinématique avant chaque épisode
+// (on voit le méchant précédent vaincu, le dérèglement causé par le suivant, et Flocon qui part l'affronter).
+// Chaque film s'ouvre le jour de son épisode ; sa grande annonce s'affiche tant qu'il n'est pas vu.
+const film = (id, from, o) => ({ id, from, sources: [{ src: `/film/${id}.mp4`, type: 'video/mp4' }], poster: `/film/${id}.jpg`, ...o });
+export const FILMS = [
+    film('prologue', day(1), {
+        title: 'Le prologue', length: '2 min 20', blurb: 'Deux minutes pour savoir pourquoi Flocon quitte l’igloo de Mamie.',
+        promo: { eyebrow: 'Décembre · nouveau', title: 'La Grande Quête de Flocon commence !', text: 'Un éclat de givre, une lettre du Maire, une écharpe tricotée par Mamie… Deux minutes pour découvrir l’histoire, puis à toi de jouer.' }
+    }),
+    film('chapitre2', day(4), {
+        title: 'Chapitre 2 · Le village de Noël', length: '1 min', ep: 2,
+        promo: { eyebrow: 'Chapitre 2 · nouveau', title: 'Le village de Noël est en danger !', text: 'Le Yéti a rendu le premier éclat… mais au village, les bonshommes grognons encerclent le grand sapin. Une minute avant l’épisode 2.' }
+    }),
+    film('chapitre3', day(9), {
+        title: 'Chapitre 3 · L’Archipel du Tri', length: '1 min', ep: 3,
+        promo: { eyebrow: 'Chapitre 3 · nouveau', title: 'Plus aucun cadeau ne part !', text: 'Le sapin brille de nouveau, mais la Grande Trieuse s’est détraquée. Une minute avant l’épisode 3.' }
+    }),
+    film('chapitre4', day(15), {
+        title: 'Chapitre 4 · Le fort du Golem', length: '1 min', ep: 4,
+        promo: { eyebrow: 'Le grand final', title: 'Le Golem de givre se réveille…', text: 'Les trois éclats sont réunis, et toute la colère du Golem s’abat sur le royaume. Une minute avant le grand final.' }
+    })
+];
+export const FILM = FILMS[0];
+export const filmById = (id) => FILMS.find((f) => f.id === id) || FILM;
+// Le film à annoncer aujourd'hui : le plus récent déjà sorti
+export function latestFilm(now) {
+    return [...FILMS].reverse().find((f) => now >= f.from) || null;
+}
 
 // Les 4 épisodes. place : position sur la carte de la quête (en % de la carte).
 // shard : l'épisode rend un éclat de givre (les 3 éclats ouvrent le fort du Golem).

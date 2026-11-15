@@ -14,9 +14,11 @@ export const SKIP_AFTER_FAILS = 3;
 export function loadQuest() {
     try {
         const raw = JSON.parse(window.localStorage.getItem(KEY) || '{}');
-        return { done: raw.done || {}, fails: raw.fails || {}, skipped: raw.skipped || {}, film: !!raw.film };
+        // films vus (avant la version à plusieurs films : un seul booléen pour le prologue)
+        const films = { ...(raw.films || {}), ...(raw.film ? { prologue: true } : {}) };
+        return { done: raw.done || {}, fails: raw.fails || {}, skipped: raw.skipped || {}, films, film: !!films.prologue };
     } catch {
-        return { done: {}, fails: {}, skipped: {}, film: false };
+        return { done: {}, fails: {}, skipped: {}, films: {}, film: false };
     }
 }
 
@@ -66,9 +68,10 @@ export function markSkipped(id) {
     return saveQuest(q);
 }
 
-export function markFilmSeen() {
+export function markFilmSeen(id = 'prologue') {
     const q = loadQuest();
-    q.film = true;
+    q.films[id] = true;
+    if (id === 'prologue') q.film = true;
     return saveQuest(q);
 }
 

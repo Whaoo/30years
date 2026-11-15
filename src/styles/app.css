@@ -918,6 +918,19 @@ html, body, #root { height: 100%; }
 .quest__card { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: 20px; background: rgba(255, 255, 255, 0.08); }
 .quest__card p { margin: 4px 0 10px; font-size: 14px; color: rgba(255, 255, 255, 0.82); }
 .quest__card .btn--primary { min-height: 42px; padding: 0 18px; font-size: 15px; display: inline-flex; align-items: center; gap: 8px; }
+.quest__films { flex: none; list-style: none; margin: -4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.quest__film { flex: none; }
+.quest__film button {
+  width: 100%; display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 6px 12px 6px 6px;
+  border: 0; border-radius: 14px; background: rgba(255, 255, 255, 0.06); color: #fff; font: inherit; font-size: 14px; text-align: left; cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.quest__film button:hover:not(:disabled) { background: rgba(255, 255, 255, 0.14); transform: translateX(2px); }
+.quest__film button:disabled { cursor: default; opacity: 0.55; }
+.quest__film-ico { flex: none; display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #ffd36e; color: #1d2542; }
+.quest__film.is-locked .quest__film-ico, .quest__film.is-seen .quest__film-ico { background: rgba(255, 255, 255, 0.18); color: #fff; }
+.quest__film-title { flex: 1; min-width: 0; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.quest__film-note { flex: none; font-size: 12px; color: rgba(255, 255, 255, 0.7); }
 .quest__rules { margin: 0; font-size: 13px; line-height: 1.5; color: rgba(255, 255, 255, 0.75); }
 .quest__code { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: rgba(255, 255, 255, 0.8); }
 .quest__code div { display: flex; gap: 8px; }
@@ -931,8 +944,6 @@ html, body, #root { height: 100%; }
 .quest__shards { gap: 6px; }
 .quest__shard { display: inline-grid; place-items: center; color: rgba(255, 255, 255, 0.3); }
 .quest__shard.is-on { color: #7fe8ff; }
-.quest__film { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.quest__film video { flex: 1 1 0; min-height: 0; max-width: 100%; border-radius: 18px; background: #000; }
 @keyframes questPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 @media (max-width: 760px) {
   .quest__body { grid-template-columns: 1fr; grid-template-rows: minmax(260px, 1fr) auto; }

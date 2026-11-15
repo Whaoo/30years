@@ -10,7 +10,7 @@ import GameModal from './components/GameModal';
 import { ADVENTURE, ALL_GAMES, CANDLES, MONTS, QUIZ, getGame, isUnlocked } from './games';
 import { episodeState, loadQuest } from './december/quest';
 import { parisDay } from './december/seed';
-import { FILM, isQuestSeason, questEpisode } from './december/calendar';
+import { filmById, isQuestSeason, latestFilm, questEpisode } from './december/calendar';
 import { clearBests, loadBests, saveScore } from './games/scores';
 import AdventCalendar from './components/AdventCalendar';
 import Gags from './components/Gags';
@@ -36,7 +36,7 @@ const TestPanel = __TEST_MODE__ ? lazy(() => import('./components/TestPanel')) :
 const EnversGame = lazy(() => import('./envers/EnversGame'));
 // La carte de la grande quête de décembre : chargée à l'ouverture
 const QuestModal = lazy(() => import('./components/QuestModal'));
-// Le film de la quête en mode cinéma, et sa grande annonce du 1er décembre
+// Les films de la quête en mode cinéma, et leur grande annonce (le 1er décembre, puis le jour de chaque épisode)
 const FilmPlayer = lazy(() => import('./components/FilmPlayer'));
 const FilmPromo = lazy(() => import('./components/FilmPromo'));
 const laterKey = (now) => `30years:filmLater:${parisDay(now)}`;
@@ -73,8 +73,9 @@ function App() {
 
     const [view, setView] = useState(null);
     const [questOpen, setQuestOpen] = useState(false);
-    const [filmOpen, setFilmOpen] = useState(false);
-    // Grande annonce : dès le 1er décembre, tant que le film n'est pas vu (« Plus tard » : jusqu'au lendemain)
+    // filmOpen : identifiant du film joué en mode cinéma (null : aucun)
+    const [filmOpen, setFilmOpen] = useState(null);
+    // Grande annonce du film le plus récent, tant qu'il n'est pas vu (« Plus tard » : jusqu'au lendemain)
     const [promoHidden, setPromoHidden] = useState(() => {
         try {
             return !!window.localStorage.getItem(laterKey(new Date()));
@@ -82,7 +83,8 @@ function App() {
             return false;
         }
     });
-    const showPromo = !promoHidden && !filmOpen && isQuestSeason(now) && now >= FILM.from && !loadQuest().film;
+    const promoFilm = isQuestSeason(now) ? latestFilm(now) : null;
+    const showPromo = !promoHidden && !filmOpen && !!promoFilm && !loadQuest().films[promoFilm.id];
     const [disco, setDisco] = useState(false);
     const [shake, setShake] = useState(false);
     const [toast, setToast] = useState('');
@@ -446,13 +448,14 @@ function App() {
             )}
             {questOpen && !gameId && !filmOpen && (
                 <Suspense fallback={null}>
-                    <QuestModal now={now} onPlay={openGame} onClose={() => setQuestOpen(false)} onFilm={() => setFilmOpen(true)} available={(id) => !!getGame(id)} />
+                    <QuestModal now={now} onPlay={openGame} onClose={() => setQuestOpen(false)} onFilm={(id) => setFilmOpen(id)} available={(id) => !!getGame(id)} />
                 </Suspense>
             )}
             {showPromo && !gameId && !envers && !questOpen && (
                 <Suspense fallback={null}>
                     <FilmPromo
-                        onWatch={() => setFilmOpen(true)}
+                        film={promoFilm}
+                        onWatch={() => setFilmOpen(promoFilm.id)}
                         onLater={() => {
                             try {
                                 window.localStorage.setItem(laterKey(now), '1');
@@ -467,12 +470,14 @@ function App() {
             {filmOpen && (
                 <Suspense fallback={<div className="cinema" />}>
                     <FilmPlayer
+                        key={filmOpen}
+                        film={filmById(filmOpen)}
                         onClose={() => {
-                            setFilmOpen(false);
+                            setFilmOpen(null);
                             setPromoHidden(true);
                         }}
                         onPlay={() => {
-                            setFilmOpen(false);
+                            setFilmOpen(null);
                             setPromoHidden(true);
                             setQuestOpen(true);
                         }}

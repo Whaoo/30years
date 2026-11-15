@@ -1,3 +1,15 @@
+# Les films de la quête
+
+## Les cinématiques d'épisode (chapitres 2, 3 et 4, environ 1 min chacune)
+
+Avant chaque épisode : le méchant précédent vaincu (l'éclat rejoint l'écharpe de Flocon), le chemin sur la carte,
+le dérèglement causé par le méchant suivant, puis Flocon qui arrive pour l'affronter et le titre de l'épisode.
+- `v3/film_eps.js` : les plans (`FILM2`, `FILM3`, `FILM4`, `renderEp`). Ils réutilisent le prologue (`film_v3.js`, `mock.js`, la v2)
+  et les maquettes de Chronoflocon (`v3/chrono_mock.js`, pour l'archipel et le bateau).
+- `v3/eps.html?ep=2` expose `renderAt(t)` et `DUR` ; capture : `node capture_eps.js 0 3720 ../frames_ep2 2` (3 840 images pour le chapitre 4).
+- `v3/soundtrack_eps.py 2 ep2.wav` : bande-son (mêmes instruments que le prologue, niveau aligné sur `soundtrack2.wav`).
+- Encodage comme le prologue ; vidéos et affiches : `public/film/chapitre2.mp4` / `.jpg`, etc. Liste et dates : `FILMS` dans `src/december/calendar.js`.
+
 # Le prologue de la quête (film du 1er décembre)
 
 Version en ligne : la v3 « conte » (2 min 20), dans `v3/` : livre à la bougie, carte du Royaume du Pôle avec zooms,
