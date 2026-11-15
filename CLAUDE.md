@@ -64,8 +64,11 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
     en retire un véhicule (jusqu'à 3 par liaison) ; les colis suivent le plus court chemin tout seuls. Tutoriel guidé en 4 étapes au premier Matin,
     îles « À relier » signalées en rouge. Événements qui demandent d'agir : panne (cliquer le véhicule), iceberg (3 clics), pont fendu (ses trains
     reviennent au dépôt, 18 s sans pont), plus brouillard, tempête, rush de 10 colis et aurore.
-    3 tournées (50/70/80 s, réseau conservé, un renfort à choisir entre deux), humeur (Mamie envoie un traîneau une fois, puis sursis de 8 s,
-    puis on rejoue la tournée ; le Matin ne se perd pas), express dorés, Radio Banquise (événements annoncés 8 s avant), traîneau joker.
+    3 tournées (50/70/80 s, réseau conservé, un renfort à choisir entre deux). Le Soir est surchargé : heure de pointe (`peak` dans `ROUNDS`,
+    bande rouge sur la frise) où les colis arrivent presque trois fois plus vite ; il donne un bateau et un avion pour relier Aurore.
+    Humeur : baisse pour chaque colis qui attend plus de 11 s (plus encore après 22 s) et dès que plus de 8 colis attendent, au plus 3,5 points/s ;
+    un colis livré en retard la remonte peu. À zéro : Mamie envoie un traîneau une fois, puis sursis de 8 s, puis on rejoue la tournée ;
+    le Matin ne se perd pas. Express dorés, Radio Banquise (événements annoncés 8 s avant), traîneau joker. Mentions : S 8500, A 6500, B 4500.
     Score = (colis × 15 + rapidité + express × 50) × (1 + 0,4 × humeur) + 150 si le joker est gardé. `/chrono` ; console : `window.chrono`.
   - `ADVENTURE` (« L'aventure de Flocon », `src/games/adventure/`) : le grand final, épisode 4 de la quête (15 décembre). 6 vagues au nombre de monstres fini,
     puis le Golem (au plus 12 mini-golems), graine du jour, bonus de temps, écran de fin commun, « Reprendre la vague » après un K.O.

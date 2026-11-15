@@ -36,10 +36,11 @@ export const VEHICLES = {
 
 // Les trois tournées. spawn : secondes entre deux colis (au début → à la fin de la tournée).
 // gift : véhicules ajoutés au dépôt au début de la tournée.
+// peak : heure de pointe [début, fin, facteur] : entre ces deux instants, les colis arrivent bien plus souvent.
 export const ROUNDS = [
     { name: 'Matin', dur: 50, spawn: [2.6, 1.9], gift: { rail: 3, boat: 1, air: 0 }, express: 0, canLose: false },
     { name: 'Midi', dur: 70, spawn: [1.8, 1.3], gift: { rail: 1, boat: 0, air: 1 }, express: 4, canLose: true },
-    { name: 'Soir', dur: 80, spawn: [1.45, 1.0], gift: { rail: 0, boat: 1, air: 0 }, express: 6, canLose: true }
+    { name: 'Soir', dur: 80, spawn: [1.2, 0.85], peak: [40, 64, 0.35], gift: { rail: 0, boat: 1, air: 1 }, express: 6, canLose: true }
 ];
 
 // Les événements de Radio Banquise (annoncés 8 s avant, visibles sur la frise de la tournée)

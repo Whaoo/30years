@@ -17,15 +17,20 @@ import { boatIcon, client, drawParcel, evIcon, gull, makeBackground, makeGlow, m
 // Jauge d'humeur : les colis qui attendent trop la font baisser. À zéro : Mamie envoie une fois un traîneau de secours,
 // ensuite 8 s de sursis, puis on rejoue la tournée. Le Matin ne se perd pas.
 // Événements annoncés 8 s avant par Radio Banquise (brouillard, banquise fendue, tempête, aurore, rush).
+// Le Soir a une heure de pointe (bande rouge sur la frise) : les colis arrivent presque deux fois plus vite.
 // Score = (colis × 15 + rapidité + express × 50) × (1 + 0,4 × humeur finale) + 150 si le traîneau joker est gardé.
 
 const ID = 'chrono';
 const WARN = 8;
 const MAX_WAIT = 40;
-const OLD = 13; // secondes : au-delà, un colis qui attend fait baisser l'humeur
+const OLD = 11; // secondes : au-delà, un colis qui attend fait baisser l'humeur
+const STALE = 22; // secondes : au-delà, il la fait baisser plus encore
+const COMFORT = 8; // colis en attente : au-delà, l'humeur baisse un peu pour chaque colis de plus
+const MAX_DRAIN = 0.035; // l'humeur ne perd jamais plus de 3,5 points par seconde
 const EXPRESS_T = 20;
 const DWELL = 0.45;
 const MAX_PER_LINK = 3; // jusqu'à 3 véhicules sur la même liaison
+const clock = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
 function createChrono(api, props) {
     const now = props.now || new Date();
@@ -69,7 +74,9 @@ function createChrono(api, props) {
             const fresh = dests.filter((v) => ISLES[v].from === r);
             const to = fresh.length && rng.chance(0.3) ? rng.pick(fresh) : rng.pick(dests);
             list.push({ t, from, to, ex: false });
-            t += R.spawn[0] + (R.spawn[1] - R.spawn[0]) * k + rng.range(-0.25, 0.25);
+            let step = R.spawn[0] + (R.spawn[1] - R.spawn[0]) * k + rng.range(-0.25, 0.25);
+            if (R.peak && t >= R.peak[0] && t < R.peak[1]) step *= R.peak[2]; // l'heure de pointe
+            t += step;
         }
         // les colis express (dorés) : tirés parmi ceux de la tournée
         const idx = rng.shuffle(list.map((_, i) => i).filter((i) => list[i].t > 6 && list[i].t < R.dur - 14)).slice(0, R.express);
@@ -273,7 +280,7 @@ function createChrono(api, props) {
             popup(ISLES[isle].x, ISLES[isle].y - 50, 'Express ! +50', '#ffd23f');
         }
         s.basePts += pts;
-        s.humeur = Math.min(1, s.humeur + 0.011 + (p.age < OLD ? 0.006 : 0));
+        s.humeur = Math.min(1, s.humeur + 0.004 + (p.age < OLD ? 0.004 : 0)); // un colis livré en retard console peu
         if (!p.ex) popup(ISLES[isle].x + (Math.random() - 0.5) * 20, ISLES[isle].y - 44, `+${pts}`, mult > 1 ? '#7be0a3' : '#ffd36e');
     }
 
@@ -300,6 +307,8 @@ function createChrono(api, props) {
         s.links.forEach((L) => (L.broken = 0));
         s.dirty = true;
         s.sursis = 0;
+        s.peakWarned = false;
+        s.peakOn = false;
         s.snapshot = JSON.parse(JSON.stringify({
             depot: s.depot, capRail: s.capRail, links: s.links.map((L) => ({ ...L, load: [], pos: 0, dir: 1, at: L.a, moving: false, wait: 0.3, broken: 0 })),
             queues: s.queues, humeur: s.humeur, delivered: s.delivered, spawned: s.spawned, rapid: s.rapid, expressOk: s.expressOk,
@@ -377,7 +386,7 @@ function createChrono(api, props) {
             subtitle: s.tranquil ? 'Mode tranquille : épisode validé, sans record' : `Archipel du ${day.split('-').reverse().slice(0, 2).join('/')}${s.retries ? ` · ${s.retries} tournée${s.retries > 1 ? 's' : ''} rejouée${s.retries > 1 ? 's' : ''}` : ''}`,
             score,
             stars: s.tranquil ? null : stars,
-            grade: s.tranquil ? null : gradeFor(score, { S: 6000, A: 5000, B: 3800 }),
+            grade: s.tranquil ? null : gradeFor(score, { S: 8500, A: 6500, B: 4500 }),
             rows: [
                 ['Colis livrés', `${s.delivered} / ${s.spawned}  ·  ${s.delivered * 15}`],
                 ['Rapidité (bonus)', `+ ${s.rapid}`],
@@ -465,6 +474,18 @@ function createChrono(api, props) {
                 if (e.id === 'iceberg' && s.iceberg && s.iceberg.key === e.target) s.iceberg = null;
             }
         }
+        // l'heure de pointe du Soir : annoncée par la radio si elle est libre, puis un message au début
+        const pk = ROUNDS[s.round].peak;
+        if (pk) {
+            if (!s.peakWarned && s.rt >= pk[0] - WARN) {
+                s.peakWarned = true;
+                if (!s.radio) s.radio = { line: 'Heure de pointe : les colis vont affluer de partout !', t: 0, ev: null };
+            }
+            if (!s.peakOn && s.rt >= pk[0]) {
+                s.peakOn = true;
+                say('Heure de pointe ! Les colis affluent de partout : tiens bon jusqu’au bout de la bande rouge.', 4);
+            }
+        }
         if (s.radio) {
             s.radio.t += dt;
             if (s.radio.t > WARN + 1.5) s.radio = null;
@@ -549,7 +570,7 @@ function createChrono(api, props) {
         let drain = 0;
         ISLE_KEYS.forEach((k) => s.queues[k].forEach((p) => {
             p.age += dt;
-            if (p.age > OLD) drain += 0.0019;
+            if (p.age > OLD) drain += p.age > STALE ? 0.0026 : 0.0016;
             if (p.ex && p.age > EXPRESS_T) {
                 p.ex = false;
                 s.humeur -= 0.05;
@@ -561,8 +582,10 @@ function createChrono(api, props) {
             if (p.ex && p.age > EXPRESS_T) p.ex = false;
         }));
         const wait = waitingCount();
+        // les îles qui débordent agacent tout le monde, même si les colis ne sont pas encore vieux
+        drain += 0.0012 * Math.max(0, wait - COMFORT);
         if (wait > MAX_WAIT) drain += 0.012;
-        s.humeur -= drain * dt;
+        s.humeur -= Math.min(MAX_DRAIN, drain) * dt;
         const floor = !R.canLose || s.tranquil ? 0.3 : 0;
         s.humeur = Math.max(floor, Math.min(1, s.humeur));
         // humeur à zéro : le traîneau de secours de Mamie (une fois), puis le sursis
@@ -828,6 +851,11 @@ function createChrono(api, props) {
         roundRect(ctx, fx, 12, fw, 10, 5);
         ctx.fillStyle = 'rgba(255,255,255,0.14)';
         ctx.fill();
+        if (R.peak) {
+            // la bande rouge de l'heure de pointe
+            ctx.fillStyle = 'rgba(255,90,90,0.55)';
+            ctx.fillRect(fx + fw * (R.peak[0] / R.dur), 12, fw * ((R.peak[1] - R.peak[0]) / R.dur), 10);
+        }
         roundRect(ctx, fx, 12, Math.max(10, fw * tk), 10, 5);
         ctx.fillStyle = 'rgba(255,211,110,0.55)';
         ctx.fill();
@@ -1267,7 +1295,9 @@ function createChrono(api, props) {
             else text(ctx, '♥', 192, y + 1, { size: 13, weight: 800, align: 'center', color: '#7be0a3' });
             text(ctx, l, 210, y, { size: 12, weight: 600, color: 'rgba(255,255,255,0.92)' });
         });
-        text(ctx, 'La météo du jour (la même pour tout le monde)', 182, 262, { size: 12, weight: 700, color: 'rgba(255,255,255,0.7)' });
+        text(ctx, 'La météo du jour', 182, 262, { size: 12, weight: 700, color: 'rgba(255,255,255,0.7)' });
+        const pk = ROUNDS[2].peak;
+        text(ctx, `Soir : heure de pointe de ${clock(pk[0])} à ${clock(pk[1])} !`, 618, 262, { size: 12, weight: 800, align: 'right', color: '#ff8f8f' });
         ROUNDS.forEach((R, i) => {
             const y = 284 + i * 22;
             text(ctx, R.name, 182, y + 4, { size: 13, weight: 800, font: DISPLAY });
@@ -1281,9 +1311,7 @@ function createChrono(api, props) {
                 ctx.fill();
                 circle(ctx, ex + 11, y, 8, '#ffffff');
                 evIcon(ctx, e.id, ex + 11, y, 0.8);
-                const m = Math.floor(e.t / 60);
-                const sec = String(Math.floor(e.t % 60)).padStart(2, '0');
-                text(ctx, `${EVENTS[e.id].short} ${m}:${sec}`, ex + 21, y + 4, { size: 9.5, weight: 600 });
+                text(ctx, `${EVENTS[e.id].short} ${clock(e.t)}`, ex + 21, y + 4, { size: 9.5, weight: 600 });
             });
         });
         const b = { id: 'go', label: 'C’est parti !', primary: true, x: 476, y: 352, w: 150, h: 38 };
@@ -1332,7 +1360,7 @@ function createChrono(api, props) {
             text(ctx, c.l1, x + 115, 312, { size: 12, weight: 500, align: 'center', color: 'rgba(255,255,255,0.8)' });
             text(ctx, c.l2, x + 115, 330, { size: 12, weight: 500, align: 'center', color: 'rgba(255,255,255,0.8)' });
         });
-        const nxt = s.round === 0 ? `Le Midi : deux îles de plus, un avion au dépôt et ${eventPlans[1].length} événements. Ton réseau est conservé.` : `Le Soir : l’île Aurore, le rush et ${eventPlans[2].length} événements. Ton réseau est conservé.`;
+        const nxt = s.round === 0 ? `Le Midi : deux îles de plus, un avion au dépôt et ${eventPlans[1].length} événements. Ton réseau est conservé.` : `Le Soir : l’île Aurore (un bateau et un avion au dépôt), l’heure de pointe (${clock(ROUNDS[2].peak[0])} à ${clock(ROUNDS[2].peak[1])}) et ${eventPlans[2].length} événements.`;
         text(ctx, nxt, W / 2, 384, { size: 12, weight: 600, align: 'center', color: 'rgba(255,255,255,0.65)' });
         return btns;
     }
