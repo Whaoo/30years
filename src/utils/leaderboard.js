@@ -75,15 +75,19 @@ function recordsLocaux() {
 }
 export async function importerRecords() {
     const j = moi();
-    if (!j) return;
+    if (!j) return false;
     try {
-        if (localStorage.getItem(KEY_IMPORT) === j.pseudo) return;
-    } catch { return; }
+        if (localStorage.getItem(KEY_IMPORT) === j.pseudo) return false;
+    } catch { return false; }
     const records = recordsLocaux();
     try {
-        if (Object.keys(records).length) await api('import', { methode: 'POST', corps: { records }, jeton: j.jeton });
+        const n = Object.keys(records).length;
+        if (n) await api('import', { methode: 'POST', corps: { records }, jeton: j.jeton });
         localStorage.setItem(KEY_IMPORT, j.pseudo);
-    } catch { /* on réessaiera à la prochaine visite */ }
+        return n > 0; // vrai si des records ont été envoyés (le classement affiché peut avoir changé)
+    } catch {
+        return false; // on réessaiera à la prochaine visite
+    }
 }
 // Au chargement du site : rattrape les joueurs qui avaient déjà un pseudo
 export async function importerSiBesoin() {
@@ -91,11 +95,11 @@ export async function importerSiBesoin() {
     if (await config()) await importerRecords();
 }
 
-export async function envoyerScore(jeu, score) {
+export async function envoyerScore(jeu, score, portee = 'tout') {
     const j = moi();
     if (!j) throw new ErreurClassement('Choisis un pseudo pour entrer au classement.', 401);
     try {
-        return await api('score', { methode: 'POST', corps: { jeu, score }, jeton: j.jeton });
+        return await api('score', { methode: 'POST', corps: { jeu, score, portee }, jeton: j.jeton });
     } catch (e) {
         if (e.status === 401) oublier(); // pseudo effacé côté serveur : on le redemandera
         throw e;

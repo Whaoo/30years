@@ -168,10 +168,12 @@ async function envoyerScore(env, request) {
     const score = Math.round(Number(corps.score));
     if (!Object.prototype.hasOwnProperty.call(JEUX, jeu)) return erreur('Jeu inconnu.');
     if (!scoreValide(jeu, score)) return erreur('Score refusé.');
-    const recents = await env.DB.prepare("SELECT COUNT(*) AS n FROM scores WHERE joueur = ? AND cree > datetime('now', '-10 minutes')").bind(joueur.id).first();
-    if (recents.n >= ENVOIS_MAX) return erreur('Doucement ! Trop de parties envoyées d\'un coup, réessaie dans quelques minutes.', 429);
+    // une seule requête pour le rythme d'envoi et l'ancien record
+    const etat = await env.DB.prepare("SELECT (SELECT COUNT(*) FROM scores WHERE joueur = ?1 AND cree > datetime('now', '-10 minutes')) AS n, (SELECT score FROM records WHERE jeu = ?2 AND joueur = ?1) AS avant")
+        .bind(joueur.id, jeu).first();
+    if (etat.n >= ENVOIS_MAX) return erreur('Doucement ! Trop de parties envoyées d\'un coup, réessaie dans quelques minutes.', 429);
     const jour = parisJour();
-    const avant = await env.DB.prepare('SELECT score FROM records WHERE jeu = ? AND joueur = ?').bind(jeu, joueur.id).first();
+    const avant = etat.avant == null ? null : { score: etat.avant };
     const record = !avant || estMieux(jeu, score, avant.score);
     const ecritures = [env.DB.prepare('INSERT INTO scores (joueur, jeu, score, jour) VALUES (?, ?, ?, ?)').bind(joueur.id, jeu, score, jour)];
     if (record) {
@@ -180,10 +182,31 @@ async function envoyerScore(env, request) {
     }
     await env.DB.batch(ecritures);
     const meilleur = record ? score : avant.score;
-    const tout = await rangTout(env, jeu, meilleur);
-    const duJour = await env.DB.prepare(`SELECT score FROM (${sqlDuJour(jeu)}) WHERE joueur = ?3`).bind(jeu, jour, joueur.id).first();
-    const jourRang = await rangJour(env, jeu, jour, duJour ? duJour.score : score);
-    return json({ pseudo: joueur.pseudo, score, record, meilleur, rang: tout.rang, total: tout.total, jour: { ...jourRang, score: duJour ? duJour.score : score } });
+    // une seule requête pour les deux rangs (toujours / aujourd'hui)
+    const m = mieux(jeu);
+    const r = await env.DB.prepare(`WITH d AS (${sqlDuJour(jeu)})
+        SELECT (SELECT COUNT(*) FROM records WHERE jeu = ?1 AND score ${m} ?4) + 1 AS rang,
+               (SELECT COUNT(*) FROM records WHERE jeu = ?1) AS total,
+               (SELECT score FROM d WHERE joueur = ?3) AS jscore,
+               (SELECT COUNT(*) FROM d) AS jtotal,
+               (SELECT COUNT(*) FROM d WHERE score ${m} (SELECT score FROM d WHERE joueur = ?3)) + 1 AS jrang`)
+        .bind(jeu, jour, joueur.id, meilleur).first();
+    // et le classement à afficher tout de suite, pour éviter un deuxième appel
+    const portee = corps.portee === 'jour' ? 'jour' : 'tout';
+    const top = await topListe(env, jeu, portee, jour, joueur.id);
+    const moi = portee === 'tout' ? { pseudo: joueur.pseudo, score: meilleur, rang: r.rang } : { pseudo: joueur.pseudo, score: r.jscore ?? score, rang: r.jrang };
+    return json({
+        pseudo: joueur.pseudo, score, record, meilleur, rang: r.rang, total: r.total,
+        jour: { rang: r.jrang, total: r.jtotal, score: r.jscore ?? score },
+        classement: { jeu, portee, jour, top, total: portee === 'tout' ? r.total : r.jtotal, moi, potentiel: null }
+    });
+}
+
+async function topListe(env, jeu, portee, jour, joueurId) {
+    const r = portee === 'tout'
+        ? await env.DB.prepare(`SELECT j.pseudo, r.score, r.joueur FROM records r JOIN joueurs j ON j.id = r.joueur WHERE r.jeu = ? ORDER BY r.score ${sens(jeu)}, r.quand ASC LIMIT ?`).bind(jeu, TOP).all()
+        : await env.DB.prepare(`SELECT j.pseudo, d.score, d.joueur FROM (${sqlDuJour(jeu)}) d JOIN joueurs j ON j.id = d.joueur ORDER BY d.score ${sens(jeu)} LIMIT ?3`).bind(jeu, jour, TOP).all();
+    return r.results.map((t, i) => ({ rang: i + 1, pseudo: t.pseudo, score: t.score, moi: joueurId != null && t.joueur === joueurId }));
 }
 
 // Les records déjà faits avant le classement (gardés dans le navigateur) : ajoutés au classement « Toujours » seulement.
@@ -214,30 +237,20 @@ async function classement(env, request, url) {
     const portee = url.searchParams.get('portee') === 'jour' ? 'jour' : 'tout';
     const jour = parisJour();
     const joueur = await joueurDuJeton(env, request);
-    let top, total, moi = null;
-    if (portee === 'tout') {
-        const r = await env.DB.prepare(`SELECT j.pseudo, r.score, r.joueur FROM records r JOIN joueurs j ON j.id = r.joueur WHERE r.jeu = ? ORDER BY r.score ${sens(jeu)}, r.quand ASC LIMIT ?`).bind(jeu, TOP).all();
-        top = r.results;
-        total = (await env.DB.prepare('SELECT COUNT(*) AS n FROM records WHERE jeu = ?').bind(jeu).first()).n;
-        if (joueur) {
-            const m = await env.DB.prepare('SELECT score FROM records WHERE jeu = ? AND joueur = ?').bind(jeu, joueur.id).first();
-            if (m) moi = { pseudo: joueur.pseudo, score: m.score, rang: (await rangTout(env, jeu, m.score)).rang };
-        }
-    } else {
-        const r = await env.DB.prepare(`SELECT j.pseudo, d.score, d.joueur FROM (${sqlDuJour(jeu)}) d JOIN joueurs j ON j.id = d.joueur ORDER BY d.score ${sens(jeu)} LIMIT ?3`).bind(jeu, jour, TOP).all();
-        top = r.results;
-        total = (await env.DB.prepare(`SELECT COUNT(*) AS n FROM (${sqlDuJour(jeu)})`).bind(jeu, jour).first()).n;
-        if (joueur) {
-            const m = await env.DB.prepare(`SELECT score FROM (${sqlDuJour(jeu)}) WHERE joueur = ?3`).bind(jeu, jour, joueur.id).first();
-            if (m) moi = { pseudo: joueur.pseudo, score: m.score, rang: (await rangJour(env, jeu, jour, m.score)).rang };
-        }
-    }
-    // rang qu'aurait un score pas encore envoyé (« tu serais 3e »)
-    let potentiel = null;
-    const s = Number(url.searchParams.get('score'));
-    if (scoreValide(jeu, Math.round(s))) potentiel = portee === 'tout' ? (await rangTout(env, jeu, s)).rang : (await rangJour(env, jeu, jour, s)).rang;
-    const liste = top.map((t, i) => ({ rang: i + 1, pseudo: t.pseudo, score: t.score, moi: !!joueur && t.joueur === joueur.id }));
-    return json({ jeu, portee, jour, top: liste, total, moi, potentiel });
+    const top = await topListe(env, jeu, portee, jour, joueur ? joueur.id : null);
+    // une seule requête pour le total, ma place et la place qu'aurait un score pas encore envoyé (« tu serais 3e »)
+    const brut = Math.round(Number(url.searchParams.get('score')));
+    const essai = scoreValide(jeu, brut) ? brut : null;
+    const m = mieux(jeu);
+    const source = portee === 'tout' ? 'SELECT joueur, score FROM records WHERE jeu = ?1' : sqlDuJour(jeu);
+    const r = await env.DB.prepare(`WITH d AS (${source})
+        SELECT (SELECT COUNT(*) FROM d) AS total,
+               (SELECT score FROM d WHERE joueur = ?3) AS mon_score,
+               (SELECT COUNT(*) FROM d WHERE score ${m} (SELECT score FROM d WHERE joueur = ?3)) + 1 AS mon_rang,
+               (SELECT COUNT(*) FROM d WHERE score ${m} ?4) + 1 AS potentiel`)
+        .bind(jeu, jour, joueur ? joueur.id : -1, essai ?? 0).first();
+    const moi = joueur && r.mon_score != null ? { pseudo: joueur.pseudo, score: r.mon_score, rang: r.mon_rang } : null;
+    return json({ jeu, portee, jour, top, total: r.total, moi, potentiel: essai == null ? null : r.potentiel });
 }
 
 async function admin(env, request) {

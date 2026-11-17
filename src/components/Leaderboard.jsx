@@ -40,10 +40,11 @@ export default function Leaderboard({ game, fin, onClose }) {
 
     const envoyer = async (score) => {
         try {
-            const r = await envoyerScore(game.id, score);
+            const r = await envoyerScore(game.id, score, portee);
             setResultat(r);
             setAttente(null);
-            await charger(portee);
+            // le classement revient avec le score : pas de deuxième appel
+            if (r.classement) { setBoard(r.classement); setEtat('pret'); } else await charger(portee);
         } catch (e) {
             if (e.status === 401) { setJoueur(null); setAttente(score); await charger(portee, score); return; }
             setMessage(e.message);
@@ -102,8 +103,8 @@ export default function Leaderboard({ game, fin, onClose }) {
             setJoueur(moi());
             // d'abord le score de la partie qui vient de finir, puis les anciens records de ce navigateur
             if (attente != null) await envoyer(attente);
-            await importerRecords();
-            await charger(portee);
+            const importe = await importerRecords();
+            if (importe || attente == null) await charger(portee);
         } catch (err) {
             setErreurForm(err.message);
             if (window.turnstile && captcha.jeton) { window.turnstile.reset(); setCaptcha((x) => ({ ...x, jeton: null })); }
