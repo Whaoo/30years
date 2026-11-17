@@ -7,7 +7,7 @@ import UpcomingList from './components/UpcomingList';
 import StatTiles from './components/StatTiles';
 import GamesTile from './components/GamesTile';
 import GameModal from './components/GameModal';
-import { ADVENTURE, ALL_GAMES, CANDLES, QUIZ, getGame, isUnlocked } from './games';
+import { ADVENTURE, ALL_GAMES, CANDLES, CULTURE, FREE_GAMES, GEO, QUIZ, getGame, isUnlocked } from './games';
 import { clearBests, loadBests, saveScore } from './games/scores';
 import AdventCalendar from './components/AdventCalendar';
 import Gags from './components/Gags';
@@ -32,8 +32,8 @@ const TestPanel = __TEST_MODE__ ? lazy(() => import('./components/TestPanel')) :
 // La cave sous la page : chargée seulement quand on y descend
 const EnversGame = lazy(() => import('./envers/EnversGame'));
 
-// Adresses directes, pratiques pour tester : /aventure, /bougies, /quiz
-const PATH_GAMES = { '/aventure': ADVENTURE.id, '/bougies': CANDLES.id, '/quiz': QUIZ.id };
+// Adresses directes, pratiques pour tester (et à partager pour les jeux libres) : /aventure, /bougies, /quiz, /culture, /ou-est-ce
+const PATH_GAMES = { '/aventure': ADVENTURE.id, '/bougies': CANDLES.id, '/quiz': QUIZ.id, '/culture': CULTURE.id, '/ou-est-ce': GEO.id };
 function pathGame() {
     return PATH_GAMES[window.location.pathname.replace(/\/+$/, '')] || null;
 }
@@ -291,6 +291,14 @@ function App() {
         setGameId(id);
     };
 
+    // Les bougies reçoivent les personnes fêtées, les jeux libres (pages de public/jeux/) l'adresse de leur page
+    const gameProps = (id) => {
+        if (id === CANDLES.id) return { people: isToday ? group : [] };
+        const g = getGame(id);
+        if (g?.frame) return { src: g.frame, title: g.title, gameId: g.id };
+        return undefined;
+    };
+
     const onWish = () => {
         if (!isToday) return; // seulement le jour de l'anniversaire
         boom();
@@ -348,6 +356,7 @@ function App() {
                             restLabel={restLabel}
                             play={play}
                             onQuiz={isAvent ? null : () => openGame(QUIZ.id)}
+                            extraGames={isAvent ? [] : FREE_GAMES.map((g) => ({ id: g.id, label: g.short, title: g.title, onPlay: () => openGame(g.id) }))}
                         />
                         {isAvent
                             ? <GamesTile openCount={advent.openCount} bests={bests} onPlay={openGame} />
@@ -398,7 +407,7 @@ function App() {
                     best={bests[gameId]}
                     onScore={onGameScore}
                     onClose={closeGame}
-                    gameProps={gameId === CANDLES.id ? { people: isToday ? group : [] } : undefined}
+                    gameProps={gameProps(gameId)}
                 />
             )}
             {envers && (

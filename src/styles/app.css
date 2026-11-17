@@ -266,6 +266,9 @@ html, body, #root { height: 100%; }
 .app .quiz-link { color: #fff; }
 .quiz-link:hover { background: rgba(255, 255, 255, 0.18); }
 .quiz-link:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.quiz-links { display: flex; flex-wrap: wrap; gap: 6px; }
+/* Jeux libres (Le Grand Quiz, Où est-ce ?) : pages autonomes affichées dans un cadre */
+.frame-game { flex: 1 1 auto; align-self: stretch; width: 100%; min-height: 0; border: 0; border-radius: 18px; background: #070b24; display: block; }
 .hero__actions { display: flex; flex-wrap: wrap; gap: 10px; }
 
 .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(10px, 1.2vw, 16px); }

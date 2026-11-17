@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Le Grand Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+[hidden] { display: none !important; }
+/* Une colonne centrée : écran d'accueil, puis une question à la fois, puis le bilan. */
+:root {
+  --night: #070b24;
+  --night2: #10164a;
+  --ink: #f2f4ff;
+  --muted: #b3bde6;
+  --gold: #ffd23f;
+  --ice: #7fe8ff;
+  --good: #3ddc97;
+  --bad: #ff6b7a;
+  --panel: rgba(18, 24, 66, 0.92);
+  --line: rgba(179, 189, 230, 0.28);
+  --keycap: #e8eeff;
+  --keyink: #141a40;
+  --display: 'Bricolage Grotesque', 'Trebuchet MS', system-ui, sans-serif;
+  --body: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body { margin: 0; background: radial-gradient(1200px 700px at 50% -10%, #1d2670 0%, var(--night) 60%) fixed, var(--night); color: var(--ink); font-family: var(--body); }
+main { max-width: 720px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top, 0px)) 16px 40px; }
+.screen[hidden] { display: none !important; }
+/* dans le site, le titre est déjà dans la fenêtre du jeu */
+.embed .brand { display: none; }
+.embed main { padding-top: 16px; }
+.eyebrow { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+h1 { margin: 6px 0 10px; font-family: var(--display); font-weight: 800; font-size: clamp(34px, 8vw, 54px); line-height: 0.95; }
+h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: clamp(24px, 5vw, 32px); line-height: 1.05; }
+h3 { margin: 22px 0 10px; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+p { line-height: 1.5; }
+.lead { color: var(--muted); font-size: 17px; margin: 0; }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 22px; }
+.tab { text-align: left; padding: 14px 16px; border-radius: 16px; border: 2px solid var(--line); background: rgba(255, 255, 255, 0.04); color: var(--ink); font: inherit; cursor: pointer; }
+.tab b { display: block; font-size: 17px; }
+.tab span { font-size: 14px; color: var(--muted); }
+.tab[aria-pressed="true"] { border-color: var(--gold); background: rgba(255, 210, 63, 0.08); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { padding: 9px 14px; border-radius: 999px; border: 2px solid var(--line); background: transparent; color: var(--ink); font: 600 15px var(--body); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--c, var(--ice)); border-color: var(--c, var(--ice)); color: var(--keyink); }
+.chip small { opacity: 0.75; font-weight: 500; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.seg { display: inline-flex; border: 2px solid var(--line); border-radius: 12px; overflow: hidden; }
+.seg button { padding: 9px 16px; background: transparent; color: var(--ink); border: 0; font: 600 15px var(--body); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ice); color: var(--keyink); }
+.players { display: grid; gap: 8px; margin-top: 10px; }
+.players input { font: 500 16px var(--body); padding: 10px 12px; border-radius: 10px; border: 2px solid var(--line); background: rgba(255, 255, 255, 0.05); color: var(--ink); width: 100%; }
+.btn { font: 700 18px var(--body); padding: 14px 26px; border-radius: 14px; border: 0; background: var(--gold); color: var(--keyink); cursor: pointer; }
+.btn.alt { background: transparent; color: var(--ink); border: 2px solid var(--line); }
+.btn.small { font-size: 15px; padding: 9px 16px; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--ice); outline-offset: 3px; }
+.start { margin-top: 26px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.note { font-size: 14px; color: var(--muted); }
+/* question */
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: var(--c, var(--ice)); color: var(--keyink); font-weight: 700; font-size: 14px; }
+.counter { color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
+.timer { height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.12); overflow: hidden; margin-bottom: 18px; }
+.timer i { display: block; height: 100%; width: 100%; background: var(--ice); border-radius: 4px; transform-origin: left; }
+.turn { font-size: 15px; color: var(--gold); font-weight: 700; margin: 0 0 6px; }
+.qtext { font-family: var(--display); font-weight: 800; font-size: clamp(22px, 5vw, 30px); line-height: 1.15; margin: 0 0 20px; }
+.answers { display: grid; gap: 10px; }
+@media (min-width: 620px) { .answers { grid-template-columns: 1fr 1fr; } }
+.ans { display: flex; gap: 12px; align-items: center; text-align: left; padding: 15px 16px; min-height: 60px; border-radius: 14px; border: 2px solid var(--line); background: var(--panel); color: var(--ink); font: 600 17px var(--body); cursor: pointer; }
+.ans kbd { flex: none; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; background: var(--keycap); color: var(--keyink); font: 700 14px var(--body); }
+.ans:hover:not(:disabled) { border-color: var(--ice); }
+.ans:disabled { cursor: default; }
+.ans.good { border-color: var(--good); background: rgba(61, 220, 151, 0.18); }
+.ans.bad { border-color: var(--bad); background: rgba(255, 107, 122, 0.16); }
+.ans.dim { opacity: 0.5; }
+.feedback { margin-top: 18px; padding: 16px 18px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); }
+.feedback b { font-size: 18px; }
+.feedback p { margin: 6px 0 0; color: var(--muted); }
+.feedback .row { margin-top: 14px; justify-content: space-between; }
+.pts { font-family: var(--display); font-weight: 800; color: var(--gold); font-size: 22px; }
+.scorebar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
+.scorebar span { padding: 6px 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.06); font-size: 14px; }
+.scorebar span.on { outline: 2px solid var(--gold); }
+/* bilan */
+.big { font-family: var(--display); font-weight: 800; font-size: clamp(48px, 12vw, 72px); line-height: 1; color: var(--gold); }
+.bars { display: grid; grid-template-columns: auto 1fr auto; gap: 8px 12px; align-items: center; font-size: 15px; }
+.bar { height: 10px; border-radius: 5px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: 5px; background: var(--c, var(--ice)); }
+.review { display: grid; gap: 10px; }
+.review div { padding: 12px 14px; border-radius: 12px; background: var(--panel); border-left: 4px solid var(--bad); }
+.review div.ok { border-left-color: var(--good); }
+.review b { display: block; }
+.review span { color: var(--muted); font-size: 14px; }
+.rank { display: grid; gap: 8px; }
+.rank div { display: flex; justify-content: space-between; padding: 12px 16px; border-radius: 12px; background: var(--panel); font-size: 17px; }
+.rank div:first-child { outline: 2px solid var(--gold); }
+</style>
+</head>
+<body>
+
+<main>
+  <section class="screen" id="home">
+    <p class="eyebrow brand">Quiz de culture générale</p>
+    <h1 class="brand">Le Grand Quiz</h1>
+    <p class="lead">Quatre réponses, une seule bonne, 20 secondes pour choisir. Plus tu réponds vite, plus tu marques.</p>
+    <div class="tabs" role="group" aria-label="Jeu">
+      <button class="tab" type="button" data-game="quiz" aria-pressed="true"><b>Culture G</b><span>9 thèmes au choix</span></button>
+      <button class="tab" type="button" data-game="titres" aria-pressed="false"><b>Le Juste Titre</b><span>Complète le titre de la chanson</span></button>
+    </div>
+    <div id="themeBox">
+      <h3>Thèmes</h3>
+      <div class="chips" id="themes"></div>
+    </div>
+    <div id="titresBox" hidden>
+      <h3>Le Juste Titre</h3>
+      <p class="note" style="margin:0">Un mot manque dans le titre d'une chanson sortie depuis 1970 : trouve-le parmi les quatre propositions. On te donne l'artiste et l'année.</p>
+    </div>
+    <h3>Partie</h3>
+    <div class="row">
+      <div class="seg" role="group" aria-label="Nombre de questions" id="count">
+        <button type="button" data-n="10" aria-pressed="true">10 questions</button>
+        <button type="button" data-n="20" aria-pressed="false">20 questions</button>
+      </div>
+      <div class="seg" role="group" aria-label="Joueurs" id="who">
+        <button type="button" data-p="solo" aria-pressed="true">Solo</button>
+        <button type="button" data-p="multi" aria-pressed="false">À plusieurs</button>
+      </div>
+    </div>
+    <div class="players" id="players" hidden>
+      <p class="note" style="margin:6px 0 0">Les joueurs répondent à tour de rôle sur cet écran.</p>
+      <input aria-label="Joueur 1" value="Joueur 1"><input aria-label="Joueur 2" value="Joueur 2"><input aria-label="Joueur 3" placeholder="Joueur 3 (facultatif)"><input aria-label="Joueur 4" placeholder="Joueur 4 (facultatif)">
+    </div>
+    <div class="start"><button class="btn" id="go" type="button">C'est parti</button><span class="note" id="best"></span></div>
+  </section>
+
+  <section class="screen" id="play" hidden>
+    <div class="top"><span class="badge" id="badge">Thème</span><span class="counter" id="counter">1 / 10</span></div>
+    <div class="timer" aria-hidden="true"><i id="timer"></i></div>
+    <p class="turn" id="turn" hidden></p>
+    <p class="qtext" id="qtext" aria-live="polite"></p>
+    <div class="answers" id="answers"></div>
+    <div class="feedback" id="feedback" hidden>
+      <b id="verdict"></b>
+      <p id="explain"></p>
+      <div class="row"><span class="pts" id="pts"></span><button class="btn small" id="next" type="button">Question suivante</button></div>
+    </div>
+    <div class="scorebar" id="scorebar"></div>
+  </section>
+
+  <section class="screen" id="end" hidden>
+    <p class="eyebrow" id="endEyebrow">Bilan</p>
+    <div class="big" id="endScore">0</div>
+    <p class="lead" id="endInfo"></p>
+    <div id="rankBox" hidden><h3>Classement</h3><div class="rank" id="rank"></div></div>
+    <h3>Par thème</h3>
+    <div class="bars" id="bars"></div>
+    <h3>Les réponses</h3>
+    <div class="review" id="review"></div>
+    <div class="start"><button class="btn" id="again" type="button">Rejouer</button><button class="btn alt" id="home2" type="button">Changer de thèmes</button></div>
+  </section>
+</main>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  // affiché dans le site des anniversaires : on renvoie le score à la page parente
+  const EMBED = window.parent !== window;
+  if (EMBED) document.documentElement.classList.add('embed');
+  function report(score) { if (EMBED) { try { window.parent.postMessage({ type: '30years:score', game: 'culture', score }, window.location.origin); } catch (e) { /* page parente d'une autre origine : pas de record partagé */ } } }
+  // ------------------------------------------------------------------ les thèmes
+  const THEMES = {
+    culture: { name: 'Culture G', c: '#7fe8ff' },
+    animaux: { name: 'Animaux', c: '#8ee07a' },
+    voyages: { name: 'Voyages', c: '#ffb86b' },
+    histoire: { name: 'Histoire de France', c: '#c9a6ff' },
+    musique: { name: 'Musique depuis 1970', c: '#ff8fc8' },
+    gastro: { name: 'Gastronomie', c: '#ffd23f' },
+    sport: { name: 'Sport', c: '#6fd0ff' },
+    cinema: { name: 'Cinéma', c: '#ff7b88' },
+    geo: { name: 'Géographie', c: '#7fffd0' }
+  };
+  // [question, bonne réponse, 3 mauvaises, explication]
+  const Q = {
+    culture: [
+      ['Qui a peint La Joconde ?', 'Léonard de Vinci', ['Michel-Ange', 'Raphaël', 'Botticelli'], 'Léonard de Vinci l\'a peinte au début du XVIe siècle ; elle est au Louvre.'],
+      ['Quel est le symbole chimique de l\'or ?', 'Au', ['Or', 'Ag', 'Go'], 'Au, du latin aurum. Ag, c\'est l\'argent.'],
+      ['Quelle planète est la plus proche du Soleil ?', 'Mercure', ['Vénus', 'Mars', 'La Terre'], 'Mercure tourne autour du Soleil en 88 jours.'],
+      ['Qui a écrit Les Misérables ?', 'Victor Hugo', ['Émile Zola', 'Alexandre Dumas', 'Honoré de Balzac'], 'Le roman de Victor Hugo paraît en 1862.'],
+      ['Combien d\'os compte le squelette d\'un adulte ?', '206', ['152', '270', '312'], 'Un bébé en a davantage : certains os se soudent en grandissant.'],
+      ['Qui a écrit Le Petit Prince ?', 'Antoine de Saint-Exupéry', ['Jules Verne', 'Jean de La Fontaine', 'Albert Camus'], 'Publié en 1943, c\'est l\'un des livres les plus traduits au monde.'],
+      ['Combien de cases compte un échiquier ?', '64', ['48', '81', '100'], '8 rangées de 8 cases.'],
+      ['Quel compositeur a écrit Les Quatre Saisons ?', 'Antonio Vivaldi', ['Mozart', 'Bach', 'Beethoven'], 'Quatre concertos pour violon composés par Vivaldi dans les années 1720.'],
+      ['Quel gaz les plantes absorbent-elles pour la photosynthèse ?', 'Le dioxyde de carbone', ['L\'oxygène', 'L\'azote', 'L\'hélium'], 'Elles absorbent du CO₂ et rejettent de l\'oxygène.'],
+      ['Quelle est la vitesse approximative de la lumière dans le vide ?', '300 000 km/s', ['30 000 km/s', '3 000 km/s', '3 millions de km/s'], 'Exactement 299 792 458 mètres par seconde.'],
+      ['Combien de côtés a un hexagone ?', '6', ['5', '7', '8'], 'Hexa veut dire six en grec ; la France métropolitaine est souvent surnommée l\'Hexagone.'],
+      ['Qui a formulé la théorie de la relativité ?', 'Albert Einstein', ['Isaac Newton', 'Marie Curie', 'Galilée'], 'Relativité restreinte en 1905, générale en 1915.'],
+      ['Quelle est la langue la plus parlée au monde en comptant les locuteurs natifs et non natifs ?', 'L\'anglais', ['Le mandarin', 'L\'espagnol', 'Le français'], 'Le mandarin compte le plus de locuteurs natifs, mais l\'anglais l\'emporte en ajoutant ceux qui l\'ont appris.'],
+      ['Quelle femme a reçu deux prix Nobel, en physique puis en chimie ?', 'Marie Curie', ['Rosalind Franklin', 'Irène Joliot-Curie', 'Ada Lovelace'], 'Prix Nobel de physique en 1903 et de chimie en 1911.']
+    ],
+    animaux: [
+      ['Quel est le plus grand animal connu ayant vécu sur Terre ?', 'La baleine bleue', ['Le mégalodon', 'L\'argentinosaure', 'Le cachalot'], 'Elle peut dépasser 25 mètres et 150 tonnes.'],
+      ['Combien de cœurs possède une pieuvre ?', '3', ['1', '2', '8'], 'Deux cœurs pour les branchies, un pour le reste du corps.'],
+      ['Quel est l\'animal terrestre le plus rapide ?', 'Le guépard', ['L\'antilope d\'Amérique', 'Le lion', 'Le lévrier'], 'Il dépasse 100 km/h en pointe, mais seulement sur quelques centaines de mètres.'],
+      ['Quel mammifère est capable de voler, et pas seulement de planer ?', 'La chauve-souris', ['L\'écureuil volant', 'Le colugo', 'Le phalanger volant'], 'Les trois autres planent grâce à une membrane, sans battre des ailes.'],
+      ['Combien de pattes a une araignée ?', '8', ['6', '10', '12'], 'Les insectes en ont 6 ; les araignées sont des arachnides.'],
+      ['Où vivent les manchots empereurs ?', 'En Antarctique', ['En Arctique', 'Au Groenland', 'En Islande'], 'Les manchots vivent dans l\'hémisphère Sud ; il n\'y en a pas au pôle Nord.'],
+      ['Que fait l\'éléphant quand il crie ?', 'Il barrit', ['Il brame', 'Il rugit', 'Il hennit'], 'Le cerf brame, le lion rugit, le cheval hennit.'],
+      ['Combien de temps dure environ la gestation d\'une éléphante ?', '22 mois', ['9 mois', '12 mois', '36 mois'], 'C\'est la plus longue gestation chez les mammifères terrestres.'],
+      ['Le dauphin est…', 'Un mammifère', ['Un poisson', 'Un reptile', 'Un amphibien'], 'Il respire de l\'air et allaite ses petits.'],
+      ['Quel est le plus grand félin du monde ?', 'Le tigre', ['Le lion', 'Le jaguar', 'Le léopard'], 'Le tigre de l\'Amour (ou de Sibérie) peut dépasser 3 mètres de long.'],
+      ['Combien d\'yeux possède une abeille ?', '5', ['2', '4', '8'], 'Deux grands yeux à facettes et trois petits yeux simples sur le dessus de la tête.'],
+      ['Comment appelle-t-on le petit de la chèvre ?', 'Le chevreau', ['L\'agneau', 'Le faon', 'Le poulain'], 'L\'agneau est le petit de la brebis, le faon celui de la biche.'],
+      ['Quel animal est l\'emblème du WWF ?', 'Le panda géant', ['Le tigre', 'Le koala', 'L\'ours polaire'], 'Le logo date de la création de l\'association, en 1961.'],
+      ['L\'axolotl, cette petite créature qui « sourit », est…', 'Un amphibien', ['Un poisson', 'Un reptile', 'Un mammifère'], 'C\'est une salamandre mexicaine qui garde ses branchies toute sa vie.'],
+      ['Lequel de ces oiseaux ne sait pas voler ?', 'L\'autruche', ['L\'albatros', 'Le condor', 'Le martinet'], 'L\'autruche compense en courant jusqu\'à 70 km/h.']
+    ],
+    voyages: [
+      ['Dans quelle ville se trouve la Sagrada Família ?', 'Barcelone', ['Madrid', 'Séville', 'Valence'], 'La basilique de Gaudí est en construction depuis 1882.'],
+      ['Quelle est la monnaie du Japon ?', 'Le yen', ['Le yuan', 'Le won', 'Le baht'], 'Le yuan est chinois, le won coréen, le baht thaïlandais.'],
+      ['Dans quel pays se trouve le Machu Picchu ?', 'Le Pérou', ['La Bolivie', 'Le Chili', 'L\'Équateur'], 'La cité inca domine la vallée de l\'Urubamba, près de Cuzco.'],
+      ['Petra, la cité taillée dans la roche rose, se trouve en…', 'Jordanie', ['Égypte', 'Israël', 'Liban'], 'Ancienne capitale des Nabatéens.'],
+      ['Angkor Vat se trouve dans quel pays ?', 'Le Cambodge', ['La Thaïlande', 'Le Laos', 'Le Viêt Nam'], 'Le plus grand monument religieux du monde, près de Siem Reap.'],
+      ['Dans quelle ville peut-on visiter l\'Alhambra ?', 'Grenade', ['Séville', 'Cordoue', 'Tolède'], 'Palais des souverains nasrides, en Andalousie.'],
+      ['Depuis quelle année le tunnel sous la Manche est-il ouvert ?', '1994', ['1985', '1999', '2003'], 'Inauguré le 6 mai 1994 par la reine Élisabeth II et François Mitterrand.'],
+      ['Quel est le code de l\'aéroport Paris-Charles-de-Gaulle ?', 'CDG', ['ORY', 'PAR', 'CGD'], 'ORY, c\'est Orly ; PAR désigne l\'ensemble des aéroports parisiens.'],
+      ['Quelle ville est dominée par la statue du Christ Rédempteur ?', 'Rio de Janeiro', ['São Paulo', 'Lisbonne', 'Buenos Aires'], 'Elle se dresse au sommet du Corcovado depuis 1931.'],
+      ['Dans quel pays se trouve la Cappadoce et ses montgolfières ?', 'La Turquie', ['La Grèce', 'L\'Iran', 'La Géorgie'], 'Région d\'Anatolie centrale aux cheminées de fées.'],
+      ['Dubrovnik, la « perle de l\'Adriatique », est en…', 'Croatie', ['Slovénie', 'Monténégro', 'Italie'], 'Ses remparts ont servi de décor à de nombreux tournages.'],
+      ['À quel pays appartiennent les îles Galápagos ?', 'L\'Équateur', ['Le Chili', 'Le Pérou', 'La Colombie'], 'Les observations de Darwin y ont nourri sa théorie de l\'évolution.'],
+      ['Quel pays est régulièrement le plus visité au monde par les touristes étrangers ?', 'La France', ['L\'Espagne', 'Les États-Unis', 'L\'Italie'], 'Environ 100 millions d\'arrivées par an ces dernières années.'],
+      ['Le Transsibérien relie Moscou à quelle ville, à l\'autre bout de la Russie ?', 'Vladivostok', ['Saint-Pétersbourg', 'Pékin', 'Irkoutsk'], 'Plus de 9 000 km et 7 heures de décalage horaire.'],
+      ['Dans quelle ville se trouve la place Djemaa el-Fna ?', 'Marrakech', ['Fès', 'Tunis', 'Le Caire'], 'Conteurs, musiciens et stands de nourriture s\'y installent chaque soir.']
+    ],
+    histoire: [
+      ['En quelle année a eu lieu la prise de la Bastille ?', '1789', ['1792', '1776', '1804'], 'Le 14 juillet 1789 ; on fête aussi le 14 juillet en souvenir de la fête de la Fédération de 1790.'],
+      ['Qui a été sacré empereur des Français en 1804 ?', 'Napoléon Ier', ['Louis XVIII', 'Charles X', 'Napoléon III'], 'Sacré à Notre-Dame de Paris le 2 décembre 1804.'],
+      ['Quelle bataille de 1515 est associée à François Ier ?', 'Marignan', ['Azincourt', 'Austerlitz', 'Bouvines'], '« 1515, Marignan » : une victoire en Italie au début de son règne.'],
+      ['Quel roi était surnommé le Roi-Soleil ?', 'Louis XIV', ['Louis XIII', 'Louis XV', 'Henri IV'], 'Il a régné 72 ans, de 1643 à 1715.'],
+      ['En quelle année les Françaises ont-elles voté pour la première fois ?', '1945', ['1918', '1936', '1958'], 'Le droit de vote est accordé en 1944 ; premier vote aux municipales d\'avril 1945.'],
+      ['Qui a lancé l\'appel du 18 juin 1940 depuis Londres ?', 'Charles de Gaulle', ['Jean Moulin', 'Philippe Pétain', 'Georges Clemenceau'], 'Un appel à continuer le combat, diffusé par la BBC.'],
+      ['Dans quelle ville Jeanne d\'Arc a-t-elle été brûlée en 1431 ?', 'Rouen', ['Orléans', 'Reims', 'Paris'], 'Place du Vieux-Marché, le 30 mai 1431.'],
+      ['En quelle année la peine de mort a-t-elle été abolie en France ?', '1981', ['1968', '1974', '1995'], 'Loi portée par Robert Badinter, garde des Sceaux.'],
+      ['Quel roi a été guillotiné en 1793 ?', 'Louis XVI', ['Louis XV', 'Charles X', 'Louis-Philippe'], 'Exécuté le 21 janvier 1793, place de la Révolution (aujourd\'hui place de la Concorde).'],
+      ['En quelle année la Ve République a-t-elle été fondée ?', '1958', ['1946', '1962', '1968'], 'La Constitution est adoptée par référendum le 28 septembre 1958.'],
+      ['Quel roi a signé l\'édit de Nantes en 1598 ?', 'Henri IV', ['Louis XIII', 'François Ier', 'Henri III'], 'Il accorde des droits aux protestants et met fin aux guerres de Religion.'],
+      ['Dans quelle ville Clovis a-t-il été baptisé ?', 'Reims', ['Paris', 'Tours', 'Soissons'], 'Par l\'évêque Remi ; les rois de France y seront ensuite sacrés.'],
+      ['Quelle loi de 1905 a marqué l\'histoire de France ?', 'La séparation des Églises et de l\'État', ['L\'école gratuite et obligatoire', 'Le repos dominical', 'Les congés payés'], 'Elle fonde la laïcité ; l\'école de Jules Ferry date des années 1880, les congés payés de 1936.'],
+      ['Combien de temps a duré la guerre de Cent Ans ?', '116 ans', ['100 ans', '99 ans', '130 ans'], 'De 1337 à 1453, avec de longues trêves.'],
+      ['Quelle reine était surnommée « l\'Autrichienne » ?', 'Marie-Antoinette', ['Anne d\'Autriche', 'Catherine de Médicis', 'Marie de Médicis'], 'Fille de l\'impératrice Marie-Thérèse d\'Autriche, guillotinée en 1793.']
+    ],
+    musique: [
+      ['Quel groupe a sorti Bohemian Rhapsody en 1975 ?', 'Queen', ['The Beatles', 'Led Zeppelin', 'The Rolling Stones'], 'Un morceau de près de six minutes, sans refrain classique.'],
+      ['Quel album est le plus vendu de l\'histoire ?', 'Thriller de Michael Jackson', ['Back in Black d\'AC/DC', 'The Dark Side of the Moon de Pink Floyd', 'Bad de Michael Jackson'], 'Sorti en 1982, il est estimé à plus de 70 millions d\'exemplaires.'],
+      ['Quel duo français a signé Get Lucky en 2013 ?', 'Daft Punk', ['Justice', 'Air', 'Cassius'], 'Avec Pharrell Williams au chant et Nile Rodgers à la guitare.'],
+      ['Quel artiste belge chante Alors on danse ?', 'Stromae', ['Angèle', 'Arno', 'Lost Frequencies'], 'Le titre de 2009 a fait le tour de l\'Europe.'],
+      ['En quelle année est sorti Smells Like Teen Spirit de Nirvana ?', '1991', ['1987', '1994', '1999'], 'Sur l\'album Nevermind.'],
+      ['Qui chante Désenchantée (1991) ?', 'Mylène Farmer', ['Jeanne Mas', 'Patricia Kaas', 'Vanessa Paradis'], 'Écrite par Mylène Farmer, composée par Laurent Boutonnat.'],
+      ['Quel groupe a gagné l\'Eurovision 1974 avec Waterloo ?', 'ABBA', ['Boney M.', 'Roxette', 'Ace of Base'], 'Victoire pour la Suède, à Brighton.'],
+      ['À qui France Gall rend-elle hommage dans Ella, elle l\'a ?', 'Ella Fitzgerald', ['Ella Henderson', 'Aretha Franklin', 'Billie Holiday'], 'Chanson écrite par Michel Berger, sortie en 1987.'],
+      ['Quel groupe a sorti L\'Aventurier en 1982 ?', 'Indochine', ['Téléphone', 'Noir Désir', 'Les Rita Mitsouko'], 'Inspiré des aventures de Bob Morane.'],
+      ['Qui chante Je l\'aime à mourir (1979) ?', 'Francis Cabrel', ['Alain Souchon', 'Jean-Jacques Goldman', 'Michel Berger'], 'Sur l\'album Les Chemins de traverse.'],
+      ['Qui interprète Les Lacs du Connemara (1981) ?', 'Michel Sardou', ['Johnny Hallyday', 'Julien Clerc', 'Michel Delpech'], 'Un incontournable de fin de soirée.'],
+      ['Quel chanteur est surnommé « The Boss » ?', 'Bruce Springsteen', ['Bon Jovi', 'Bob Dylan', 'Tom Petty'], 'Le rockeur du New Jersey, auteur de Born in the U.S.A.'],
+      ['Quel groupe britannique a sorti Wonderwall en 1995 ?', 'Oasis', ['Blur', 'Radiohead', 'Pulp'], 'Sur l\'album (What\'s the Story) Morning Glory?'],
+      ['Qui a écrit Pour que tu m\'aimes encore pour Céline Dion ?', 'Jean-Jacques Goldman', ['Luc Plamondon', 'Michel Berger', 'Pascal Obispo'], 'Sur l\'album D\'eux, sorti en 1995.'],
+      ['Quel artiste jamaïcain, figure du reggae, est mort en 1981 ?', 'Bob Marley', ['Peter Tosh', 'Jimmy Cliff', 'Burning Spear'], 'Mort à 36 ans, à Miami.'],
+      ['Quel groupe a sorti l\'album The Wall en 1979 ?', 'Pink Floyd', ['Genesis', 'The Who', 'Supertramp'], 'Un double album adapté au cinéma en 1982.'],
+      ['Qui a chanté Voyage, voyage en 1986 ?', 'Desireless', ['Jeanne Mas', 'Elsa', 'Mylène Farmer'], 'Un tube européen, encore très repris.'],
+      ['Quelle chanteuse britannique a sorti Rolling in the Deep en 2010 ?', 'Adele', ['Amy Winehouse', 'Duffy', 'Florence Welch'], 'Premier extrait de l\'album 21.'],
+      ['Quel rappeur caennais a sorti l\'album Civilisation en 2021 ?', 'Orelsan', ['Nekfeu', 'Vald', 'Bigflo et Oli'], 'Avec notamment L\'Odeur de l\'essence.']
+    ],
+    gastro: [
+      ['De quelle région la choucroute est-elle la spécialité ?', 'L\'Alsace', ['La Bretagne', 'La Savoie', 'La Normandie'], 'Chou fermenté, charcuteries et pommes de terre.'],
+      ['Quel fromage au lait de brebis s\'affine dans des caves de l\'Aveyron ?', 'Le roquefort', ['Le camembert', 'Le comté', 'Le reblochon'], 'Affiné dans les caves de Roquefort-sur-Soulzon.'],
+      ['Quel est l\'ingrédient principal du guacamole ?', 'L\'avocat', ['Le concombre', 'Le petit pois', 'La courgette'], 'Une recette mexicaine, avec citron vert, oignon et coriandre.'],
+      ['Quel poisson est incontournable dans la bouillabaisse marseillaise ?', 'La rascasse', ['Le saumon', 'Le thon', 'Le cabillaud'], 'La bouillabaisse est une soupe de poissons de roche.'],
+      ['Qu\'a de particulier la tarte Tatin ?', 'Elle est cuite à l\'envers', ['Elle ne cuit pas', 'Elle est salée', 'Elle n\'a pas de pâte'], 'Les pommes caramélisent au fond du moule, puis on la retourne.'],
+      ['Le cassoulet est une spécialité…', 'Du Sud-Ouest', ['De Bretagne', 'D\'Alsace', 'De Normandie'], 'Castelnaudary, Toulouse et Carcassonne s\'en disputent la paternité.'],
+      ['Quelle épice est la plus chère au monde ?', 'Le safran', ['La vanille', 'La cardamome', 'Le poivre de Sichuan'], 'Il faut environ 150 000 fleurs pour un kilo.'],
+      ['Combien d\'étoiles le Guide Michelin peut-il attribuer au maximum ?', '3', ['4', '5', '6'], 'Trois étoiles : « une cuisine unique, qui vaut le voyage ».'],
+      ['Le kouign-amann est une spécialité de…', 'Bretagne', ['Normandie', 'Alsace', 'Pays basque'], 'Né à Douarnenez ; son nom signifie « gâteau au beurre » en breton.'],
+      ['Quel légume est la base du gaspacho ?', 'La tomate', ['La betterave', 'Le poivron', 'La carotte'], 'Une soupe froide andalouse.'],
+      ['De quelle région d\'Espagne la paella est-elle originaire ?', 'Valence', ['La Catalogne', 'L\'Andalousie', 'La Galice'], 'La recette d\'origine est au poulet, au lapin et aux haricots.'],
+      ['Quel champignon surnomme-t-on le « diamant noir » ?', 'La truffe noire', ['Le cèpe', 'La morille', 'La trompette-de-la-mort'], 'La truffe du Périgord, récoltée l\'hiver.'],
+      ['Le comté est un fromage…', 'Du Jura', ['Des Pyrénées', 'D\'Auvergne', 'De Normandie'], 'Un fromage au lait cru de vache, en meules de près de 40 kilos.'],
+      ['À partir de quelle plante fabrique-t-on la tequila ?', 'L\'agave', ['La canne à sucre', 'Le cactus', 'Le maïs'], 'L\'agave bleu, dans la région de Tequila, au Mexique.'],
+      ['Qu\'est-ce qui distingue le croque-madame du croque-monsieur ?', 'Un œuf sur le dessus', ['Du poulet', 'Du saumon', 'Une sauce tomate'], 'Un œuf, souvent au plat, posé sur le dessus.'],
+      ['Quel fromage surnomme-t-on « le roi des fromages » ?', 'Le brie', ['Le camembert', 'Le roquefort', 'Le beaufort'], 'Il aurait gagné ce titre lors d\'un concours au congrès de Vienne, en 1815.']
+    ],
+    sport: [
+      ['Combien de joueurs une équipe de football aligne-t-elle sur le terrain ?', '11', ['10', '12', '9'], 'Dix joueurs de champ et un gardien.'],
+      ['Quel pays a remporté la Coupe du monde de football en 1998 ?', 'La France', ['Le Brésil', 'L\'Italie', 'L\'Allemagne'], 'Victoire 3-0 contre le Brésil au Stade de France.'],
+      ['Quel joueur détient le record de victoires à Roland-Garros ?', 'Rafael Nadal', ['Novak Djokovic', 'Roger Federer', 'Björn Borg'], '14 titres entre 2005 et 2022.'],
+      ['Dans quel sport utilise-t-on un volant ?', 'Le badminton', ['Le squash', 'Le tennis de table', 'Le padel'], 'Le volant peut dépasser 400 km/h lors d\'un smash.'],
+      ['Combien de points vaut un essai au rugby à XV, sans la transformation ?', '5', ['3', '4', '7'], 'La transformation en ajoute 2.'],
+      ['Combien de trous compte un parcours de golf standard ?', '18', ['9', '12', '24'], 'Certains petits parcours n\'en ont que 9.'],
+      ['Sur le Tour de France, de quelle couleur est le maillot du leader du classement général ?', 'Jaune', ['Vert', 'À pois rouges', 'Blanc'], 'Vert pour les sprinteurs, à pois pour les grimpeurs, blanc pour le meilleur jeune.'],
+      ['Quel nageur français a remporté quatre titres olympiques individuels aux JO de Paris 2024 ?', 'Léon Marchand', ['Florent Manaudou', 'Maxime Grousset', 'Yannick Agnel'], '200 m papillon, 200 m brasse, 200 m et 400 m quatre nages.'],
+      ['Quel est le record du monde du 100 mètres d\'Usain Bolt ?', '9,58 s', ['9,69 s', '9,72 s', '9,49 s'], 'Établi à Berlin en 2009.'],
+      ['Quelle est la durée de jeu d\'un match de NBA ?', '48 minutes', ['40 minutes', '60 minutes', '36 minutes'], 'Quatre quarts-temps de 12 minutes (10 minutes dans les règles internationales).'],
+      ['Quel pays a remporté le plus de Coupes du monde de rugby ?', 'L\'Afrique du Sud', ['La Nouvelle-Zélande', 'L\'Australie', 'L\'Angleterre'], 'Quatre titres : 1995, 2007, 2019 et 2023.'],
+      ['Quel judoka a été champion olympique individuel en 2012, 2016 et 2024 ?', 'Teddy Riner', ['David Douillet', 'Clarisse Agbégnénou', 'Djamel Bouras'], 'Il a aussi remporté l\'or par équipes en 2021 et en 2024.'],
+      ['Au tennis, comment appelle-t-on le score de 40 partout ?', 'Égalité', ['Avantage', 'Jeu blanc', 'Tie-break'], 'Il faut ensuite deux points d\'avance pour gagner le jeu.'],
+      ['Quelle ville a accueilli les Jeux olympiques d\'hiver de 1992 ?', 'Albertville', ['Grenoble', 'Chamonix', 'Annecy'], 'Grenoble les avait accueillis en 1968, Chamonix en 1924.'],
+      ['Combien de joueurs compte une équipe de volley-ball sur le terrain ?', '6', ['5', '7', '8'], 'Trois à l\'avant, trois à l\'arrière, avec rotation à chaque service gagné.']
+    ],
+    cinema: [
+      ['Qui a réalisé Le Fabuleux Destin d\'Amélie Poulain (2001) ?', 'Jean-Pierre Jeunet', ['Luc Besson', 'Jacques Audiard', 'Michel Gondry'], 'Avec Audrey Tautou, à Montmartre.'],
+      ['Quel film a attiré plus de 20 millions de spectateurs en France en 2008 ?', 'Bienvenue chez les Ch\'tis', ['Intouchables', 'Les Visiteurs', 'Astérix et Obélix : Mission Cléopâtre'], 'Environ 20,4 millions d\'entrées : le record pour un film français, seul Titanic a fait mieux.'],
+      ['Qui joue Driss dans Intouchables (2011) ?', 'Omar Sy', ['Jamel Debbouze', 'Gad Elmaleh', 'Kad Merad'], 'Le rôle lui a valu le César du meilleur acteur.'],
+      ['Quel film français muet a remporté l\'Oscar du meilleur film en 2012 ?', 'The Artist', ['Amour', 'La Môme', 'Les Choristes'], 'Réalisé par Michel Hazanavicius, avec Jean Dujardin, lui aussi oscarisé.'],
+      ['Qui a réalisé Titanic (1997) ?', 'James Cameron', ['Steven Spielberg', 'Ridley Scott', 'Robert Zemeckis'], 'Onze Oscars, un record partagé.'],
+      ['Quelle est la plus haute récompense du Festival de Cannes ?', 'La Palme d\'or', ['Le Lion d\'or', 'L\'Ours d\'or', 'Le César d\'or'], 'Le Lion d\'or est remis à Venise, l\'Ours d\'or à Berlin.'],
+      ['Qui a réalisé La Haine (1995) ?', 'Mathieu Kassovitz', ['Jacques Audiard', 'Luc Besson', 'Cédric Klapisch'], 'Avec Vincent Cassel, Saïd Taghmaoui et Hubert Koundé.'],
+      ['Dans quel film d\'animation un rat rêve-t-il de devenir chef à Paris ?', 'Ratatouille', ['Le Monde de Nemo', 'Les Indestructibles', 'Là-haut'], 'Un film Pixar sorti en 2007.'],
+      ['Quel réalisateur a signé Pulp Fiction ?', 'Quentin Tarantino', ['Martin Scorsese', 'David Fincher', 'les frères Coen'], 'Palme d\'or à Cannes en 1994.'],
+      ['Avec quel acteur Louis de Funès partage-t-il l\'affiche de La Grande Vadrouille ?', 'Bourvil', ['Jean Gabin', 'Fernandel', 'Jean-Paul Belmondo'], 'Sorti en 1966, longtemps le plus gros succès du cinéma français.'],
+      ['Quelle actrice française a reçu l\'Oscar pour La Môme ?', 'Marion Cotillard', ['Juliette Binoche', 'Audrey Tautou', 'Isabelle Huppert'], 'Elle y incarne Édith Piaf ; Oscar reçu en 2008.'],
+      ['Qui a réalisé Les Visiteurs (1993) ?', 'Jean-Marie Poiré', ['Claude Zidi', 'Francis Veber', 'Gérard Oury'], 'Avec Christian Clavier et Jean Reno.'],
+      ['Qui a réalisé Le Grand Bleu (1988) ?', 'Luc Besson', ['Jean-Jacques Annaud', 'Claude Lelouch', 'Jean-Jacques Beineix'], 'Inspiré du plongeur Jacques Mayol.'],
+      ['Combien de films compte la trilogie du Seigneur des anneaux de Peter Jackson ?', '3', ['2', '4', '6'], 'Sortis en 2001, 2002 et 2003 ; Le Hobbit est une autre trilogie.'],
+      ['Quel acteur incarne le capitaine Jack Sparrow ?', 'Johnny Depp', ['Orlando Bloom', 'Brad Pitt', 'Keanu Reeves'], 'Dans la saga Pirates des Caraïbes, à partir de 2003.']
+    ],
+    geo: [
+      ['Quelle est la capitale de l\'Australie ?', 'Canberra', ['Sydney', 'Melbourne', 'Perth'], 'Une ville construite pour départager Sydney et Melbourne.'],
+      ['Quel est le plus long fleuve de France ?', 'La Loire', ['La Seine', 'Le Rhône', 'La Garonne'], 'Environ 1 000 km, du mont Gerbier-de-Jonc à l\'Atlantique.'],
+      ['Quel est le plus haut sommet des Alpes ?', 'Le mont Blanc', ['Le mont Rose', 'Le Cervin', 'La Barre des Écrins'], 'Environ 4 806 mètres ; son altitude varie avec l\'épaisseur de neige.'],
+      ['Quel est le plus grand océan du monde ?', 'L\'océan Pacifique', ['L\'océan Atlantique', 'L\'océan Indien', 'L\'océan Arctique'], 'Il couvre environ un tiers de la surface de la Terre.'],
+      ['Quel est le plus grand pays du monde par la superficie ?', 'La Russie', ['Le Canada', 'La Chine', 'Les États-Unis'], 'Plus de 17 millions de km², sur 11 fuseaux horaires.'],
+      ['Quelle est la capitale du Canada ?', 'Ottawa', ['Toronto', 'Montréal', 'Vancouver'], 'Située en Ontario, à la frontière du Québec.'],
+      ['Quel fleuve traverse Le Caire ?', 'Le Nil', ['Le Tigre', 'L\'Euphrate', 'Le Jourdain'], 'Le Nil se jette dans la Méditerranée par un vaste delta au nord du Caire.'],
+      ['Combien de régions compte la France métropolitaine depuis 2016 ?', '13', ['12', '18', '22'], '13 régions en métropole, 18 en comptant l\'outre-mer.'],
+      ['Quelle est la capitale de la Nouvelle-Zélande ?', 'Wellington', ['Auckland', 'Christchurch', 'Queenstown'], 'Auckland est la plus grande ville, mais pas la capitale.'],
+      ['Lequel de ces pays n\'a pas d\'accès à la mer ?', 'La Bolivie', ['Le Chili', 'Le Pérou', 'La Colombie'], 'La Bolivie a perdu son accès au Pacifique à la fin du XIXe siècle.'],
+      ['Quel détroit sépare l\'Espagne du Maroc ?', 'Le détroit de Gibraltar', ['Le Bosphore', 'Le pas de Calais', 'Le détroit de Messine'], 'Environ 14 km au plus étroit.'],
+      ['Quel est le pays le plus peuplé du monde depuis 2023 ?', 'L\'Inde', ['La Chine', 'Les États-Unis', 'L\'Indonésie'], 'Selon l\'ONU, l\'Inde a dépassé la Chine en 2023.'],
+      ['Quel est le plus grand lac d\'Afrique ?', 'Le lac Victoria', ['Le lac Tanganyika', 'Le lac Tchad', 'Le lac Malawi'], 'Partagé entre l\'Ouganda, le Kenya et la Tanzanie.'],
+      ['Quelle est la préfecture de la Corse-du-Sud ?', 'Ajaccio', ['Bastia', 'Porto-Vecchio', 'Corte'], 'Bastia est la préfecture de la Haute-Corse.'],
+      ['Quel est le plus grand désert chaud du monde ?', 'Le Sahara', ['Le désert de Gobi', 'Le Kalahari', 'Le désert d\'Arabie'], 'Plus de 9 millions de km² ; l\'Antarctique est un désert froid plus grand encore.'],
+      ['Quel est le plus haut sommet du monde ?', 'L\'Everest', ['Le K2', 'L\'Aconcagua', 'Le Kilimandjaro'], '8 849 mètres, à la frontière du Népal et de la Chine.']
+    ]
+  };
+  // Le Juste Titre : [titre avec ___, mot manquant, 3 leurres, artiste, année]
+  const T = [
+    ['Les Lacs du ___', 'Connemara', ['Galway', 'Donegal', 'Kerry'], 'Michel Sardou', 1981],
+    ['___, elle l\'a', 'Ella', ['Nina', 'Lola', 'Laura'], 'France Gall', 1987],
+    ['Mistral ___', 'gagnant', ['perdant', 'd\'été', 'gagné'], 'Renaud', 1985],
+    ['Voyage, ___', 'voyage', ['partir', 'rivage', 'nuage'], 'Desireless', 1986],
+    ['Les Démons de ___', 'minuit', ['la nuit', 'midi', 'l\'amour'], 'Images', 1986],
+    ['Partenaire ___', 'particulier', ['idéal', 'secret', 'fidèle'], 'Partenaire Particulier', 1985],
+    ['Joe le ___', 'taxi', ['marin', 'gitan', 'rital'], 'Vanessa Paradis', 1987],
+    ['Foule ___', 'sentimentale', ['solitaire', 'immense', 'en délire'], 'Alain Souchon', 1993],
+    ['Alors on ___', 'danse', ['chante', 'rêve', 's\'aime'], 'Stromae', 2009],
+    ['Dernière ___', 'danse', ['chance', 'valse', 'étoile'], 'Indila', 2013],
+    ['Tout le bonheur du ___', 'monde', ['jour', 'temps', 'ciel'], 'Sinsemilia', 2004],
+    ['Je l\'aime à ___', 'mourir', ['la folie', 'pleurer', 'crever'], 'Francis Cabrel', 1979],
+    ['Pour que tu m\'aimes ___', 'encore', ['toujours', 'demain', 'un peu'], 'Céline Dion', 1995],
+    ['Quelque chose de ___', 'Tennessee', ['Nashville', 'Memphis', 'Louisiane'], 'Johnny Hallyday', 1985],
+    ['Toute la musique que j\'___', 'aime', ['écoute', 'adore', 'entends'], 'Johnny Hallyday', 1973],
+    ['Femmes des années ___', '80', ['70', '90', '60'], 'Michel Sardou', 1980],
+    ['Allumer le ___', 'feu', ['ciel', 'soleil', 'phare'], 'Johnny Hallyday', 1998],
+    ['Il jouait du piano ___', 'debout', ['la nuit', 'tout seul', 'couché'], 'France Gall', 1980],
+    ['Marcia ___', 'Baïla', ['Bella', 'Samba', 'Mambo'], 'Les Rita Mitsouko', 1984],
+    ['Nuit de ___', 'folie', ['Chine', 'rêve', 'fête'], 'Début de soirée', 1988],
+    ['Tombé du ___', 'ciel', ['nid', 'lit', 'train'], 'Jacques Higelin', 1988],
+    ['Born to Be ___', 'Alive', ['Wild', 'Free', 'Loved'], 'Patrick Hernandez', 1979],
+    ['Hotel ___', 'California', ['Paradise', 'Babylon', 'Chelsea'], 'Eagles', 1977],
+    ['Another Brick in the ___', 'Wall', ['Road', 'House', 'Sky'], 'Pink Floyd', 1979],
+    ['Sweet ___ (Are Made of This)', 'Dreams', ['Nights', 'Things', 'Lies'], 'Eurythmics', 1983],
+    ['Stayin\' ___', 'Alive', ['Awake', 'Strong', 'Home'], 'Bee Gees', 1977],
+    ['I Will ___', 'Survive', ['Remember', 'Return', 'Always'], 'Gloria Gaynor', 1978],
+    ['Purple ___', 'Rain', ['Haze', 'Heart', 'Sky'], 'Prince', 1984],
+    ['Uptown ___', 'Funk', ['Girl', 'Dance', 'Party'], 'Mark Ronson et Bruno Mars', 2014],
+    ['Get ___', 'Lucky', ['Lost', 'Down', 'Ready'], 'Daft Punk', 2013],
+    ['Take On ___', 'Me', ['You', 'Fire', 'Time'], 'a-ha', 1985],
+    ['Livin\' on a ___', 'Prayer', ['Dream', 'Highway', 'Wire'], 'Bon Jovi', 1986],
+    ['Like a ___', 'Prayer', ['Dream', 'Star', 'Song'], 'Madonna', 1989],
+    ['Smells Like Teen ___', 'Spirit', ['Riot', 'Angel', 'Dream'], 'Nirvana', 1991],
+    ['Billie ___', 'Jean', ['Joe', 'Jane', 'June'], 'Michael Jackson', 1983],
+    ['L\'___', 'Aventurier', ['Étranger', 'Envahisseur', 'Inconnu'], 'Indochine', 1982],
+    ['Sous le ___', 'vent', ['soleil', 'ciel', 'pont'], 'Garou et Céline Dion', 2001],
+    ['Laisse ___', 'béton', ['tomber', 'courir', 'filer'], 'Renaud', 1977],
+    ['Le ___', 'Sud', ['Nord', 'Soleil', 'Midi'], 'Nino Ferrer', 1975],
+    ['La ___', 'Corrida', ['Fiesta', 'Feria', 'Sardane'], 'Francis Cabrel', 1994],
+    ['Ces soirées-___', 'là', ['ci', 'folles', 'd\'été'], 'Yannick', 2000],
+    ['Femme Like ___', 'U', ['Me', 'Her', 'Dat'], 'K-Maro', 2004],
+    ['Les Mots ___', 'bleus', ['doux', 'perdus', 'd\'amour'], 'Christophe', 1974],
+    ['Ne partez pas sans ___', 'moi', ['un mot', 'adieu', 'lui'], 'Céline Dion', 1988],
+    ['Il tape sur des ___', 'bambous', ['tambours', 'bidons', 'casseroles'], 'Philippe Lavil', 1982],
+    ['Bohemian ___', 'Rhapsody', ['Symphony', 'Dream', 'Melody'], 'Queen', 1975],
+    ['Rolling in the ___', 'Deep', ['Dark', 'Rain', 'Night'], 'Adele', 2010],
+    ['Sweet Child o\' ___', 'Mine', ['Gold', 'Time', 'Fire'], 'Guns N\' Roses', 1987],
+    ['Every Breath You ___', 'Take', ['Make', 'Fake', 'Breathe'], 'The Police', 1983],
+    ['We Will Rock ___', 'You', ['On', 'Again', 'Forever'], 'Queen', 1977],
+    ['Ma ___', 'Benz', ['Caisse', 'Gova', 'Life'], 'Suprême NTM', 1998],
+    ['On écrit sur les ___', 'murs', ['vitres', 'cœurs', 'ponts'], 'Demis Roussos', 1989]
+  ];
+
+  // ------------------------------------------------------------------ réglages
+  const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* pas de record */ } } };
+  const cfg = { game: 'quiz', themes: new Set(Object.keys(THEMES)), n: 10, multi: false };
+  const chipBox = $('themes');
+  const allChip = document.createElement('button');
+  allChip.className = 'chip'; allChip.type = 'button'; allChip.textContent = 'Tous les thèmes'; allChip.style.setProperty('--c', '#f2f4ff');
+  chipBox.appendChild(allChip);
+  const chipEls = {};
+  for (const [k, t] of Object.entries(THEMES)) {
+    const b = document.createElement('button');
+    b.className = 'chip'; b.type = 'button'; b.style.setProperty('--c', t.c);
+    b.innerHTML = t.name + ' <small>' + (Q[k].length) + '</small>';
+    b.addEventListener('click', () => { if (cfg.themes.has(k)) { if (cfg.themes.size > 1) cfg.themes.delete(k); } else cfg.themes.add(k); syncChips(); });
+    chipEls[k] = b; chipBox.appendChild(b);
+  }
+  allChip.addEventListener('click', () => { cfg.themes = new Set(Object.keys(THEMES)); syncChips(); });
+  function syncChips() {
+    for (const k in chipEls) chipEls[k].setAttribute('aria-pressed', String(cfg.themes.has(k)));
+    allChip.setAttribute('aria-pressed', String(cfg.themes.size === Object.keys(THEMES).length));
+    showBest();
+  }
+  document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => {
+    cfg.game = b.dataset.game;
+    document.querySelectorAll('.tab').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    $('themeBox').hidden = cfg.game !== 'quiz'; $('titresBox').hidden = cfg.game === 'quiz';
+    showBest();
+  }));
+  function seg(id, attr, fn) {
+    const box = $(id);
+    box.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { box.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); fn(b.dataset[attr]); }));
+  }
+  seg('count', 'n', (v) => { cfg.n = +v; showBest(); });
+  seg('who', 'p', (v) => { cfg.multi = v === 'multi'; $('players').hidden = !cfg.multi; });
+  function bestKey() { return 'grand-quiz-best-' + cfg.game + '-' + cfg.n; }
+  function showBest() { const b = +store.get(bestKey()); $('best').textContent = b ? 'Ton record sur ' + cfg.n + ' questions : ' + b + ' pts' : ''; }
+  syncChips();
+
+  // ------------------------------------------------------------------ partie
+  const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const S = { qs: [], i: 0, players: [], cur: 0, answered: false, t0: 0, raf: 0, log: [] };
+  const TIME = 20;
+  // on évite de reposer les mêmes questions d'une partie à l'autre
+  let seen = new Set();
+  try { seen = new Set(JSON.parse(sessionStorage.getItem('grand-quiz-seen') || '[]')); } catch (e) { seen = new Set(); }
+  function pickQuestions() {
+    if (cfg.game === 'titres') {
+      const pool = T.map((t, i) => ({ id: 't' + i, theme: 'musique', q: t[0], good: t[1], bad: t[2], extra: t[3] + ', ' + t[4], explain: '« ' + t[0].replace('___', t[1]) + ' », ' + t[3] + ' (' + t[4] + ').' }));
+      return freshFirst(pool).slice(0, cfg.n);
+    }
+    const themes = shuffle([...cfg.themes]);
+    const pools = {};
+    for (const k of themes) pools[k] = freshFirst(Q[k].map((q, i) => ({ id: k + i, theme: k, q: q[0], good: q[1], bad: q[2], explain: q[3] })));
+    // on alterne les thèmes pour équilibrer la partie
+    const out = [];
+    let guard = 0;
+    while (out.length < cfg.n && guard++ < 500) for (const k of themes) { if (out.length >= cfg.n) break; const q = pools[k].shift(); if (q) out.push(q); }
+    return shuffle(out);
+  }
+  function freshFirst(pool) { shuffle(pool); return pool.filter((q) => !seen.has(q.id)).concat(pool.filter((q) => seen.has(q.id))); }
+  function start() {
+    S.qs = pickQuestions(); S.i = 0; S.log = [];
+    const names = [...$('players').querySelectorAll('input')].map((x) => x.value.trim()).filter(Boolean);
+    S.players = (cfg.multi && names.length ? names : ['Toi']).map((n) => ({ name: n.slice(0, 20), score: 0, good: 0 }));
+    S.cur = 0;
+    $('home').hidden = true; $('end').hidden = true; $('play').hidden = false;
+    show();
+  }
+  function show() {
+    const q = S.qs[S.i];
+    S.answered = false;
+    const th = THEMES[q.theme];
+    $('badge').textContent = cfg.game === 'titres' ? 'Le Juste Titre' : th.name;
+    $('badge').style.setProperty('--c', th.c);
+    $('counter').textContent = (S.i + 1) + ' / ' + S.qs.length;
+    const multi = S.players.length > 1;
+    $('turn').hidden = !multi;
+    if (multi) $('turn').textContent = 'À ' + S.players[S.cur].name + ' de répondre';
+    $('qtext').textContent = cfg.game === 'titres' ? '« ' + q.q + ' » — ' + q.extra : q.q;
+    const opts = shuffle([q.good, ...q.bad]);
+    const box = $('answers'); box.innerHTML = '';
+    opts.forEach((o, i) => {
+      const b = document.createElement('button');
+      b.className = 'ans'; b.type = 'button';
+      b.innerHTML = '<kbd>' + 'ABCD'[i] + '</kbd><span></span>';
+      b.querySelector('span').textContent = o;
+      b.dataset.v = o;
+      b.addEventListener('click', () => answer(o));
+      box.appendChild(b);
+    });
+    $('feedback').hidden = true;
+    renderScorebar();
+    S.t0 = performance.now();
+    cancelAnimationFrame(S.raf);
+    tick();
+    box.querySelector('button').focus({ preventScroll: true });
+    window.scrollTo({ top: 0 });
+  }
+  function tick() {
+    const left = Math.max(0, TIME - (performance.now() - S.t0) / 1000);
+    const bar = $('timer');
+    bar.style.transform = 'scaleX(' + left / TIME + ')';
+    bar.style.background = left < 5 ? 'var(--bad)' : left < 10 ? 'var(--gold)' : 'var(--ice)';
+    if (S.answered) return;
+    if (left <= 0) return answer(null);
+    S.raf = requestAnimationFrame(tick);
+  }
+  function answer(v) {
+    if (S.answered) return;
+    S.answered = true;
+    cancelAnimationFrame(S.raf);
+    const q = S.qs[S.i];
+    const left = Math.max(0, TIME - (performance.now() - S.t0) / 1000);
+    const ok = v === q.good;
+    const pts = ok ? 100 + Math.round(50 * left / TIME) : 0;
+    const p = S.players[S.cur];
+    p.score += pts; if (ok) p.good++;
+    S.log.push({ q, v, ok, pts, who: p.name });
+    seen.add(q.id);
+    try { sessionStorage.setItem('grand-quiz-seen', JSON.stringify([...seen])); } catch (e) { /* rien */ }
+    document.querySelectorAll('.ans').forEach((b) => {
+      b.disabled = true;
+      if (b.dataset.v === q.good) b.classList.add('good');
+      else if (b.dataset.v === v) b.classList.add('bad');
+      else b.classList.add('dim');
+    });
+    $('verdict').textContent = ok ? (left > 15 ? 'Bravo, et rapide !' : 'Bonne réponse !') : v === null ? 'Temps écoulé. C\'était : ' + q.good : 'Raté. C\'était : ' + q.good;
+    $('verdict').style.color = ok ? 'var(--good)' : 'var(--bad)';
+    $('explain').textContent = q.explain;
+    $('pts').textContent = ok ? '+' + pts + ' pts' : '0 pt';
+    $('next').textContent = S.i + 1 >= S.qs.length ? 'Voir le bilan' : 'Question suivante';
+    $('feedback').hidden = false;
+    renderScorebar();
+    $('next').focus({ preventScroll: true });
+    $('feedback').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+  function renderScorebar() {
+    const box = $('scorebar');
+    box.innerHTML = '';
+    S.players.forEach((p, i) => { const s = document.createElement('span'); s.textContent = p.name + ' · ' + p.score + ' pts'; if (i === S.cur && S.players.length > 1) s.className = 'on'; box.appendChild(s); });
+  }
+  function next() {
+    S.i++;
+    if (S.players.length > 1) S.cur = (S.cur + 1) % S.players.length;
+    if (S.i >= S.qs.length) return finish();
+    show();
+  }
+  function finish() {
+    $('play').hidden = true; $('end').hidden = false;
+    const solo = S.players.length === 1;
+    const p = S.players[0];
+    const good = S.log.filter((l) => l.ok).length;
+    if (solo) {
+      const best = +store.get(bestKey()) || 0;
+      if (p.score > best) store.set(bestKey(), String(p.score));
+      // le record du site ne compte que les parties de Culture G en 10 questions, pour comparer ce qui est comparable
+      if (cfg.game === 'quiz' && cfg.n === 10) report(p.score);
+      $('endEyebrow').textContent = good === S.qs.length ? 'Sans-faute !' : 'Bilan';
+      $('endScore').textContent = p.score + ' pts';
+      $('endInfo').textContent = good + ' bonne' + (good > 1 ? 's' : '') + ' réponse' + (good > 1 ? 's' : '') + ' sur ' + S.qs.length + '. ' + (p.score > best ? (best ? 'Nouveau record (ancien : ' + best + ' pts) !' : 'Premier record enregistré.') : 'Record : ' + best + ' pts.');
+      $('rankBox').hidden = true;
+    } else {
+      const ranked = S.players.slice().sort((a, b) => b.score - a.score);
+      const tie = ranked.length > 1 && ranked[0].score === ranked[1].score;
+      $('endEyebrow').textContent = 'Fin de la partie';
+      $('endScore').textContent = tie ? 'Égalité !' : ranked[0].name + ' gagne';
+      $('endInfo').textContent = 'Chacun a répondu à ' + Math.floor(S.qs.length / S.players.length) + ' ou ' + Math.ceil(S.qs.length / S.players.length) + ' questions.';
+      $('rankBox').hidden = false;
+      $('rank').innerHTML = '';
+      ranked.forEach((r, i) => { const d = document.createElement('div'); const a = document.createElement('span'); a.textContent = (i + 1) + '. ' + r.name; const b = document.createElement('b'); b.textContent = r.score + ' pts · ' + r.good + ' bonne' + (r.good > 1 ? 's' : ''); d.append(a, b); $('rank').appendChild(d); });
+    }
+    // par thème
+    const bars = $('bars'); bars.innerHTML = '';
+    const by = {};
+    for (const l of S.log) { const k = cfg.game === 'titres' ? 'titres' : l.q.theme; (by[k] = by[k] || { n: 0, ok: 0 }); by[k].n++; if (l.ok) by[k].ok++; }
+    for (const [k, v] of Object.entries(by)) {
+      const name = k === 'titres' ? 'Le Juste Titre' : THEMES[k].name, c = k === 'titres' ? THEMES.musique.c : THEMES[k].c;
+      const a = document.createElement('span'); a.textContent = name;
+      const bar = document.createElement('div'); bar.className = 'bar'; bar.style.setProperty('--c', c); bar.innerHTML = '<i style="width:' + Math.round(v.ok / v.n * 100) + '%"></i>';
+      const b = document.createElement('b'); b.textContent = v.ok + '/' + v.n;
+      bars.append(a, bar, b);
+    }
+    const rv = $('review'); rv.innerHTML = '';
+    for (const l of S.log) {
+      const d = document.createElement('div'); if (l.ok) d.className = 'ok';
+      const b = document.createElement('b'); b.textContent = cfg.game === 'titres' ? '« ' + l.q.q.replace('___', l.q.good) + ' » — ' + l.q.extra : l.q.q;
+      const s = document.createElement('span'); s.textContent = (S.players.length > 1 ? l.who + ' : ' : '') + (l.ok ? 'Bonne réponse, ' + l.q.good : (l.v === null ? 'Pas de réponse' : 'Répondu « ' + l.v + ' »') + ' · la bonne : ' + l.q.good);
+      d.append(b, s); rv.appendChild(d);
+    }
+    window.scrollTo({ top: 0 });
+    $('again').focus({ preventScroll: true });
+  }
+  $('go').addEventListener('click', start);
+  $('next').addEventListener('click', next);
+  $('again').addEventListener('click', start);
+  $('home2').addEventListener('click', () => { $('end').hidden = true; $('home').hidden = false; showBest(); window.scrollTo({ top: 0 }); });
+  window.addEventListener('keydown', (e) => {
+    if ($('play').hidden || e.target.tagName === 'INPUT') return;
+    const k = e.key.toUpperCase();
+    if (!S.answered) {
+      const idx = 'ABCD'.indexOf(k) >= 0 ? 'ABCD'.indexOf(k) : '1234'.indexOf(k);
+      if (idx >= 0) { const b = document.querySelectorAll('.ans')[idx]; if (b) { e.preventDefault(); answer(b.dataset.v); } }
+    }
+  });
+  window.grandQuiz = { S, Q, T, THEMES, cfg };
+})();
+</script>
+
+</body>
+</html>
