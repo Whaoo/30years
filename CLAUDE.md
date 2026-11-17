@@ -24,7 +24,8 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
 - `main` = production, publiée sur https://30years.pages.dev
 - `dev` = travail en cours, publiée en prévisualisation sur https://dev.30years.pages.dev
 - Travailler sur `dev`. Pour publier : `git checkout main && git merge dev && git push && git checkout dev`.
-- Aucun serveur : tout tourne dans le navigateur. Les records sont dans le `localStorage` (`30years:best:<id>`).
+- Presque aucun serveur : tout tourne dans le navigateur, records personnels dans le `localStorage` (`30years:best:<id>`).
+  Seule exception : les classements en ligne (voir « Classements en ligne » plus bas), servis sous `/api/` par Pages Functions + D1, offre gratuite.
 
 ## Organisation du code
 
@@ -56,6 +57,26 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
   - `Puzzle.jsx` : remettre TRICK OR TREE dans l'ordre. Progression gardée dans `localStorage` (`30years:envers`), record de temps `30years:best:envers`.
   - `art/` : décors SVG générés depuis les maquettes du canevas de design (Page 2) ; `level-top.json` = salles, couloirs, obstacles, lumières, lettres.
   - En mode test : `/envers` ouvre la cave, le panneau « Test » a un bouton dédié, la console expose `window.envers` (`revealAll()`, `grabAll()`, `openDoors()`, `setBattery(n)`).
+
+## Classements en ligne (Cloudflare Pages Functions + D1, gratuits)
+
+- `functions/api/[[route]].js` : toutes les adresses `/api/…` ; le code est dans `classement/api.js` (testable hors Cloudflare).
+  Seules ces adresses font tourner du code (Cloudflare génère `_routes.json`) ; le reste du site reste statique et gratuit.
+- `classement/schema.sql` : tables `joueurs` (pseudo + empreinte du code de récupération), `cles` (une clé par navigateur, en empreinte),
+  `scores` (chaque partie, date de Paris) et `records` (meilleur score par joueur et par jeu). Ni e-mail ni adresse IP.
+- Côté site : `src/utils/leaderboard.js` (client, pseudo + clé dans `30years:joueur`) et `src/components/Leaderboard.jsx`
+  (panneau « Classement » de la fenêtre de jeu). En fin de partie (score > 0), le panneau s'ouvre : sans pseudo, il le demande une fois
+  en montrant la place qu'aurait ce score ; ensuite chaque score part tout seul. Onglets « Toujours » et « Aujourd'hui »
+  (jeux de la quête : premier essai du jour, comme le score officiel). Si l'API ne répond pas (`npm run dev`, base absente), rien ne s'affiche.
+- Garde-fous : score maximal par jeu (`JEUX` dans `classement/api.js`, à compléter pour un nouveau jeu), 20 parties par joueur et par 10 min,
+  mots interdits dans les pseudos, captcha Turnstile à la création d'un pseudo si `TURNSTILE_SITEKEY` + `TURNSTILE_SECRET` sont définis.
+- Réglages Cloudflare (une fois) : deux bases D1 (`30years-scores` pour la production, `30years-scores-dev` pour les préversions),
+  `classement/schema.sql` collé dans leur console ; projet Pages > Settings > Bindings : D1 sous le nom `DB` ;
+  variables `TURNSTILE_SITEKEY`, `TURNSTILE_SECRET` (chiffrée) et `ADMIN_KEY` (chiffrée).
+- Administration : `POST /api/admin` avec l'en-tête `X-Admin-Key`, `{ "action": "effacer-pseudo", "pseudo": "…" }`
+  ou `{ "action": "effacer-scores", "pseudo": "…", "jeu": "…" }`.
+- Tester sans Cloudflare : `node tools/classement/test.mjs` (API sur une base en mémoire) ;
+  `npm run build && node tools/classement/serveur.mjs` sert `dist/` + l'API sur http://localhost:8788 (Node 22 ou plus).
 
 ## Règles à respecter
 
