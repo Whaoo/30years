@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import Icon from './Icons';
 import WeatherWidget from './WeatherWidget';
 
@@ -14,7 +15,38 @@ function LogoMark() {
     );
 }
 
-export default function Header({ theme, weather, isAvent, isDecember, daysToStart, onHome, onAvent, onLogo, onAdventure }) {
+// Sur téléphone, la colonne de droite (et ses liens vers les jeux) est masquée : un petit menu « Jeux » les remplace
+function GamesMenu({ games }) {
+    const [open, setOpen] = useState(false);
+    const box = useRef(null);
+    useEffect(() => {
+        if (!open) return undefined;
+        const away = (e) => { if (box.current && !box.current.contains(e.target)) setOpen(false); };
+        const esc = (e) => { if (e.key === 'Escape') setOpen(false); };
+        document.addEventListener('pointerdown', away);
+        window.addEventListener('keydown', esc);
+        return () => { document.removeEventListener('pointerdown', away); window.removeEventListener('keydown', esc); };
+    }, [open]);
+    return (
+        <div className="jeux-menu" ref={box}>
+            <button type="button" className="jeux-menu__btn glass" aria-expanded={open} aria-label="Jeux" title="Jeux" onClick={() => setOpen((o) => !o)}>
+                <Icon name="question" size={20} />
+            </button>
+            {open && (
+                <div className="jeux-menu__list" role="menu">
+                    {games.map((g) => (
+                        <button key={g.id} type="button" role="menuitem" onClick={() => { setOpen(false); g.onPlay(); }}>
+                            <Icon name={g.icon} size={18} />
+                            {g.title}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+export default function Header({ theme, weather, isAvent, isDecember, daysToStart, onHome, onAvent, onLogo, onAdventure, games = [] }) {
     return (
         <header className="header">
             <div className="header__left">
@@ -56,6 +88,7 @@ export default function Header({ theme, weather, isAvent, isDecember, daysToStar
                         )}
                     </button>
                 </nav>
+                {games.length > 0 && <GamesMenu games={games} />}
             </div>
         </header>
     );

@@ -22,6 +22,8 @@ import { useDialMode } from './hooks/useDialMode';
 import { usePenguinPlay } from './hooks/usePenguinPlay';
 import { announceActive, dismissAnnounce, formatTime, isEnversOpen } from './envers/config';
 import NewsBanner from './envers/NewsBanner';
+import GamesNews from './components/GamesNews';
+import { dismissGamesNews, gamesNewsActive } from './utils/gamesNews';
 import Crack from './envers/Crack';
 
 const HOUR = 3600000;
@@ -82,6 +84,7 @@ function App() {
     const [envers, setEnvers] = useState(enversPath);
     const [stage, setStage] = useState(0); // passage : 0 rien, 1 ça gratte, 2 ça craque
     const [newsHidden, setNewsHidden] = useState(false);
+    const [gamesNewsHidden, setGamesNewsHidden] = useState(false);
     const [enversCovered, setEnversCovered] = useState(false); // la page reste visible pendant la première seconde de la chute
     const stageRef = useRef({ n: 0, last: 0, timer: 0 });
     const touchY = useRef(null);
@@ -169,7 +172,9 @@ function App() {
     }, [isToday, firstId, wave]);
 
     const enversOpen = isEnversOpen(now);
-    const news = announceActive(now, isToday) && !newsHidden;
+    // Deux annonces possibles : les jeux libres (18-25/11) passent devant celle de la cave
+    const gamesNews = gamesNewsActive(now, isToday) && !gamesNewsHidden;
+    const news = announceActive(now, isToday) && !newsHidden && !gamesNews;
 
     // Le passage vers l'Envers : trois coups vers le bas (molette ou glissé), sans pause de plus de 4 secondes
     const passageStep = useCallback(() => {
@@ -342,6 +347,7 @@ function App() {
                     onAvent={onAvent}
                     onLogo={onLogo}
                     onAdventure={isUnlocked(ADVENTURE, advent, now) ? () => openGame(ADVENTURE.id) : null}
+                    games={[QUIZ, ...FREE_GAMES].map((g) => ({ id: g.id, title: g.title, icon: g.icon, onPlay: () => openGame(g.id) }))}
                 />
 
                 <main className={`main${isAvent ? ' main--avent' : ''}`}>
@@ -370,6 +376,20 @@ function App() {
             </div>
 
             {stage > 0 && !envers && <Crack stage={stage} />}
+            {gamesNews && !gameId && !envers && (
+                <GamesNews
+                    games={FREE_GAMES}
+                    onPlay={(id) => {
+                        dismissGamesNews();
+                        setGamesNewsHidden(true);
+                        openGame(id);
+                    }}
+                    onClose={() => {
+                        dismissGamesNews();
+                        setGamesNewsHidden(true);
+                    }}
+                />
+            )}
             {news && !gameId && !envers && (
                 <NewsBanner
                     onClose={() => {
