@@ -284,7 +284,8 @@ function createCandles(api, people) {
             s.elapsed += dt;
             s.time -= dt;
             s.bigCd = Math.max(0, s.bigCd - dt);
-            s.comboT -= dt;
+            // le combo ne s'use que s'il y a une flamme à souffler : pas de pénalité quand le gâteau est éteint
+            if (s.candles.some((c) => c.lit)) s.comboT -= dt;
             if (s.comboT <= 0) s.combo = 0;
             if (s.breath) s.breath.t += dt;
             s.spawnT -= dt;
