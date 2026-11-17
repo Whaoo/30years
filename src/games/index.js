@@ -200,6 +200,7 @@ export const CULTURE = {
     icon: 'question',
     unit: 'pts',
     frame: '/jeux/grand-quiz.html',
+    pitch: 'Culture générale, 9 thèmes',
     help: '9 thèmes au choix, ou « Le Juste Titre » pour compléter des titres de chansons. 20 secondes par question, clic ou touches A à D. Le record compte les parties solo de 10 questions de culture G.',
     component: lazy(() => import('./FrameGame'))
 };
@@ -213,6 +214,7 @@ export const GEO = {
     icon: 'map',
     unit: 'pts',
     frame: '/jeux/ou-est-ce.html',
+    pitch: 'Villes et villages de France',
     help: 'Place la ville ou le village sur la carte : jusqu’à 1 000 points par lieu selon la distance. Molette ou pincement pour zoomer. Le record compte les parties solo de 10 lieux.',
     component: lazy(() => import('./FrameGame'))
 };

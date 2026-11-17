@@ -4,7 +4,7 @@ import WeatherParticles from './components/WeatherParticles';
 import Header from './components/Header';
 import Countdown from './components/Countdown';
 import UpcomingList from './components/UpcomingList';
-import StatTiles from './components/StatTiles';
+import GameTiles from './components/GameTiles';
 import GamesTile from './components/GamesTile';
 import GameModal from './components/GameModal';
 import { ADVENTURE, ALL_GAMES, CANDLES, CULTURE, FREE_GAMES, GEO, QUIZ, getGame, isUnlocked } from './games';
@@ -13,7 +13,7 @@ import AdventCalendar from './components/AdventCalendar';
 import Gags from './components/Gags';
 import Confetti from './components/Confetti';
 import Dial from './components/Dial';
-import { MONTHS, birthdays, getSortedBirthdays } from './utils/birthdayLogic';
+import { MONTHS, getSortedBirthdays } from './utils/birthdayLogic';
 import { adventState } from './utils/advent';
 import { resolveTheme, themeStyle } from './utils/theme';
 import { useWeather } from './hooks/useWeather';
@@ -334,13 +334,6 @@ function App() {
         ? `Et ${restCount} ${restCount > 1 ? 'autres' : 'autre'} ${horizon}.`
         : null;
 
-    const monthCount = birthdays.filter((b) => Number(b.date.split('-')[1]) === now.getMonth() + 1).length;
-    const tiles = [
-        { value: String(monthCount), label: `${monthCount > 1 ? 'anniversaires' : 'anniversaire'} en ${MONTHS[now.getMonth()]}` },
-        advent.isDecember
-            ? { value: `${advent.openCount}/25`, label: 'portes ouvertes' }
-            : { value: `J-${advent.daysToStart}`, label: 'avant le calendrier de l’Avent' }
-    ];
 
     return (
         <div className={`app${gameId || enversCovered ? ' is-gaming' : ''}`} style={themeStyle(theme)} onWheel={onWheel} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
@@ -374,12 +367,11 @@ function App() {
                             restLabel={restLabel}
                             play={play}
                             onQuiz={isAvent ? null : () => openGame(QUIZ.id)}
-                            extraGames={isAvent ? [] : FREE_GAMES.map((g) => ({ id: g.id, label: g.short, title: g.title, onPlay: () => openGame(g.id) }))
-                                .concat(caveLink ? [{ id: 'cave', label: 'Cave : classement', title: 'Classement de la cave', onPlay: caveLink }] : [])}
+                            extraGames={!isAvent && caveLink ? [{ id: 'cave', label: 'Cave : classement', title: 'Classement de la cave', onPlay: caveLink }] : []}
                         />
                         {isAvent
                             ? <GamesTile openCount={advent.openCount} bests={bests} onPlay={openGame} />
-                            : <StatTiles tiles={tiles} />}
+                            : <GameTiles games={FREE_GAMES} bests={bests} onPlay={openGame} />}
                     </aside>
                 </main>
 

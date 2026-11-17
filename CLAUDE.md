@@ -37,7 +37,7 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
   - `ADVENTURE` (« L'aventure de Flocon », `src/games/adventure/`) apparaît le 10/12/2026 (porte 10 + bouton de l'en-tête).
   - `QUIZ` (« Qui fête quand ? », `always`) : ouvert toute l'année depuis la liste des anniversaires.
   - `CANDLES` (« Souffle les bougies », `birthdayOnly`) : bouton du compte à rebours, uniquement le jour J.
-  - `FREE_GAMES` : jeux libres sans lien avec les pingouins ni le calendrier, ouverts toute l'année (liens sous la liste « Ensuite »,
+  - `FREE_GAMES` : jeux libres sans lien avec les pingouins ni le calendrier, ouverts toute l'année (deux tuiles cliquables sous la liste « Ensuite », `GameTiles.jsx`,
     menu « Jeux » de l'en-tête sur téléphone où la colonne de droite est masquée, tuile des mini-jeux en décembre ;
     annonce du 18 au 25/11 : `GamesNews.jsx` + `src/utils/gamesNews.js`, prioritaire sur le bandeau de la cave) : `CULTURE` (« Le Grand Quiz », 9 thèmes + « Le Juste Titre ») et `GEO` (« Où est-ce ? », placer
     villes et villages sur la carte de France). Ce sont des pages autonomes dans `public/jeux/` affichées dans un cadre (`FrameGame.jsx`) ;

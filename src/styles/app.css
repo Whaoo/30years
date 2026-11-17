@@ -292,6 +292,13 @@ html, body, #root { height: 100%; }
 .tile__row { display: flex; align-items: baseline; gap: 10px; }
 .tile__value { font-weight: 800; font-size: clamp(30px, 5.4vh, 52px); line-height: 1; letter-spacing: -0.03em; color: var(--accent); }
 .tile__label { font-size: clamp(12px, 1.7vh, 14px); color: rgba(255, 255, 255, 0.9); }
+/* Tuiles des jeux de toute l'année (à la place des chiffres) */
+.tile--game { text-align: left; border: 0; font: inherit; color: inherit; cursor: pointer; transition: transform 0.15s, background 0.15s; }
+.app .tile--game { color: #fff; }
+.tile--game:hover { transform: translateY(-2px); background: rgba(255, 255, 255, 0.16); }
+.tile--game:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.tile__value--game { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: clamp(13px, min(2.6vh, 1.5vw), 26px); letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; }
+.tile__value--game svg { flex: none; }
 .progress { height: 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.16); overflow: hidden; }
 .progress__bar { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #9fd8ff, #ffd36e); }
 
