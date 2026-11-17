@@ -39,7 +39,7 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
   - `CANDLES` (« Souffle les bougies », `birthdayOnly`) : bouton du compte à rebours, uniquement le jour J.
   - `FREE_GAMES` : jeux libres sans lien avec les pingouins ni le calendrier, ouverts toute l'année (deux tuiles cliquables sous la liste « Ensuite », `GameTiles.jsx`,
     menu « Jeux » de l'en-tête sur téléphone où la colonne de droite est masquée, tuile des mini-jeux en décembre ;
-    annonce du 18 au 25/11 : `GamesNews.jsx` + `src/utils/gamesNews.js`, prioritaire sur le bandeau de la cave) : `CULTURE` (« Le Grand Quiz », 9 thèmes + « Le Juste Titre ») et `GEO` (« Où est-ce ? », placer
+    annonce du 18/11 à 9 h au 25/11 : `GamesNews.jsx` + `src/utils/gamesNews.js`, qui remplace le bandeau de la cave) : `CULTURE` (« Le Grand Quiz », 9 thèmes + « Le Juste Titre ») et `GEO` (« Où est-ce ? », placer
     villes et villages sur la carte de France). Ce sont des pages autonomes dans `public/jeux/` affichées dans un cadre (`FrameGame.jsx`) ;
     elles renvoient leur score par `postMessage` (`{ type: '30years:score', game, score }`). Le record du site ne compte que les parties
     solo de 10 questions de culture G / de 10 lieux. Contours de la carte : IGN Admin Express via france-geojson (Licence ouverte).
@@ -49,7 +49,7 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
 - Vue Speed Dial de Vivaldi : `?dial`, `/dial`, ou fenêtre de 480 px de côté ou moins (`src/components/Dial.jsx`).
 - `src/envers/` : « L'Envers », la cave sous la page (du 12 au 30/11/2026 inclus, tous les jours).
   - Passage : trois coups de molette vers le bas (ou trois glissés vers le haut sur téléphone) en moins de 4 s, géré dans `App.jsx`.
-  - Annonce du 12 au 18/11 : bandeau `NewsBanner.jsx` et pastille « Nouveau ! » dans la vue Vivaldi (`config.js`).
+  - Annonce du 12 au 18/11 à 9 h : bandeau `NewsBanner.jsx` et pastille « Nouveau ! » dans la vue Vivaldi (`config.js`).
   - `engine.js` : chute d'introduction, exploration à la lampe en vue de dessus (4 salles : crypte et potions côté Halloween, atelier et sapin côté Noël ;
     déplacement libre aux flèches ou au doigt, lumière arrêtée par les murs, carte en brouillard, objectif 85 % éclairé + 11 lettres), fin (message, citrouille qui gèle, micro doré et « IT’S… TIIIIIMEEEE ! », remontée).
   - Mécaniques (partie de moins de 5 min) : portes de glace (il faut la bougie de l'atelier) et toiles (les ciseaux du sapin),

@@ -2,8 +2,8 @@
 
 export const ENVERS_FROM = new Date(2026, 10, 12);
 export const ENVERS_UNTIL = new Date(2026, 11, 1); // fermé à partir du 1er décembre (place au calendrier de l'Avent)
-// Petit message « il y a du nouveau » du jeudi 12 au mercredi 18 novembre inclus
-export const ANNOUNCE_UNTIL = new Date(2026, 10, 19);
+// Petit message « il y a du nouveau » du jeudi 12 au mercredi 18 novembre à 9 h (le bandeau des jeux prend le relais)
+export const ANNOUNCE_UNTIL = new Date(2026, 10, 18, 9, 0);
 
 const KEY = '30years:envers';
 const KEY_NEWS = '30years:envers-news';

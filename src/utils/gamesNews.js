@@ -1,6 +1,6 @@
-// Bandeau « Nouveau : Le Grand Quiz et Où est-ce ? » : du mercredi 18 au mercredi 25 novembre 2026 inclus.
-// Il prend la suite du bandeau de la cave (qui s'efface dès qu'il est là), sauf le jour d'un anniversaire.
-export const GAMES_NEWS_FROM = new Date(2026, 10, 18);
+// Bandeau « Nouveau : Le Grand Quiz et Où est-ce ? » : du mercredi 18 novembre 2026 à 9 h au mercredi 25 inclus.
+// Il remplace le bandeau de la cave (qui s'arrête au même moment), sauf le jour d'un anniversaire.
+export const GAMES_NEWS_FROM = new Date(2026, 10, 18, 9, 0);
 export const GAMES_NEWS_UNTIL = new Date(2026, 10, 26);
 const KEY = '30years:jeux-news';
 

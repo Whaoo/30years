@@ -24,7 +24,7 @@ import { ENVERS_BOARD, announceActive, dismissAnnounce, enversDone, formatTime, 
 import { config as classementEnLigne, importerSiBesoin } from './utils/leaderboard';
 import NewsBanner from './envers/NewsBanner';
 import GamesNews from './components/GamesNews';
-import { dismissGamesNews, gamesNewsActive } from './utils/gamesNews';
+import { dismissGamesNews, gamesNewsActive, gamesNewsWindow } from './utils/gamesNews';
 import Crack from './envers/Crack';
 
 const HOUR = 3600000;
@@ -182,9 +182,9 @@ function App() {
 
     const enversOpen = isEnversOpen(now);
     const caveLink = enLigne && enversOpen && enversDone() ? () => setCaveBoard({ fin: null }) : null;
-    // Deux annonces possibles : les jeux libres (18-25/11) passent devant celle de la cave
+    // Deux annonces successives : la cave jusqu'au 18/11 à 9 h, puis les jeux libres (même fermé, le bandeau des jeux ne rend pas la place à la cave)
     const gamesNews = gamesNewsActive(now, isToday) && !gamesNewsHidden;
-    const news = announceActive(now, isToday) && !newsHidden && !gamesNews;
+    const news = announceActive(now, isToday) && !newsHidden && !gamesNewsWindow(now, isToday);
 
     // Le passage vers l'Envers : trois coups vers le bas (molette ou glissé), sans pause de plus de 4 secondes
     const passageStep = useCallback(() => {
