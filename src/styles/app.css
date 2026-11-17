@@ -501,6 +501,7 @@ html, body, #root { height: 100%; }
 .game-board-btn:focus-visible, .lb button:focus-visible, .lb input:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 .lb { flex: 0 0 300px; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 20px; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.14); color: #fff; animation: fadeIn 0.2s ease-out; }
 .lb__head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.board-modal .lb { flex: 0 1 auto; width: min(420px, 100%); max-height: min(660px, 100%); background: rgba(14, 18, 44, 0.98); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); }
 .lb__title { margin: 0; flex: 1 1 auto; display: flex; align-items: center; gap: 6px; font: 800 18px 'Bricolage Grotesque', 'DM Sans', sans-serif; }
 .lb__tabs { order: 3; flex: 1 1 100%; display: flex; border-radius: 999px; background: rgba(0, 0, 0, 0.25); padding: 2px; }
 .lb__tabs button { flex: 1 1 0; border: 0; background: transparent; color: rgba(255, 255, 255, 0.75); font: 700 12px 'DM Sans', sans-serif; padding: 6px 9px; border-radius: 999px; cursor: pointer; }

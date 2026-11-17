@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Icon from './Icons';
 import { formatScore } from '../games';
-import { chargerTurnstile, choisirPseudo, classement, config, envoyerScore, moi, retrouverPseudo } from '../utils/leaderboard';
+import { chargerTurnstile, choisirPseudo, classement, config, envoyerScore, importerRecords, moi, retrouverPseudo } from '../utils/leaderboard';
 
 // Panneau « Classement » de la fenêtre de jeu.
 // En fin de partie (fin = nouveau `fin.n`) : avec un pseudo, le score part tout seul ; sans pseudo, on le demande une fois,
@@ -25,7 +25,8 @@ export default function Leaderboard({ game, fin, onClose }) {
     const captchaBox = useRef(null);
     const vu = useRef(0);
 
-    const fmt = (sc) => formatScore(game, sc);
+    const fmt = (sc) => (game.format ? game.format(sc) : formatScore(game, sc));
+    const meilleurQue = (a, b) => (game.lowerIsBetter ? a < b : a > b);
     const charger = async (p = portee, score = null) => {
         try {
             const b = await classement(game.id, p, score);
@@ -99,8 +100,10 @@ export default function Leaderboard({ game, fin, onClose }) {
                 await retrouverPseudo(saisie.pseudo, saisie.code);
             }
             setJoueur(moi());
+            // d'abord le score de la partie qui vient de finir, puis les anciens records de ce navigateur
             if (attente != null) await envoyer(attente);
-            else await charger(portee);
+            await importerRecords();
+            await charger(portee);
         } catch (err) {
             setErreurForm(err.message);
             if (window.turnstile && captcha.jeton) { window.turnstile.reset(); setCaptcha((x) => ({ ...x, jeton: null })); }
@@ -113,7 +116,7 @@ export default function Leaderboard({ game, fin, onClose }) {
     // sans pseudo : la place qu'aurait ce score, glissée dans la liste
     if (board && attente != null && board.potentiel != null) {
         const ligne = { rang: board.potentiel, pseudo: 'Toi ?', score: attente, fantome: true };
-        const i = lignes.findIndex((l) => l.score < attente);
+        const i = lignes.findIndex((l) => meilleurQue(attente, l.score));
         if (i >= 0) {
             lignes.splice(i, 0, ligne);
             for (let k = i + 1; k < lignes.length; k++) lignes[k] = { ...lignes[k], rang: lignes[k].rang + 1 }; // les suivants descendraient d'une place

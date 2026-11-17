@@ -60,3 +60,17 @@ export function formatTime(sec) {
     const s = Math.round(sec % 60);
     return m ? `${m} min ${String(s).padStart(2, '0')} s` : `${s} s`;
 }
+
+// Le classement en ligne de la cave (même panneau que les jeux) : le meilleur temps gagne
+export const ENVERS_BOARD = {
+    id: 'envers',
+    title: 'L’Envers, la cave',
+    unit: 's',
+    lowerIsBetter: true,
+    format: (s) => formatTime(s)
+};
+
+// A-t-on déjà fini la cave dans ce navigateur ? (sinon, on ne dévoile pas son classement)
+export function enversDone() {
+    return Number(read('30years:best:envers')) > 0;
+}

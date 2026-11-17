@@ -20,7 +20,8 @@ import { useWeather } from './hooks/useWeather';
 import { useNow } from './hooks/useNow';
 import { useDialMode } from './hooks/useDialMode';
 import { usePenguinPlay } from './hooks/usePenguinPlay';
-import { announceActive, dismissAnnounce, formatTime, isEnversOpen } from './envers/config';
+import { ENVERS_BOARD, announceActive, dismissAnnounce, enversDone, formatTime, isEnversOpen } from './envers/config';
+import { config as classementEnLigne, importerSiBesoin } from './utils/leaderboard';
 import NewsBanner from './envers/NewsBanner';
 import GamesNews from './components/GamesNews';
 import { dismissGamesNews, gamesNewsActive } from './utils/gamesNews';
@@ -33,6 +34,7 @@ const HOUR = 3600000;
 const TestPanel = __TEST_MODE__ ? lazy(() => import('./components/TestPanel')) : null;
 // La cave sous la page : chargée seulement quand on y descend
 const EnversGame = lazy(() => import('./envers/EnversGame'));
+const BoardModal = lazy(() => import('./components/BoardModal'));
 
 // Adresses directes, pratiques pour tester (et à partager pour les jeux libres) : /aventure, /bougies, /quiz, /culture, /ou-est-ce
 const PATH_GAMES = { '/aventure': ADVENTURE.id, '/bougies': CANDLES.id, '/quiz': QUIZ.id, '/culture': CULTURE.id, '/ou-est-ce': GEO.id };
@@ -85,6 +87,13 @@ function App() {
     const [stage, setStage] = useState(0); // passage : 0 rien, 1 ça gratte, 2 ça craque
     const [newsHidden, setNewsHidden] = useState(false);
     const [gamesNewsHidden, setGamesNewsHidden] = useState(false);
+    // Classements en ligne : disponibles si l'API répond ; la cave a son classement dans une fenêtre à part
+    const [enLigne, setEnLigne] = useState(false);
+    const [caveBoard, setCaveBoard] = useState(null);
+    useEffect(() => {
+        classementEnLigne().then((c) => setEnLigne(!!c));
+        importerSiBesoin(); // anciens records de ce navigateur, pour ceux qui ont déjà un pseudo
+    }, []);
     const [enversCovered, setEnversCovered] = useState(false); // la page reste visible pendant la première seconde de la chute
     const stageRef = useRef({ n: 0, last: 0, timer: 0 });
     const touchY = useRef(null);
@@ -172,6 +181,7 @@ function App() {
     }, [isToday, firstId, wave]);
 
     const enversOpen = isEnversOpen(now);
+    const caveLink = enLigne && enversOpen && enversDone() ? () => setCaveBoard({ fin: null }) : null;
     // Deux annonces possibles : les jeux libres (18-25/11) passent devant celle de la cave
     const gamesNews = gamesNewsActive(now, isToday) && !gamesNewsHidden;
     const news = announceActive(now, isToday) && !newsHidden && !gamesNews;
@@ -251,6 +261,7 @@ function App() {
         if (enversPath()) window.history.replaceState(null, '', '/');
         if (result?.kind === 'win') {
             const record = saveScore('envers', Math.round(result.time), true);
+            classementEnLigne().then((c) => { if (c) setCaveBoard({ fin: { score: Math.round(result.time), n: Date.now() } }); });
             boom();
             flash(`Bravo ! Cave éclairée et message retrouvé en ${formatTime(result.time)}${record ? ' · nouveau record' : ''}.`);
         } else if (result?.kind === 'quit') {
@@ -347,7 +358,8 @@ function App() {
                     onAvent={onAvent}
                     onLogo={onLogo}
                     onAdventure={isUnlocked(ADVENTURE, advent, now) ? () => openGame(ADVENTURE.id) : null}
-                    games={[QUIZ, ...FREE_GAMES].map((g) => ({ id: g.id, title: g.title, icon: g.icon, onPlay: () => openGame(g.id) }))}
+                    games={[QUIZ, ...FREE_GAMES].map((g) => ({ id: g.id, title: g.title, icon: g.icon, onPlay: () => openGame(g.id) }))
+                        .concat(caveLink ? [{ id: 'cave', title: 'Classement de la cave', icon: 'trophy', onPlay: caveLink }] : [])}
                 />
 
                 <main className={`main${isAvent ? ' main--avent' : ''}`}>
@@ -362,7 +374,8 @@ function App() {
                             restLabel={restLabel}
                             play={play}
                             onQuiz={isAvent ? null : () => openGame(QUIZ.id)}
-                            extraGames={isAvent ? [] : FREE_GAMES.map((g) => ({ id: g.id, label: g.short, title: g.title, onPlay: () => openGame(g.id) }))}
+                            extraGames={isAvent ? [] : FREE_GAMES.map((g) => ({ id: g.id, label: g.short, title: g.title, onPlay: () => openGame(g.id) }))
+                                .concat(caveLink ? [{ id: 'cave', label: 'Cave : classement', title: 'Classement de la cave', onPlay: caveLink }] : [])}
                         />
                         {isAvent
                             ? <GamesTile openCount={advent.openCount} bests={bests} onPlay={openGame} />
@@ -376,7 +389,7 @@ function App() {
             </div>
 
             {stage > 0 && !envers && <Crack stage={stage} />}
-            {gamesNews && !gameId && !envers && (
+            {gamesNews && !gameId && !envers && !caveBoard && (
                 <GamesNews
                     games={FREE_GAMES}
                     onPlay={(id) => {
@@ -390,7 +403,7 @@ function App() {
                     }}
                 />
             )}
-            {news && !gameId && !envers && (
+            {news && !gameId && !envers && !caveBoard && (
                 <NewsBanner
                     onClose={() => {
                         dismissAnnounce();
@@ -429,6 +442,11 @@ function App() {
                     onClose={closeGame}
                     gameProps={gameProps(gameId)}
                 />
+            )}
+            {caveBoard && !envers && (
+                <Suspense fallback={null}>
+                    <BoardModal game={ENVERS_BOARD} fin={caveBoard.fin} onClose={() => setCaveBoard(null)} />
+                </Suspense>
             )}
             {envers && (
                 <Suspense fallback={<div className="envers envers--loading" />}>

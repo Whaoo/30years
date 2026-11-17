@@ -58,6 +58,39 @@ export async function retrouverPseudo(pseudo, code) {
     return d;
 }
 
+// Les records faits dans ce navigateur avant le classement (`30years:best:<jeu>`, la cave comprise)
+// rejoignent le classement « Toujours » : une fois par pseudo et par navigateur.
+const KEY_IMPORT = '30years:import';
+function recordsLocaux() {
+    const out = {};
+    try {
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (!k || !k.startsWith('30years:best:')) continue;
+            const v = Number(localStorage.getItem(k));
+            if (Number.isFinite(v) && v > 0) out[k.slice('30years:best:'.length)] = Math.round(v);
+        }
+    } catch { /* stockage indisponible */ }
+    return out;
+}
+export async function importerRecords() {
+    const j = moi();
+    if (!j) return;
+    try {
+        if (localStorage.getItem(KEY_IMPORT) === j.pseudo) return;
+    } catch { return; }
+    const records = recordsLocaux();
+    try {
+        if (Object.keys(records).length) await api('import', { methode: 'POST', corps: { records }, jeton: j.jeton });
+        localStorage.setItem(KEY_IMPORT, j.pseudo);
+    } catch { /* on réessaiera à la prochaine visite */ }
+}
+// Au chargement du site : rattrape les joueurs qui avaient déjà un pseudo
+export async function importerSiBesoin() {
+    if (!moi()) return;
+    if (await config()) await importerRecords();
+}
+
 export async function envoyerScore(jeu, score) {
     const j = moi();
     if (!j) throw new ErreurClassement('Choisis un pseudo pour entrer au classement.', 401);

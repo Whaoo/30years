@@ -69,6 +69,10 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
   (panneau « Classement » de la fenêtre de jeu). En fin de partie (score > 0), le panneau s'ouvre : sans pseudo, il le demande une fois
   en montrant la place qu'aurait ce score ; ensuite chaque score part tout seul. Onglets « Toujours » et « Aujourd'hui »
   (jeux de la quête : premier essai du jour, comme le score officiel). Si l'API ne répond pas (`npm run dev`, base absente), rien ne s'affiche.
+- La cave a son classement (`ENVERS_BOARD` dans `src/envers/config.js`, le meilleur temps gagne, `CHRONOS` dans `classement/api.js`) :
+  fenêtre `BoardModal.jsx` ouverte à la remontée, et lien « Cave : classement » (menu « Jeux » sur téléphone) pour ceux qui l'ont déjà finie.
+- Anciens records : `importerRecords()` envoie les `30years:best:<jeu>` du navigateur (`POST /api/import`, classement « Toujours » seulement,
+  le meilleur est gardé) juste après le premier pseudo, ou au chargement du site pour ceux qui en avaient déjà un (une fois par pseudo, `30years:import`).
 - Garde-fous : score maximal par jeu (`JEUX` dans `classement/api.js`, à compléter pour un nouveau jeu), 20 parties par joueur et par 10 min,
   mots interdits dans les pseudos, captcha Turnstile à la création d'un pseudo si `TURNSTILE_SITEKEY` + `TURNSTILE_SECRET` sont définis.
 - Réglages Cloudflare (une fois) : deux bases D1 (`30years-scores` pour la production, `30years-scores-dev` pour les préversions),

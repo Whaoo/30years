@@ -60,12 +60,36 @@ assert.equal((await appel('POST', 'score', { jeu: 'geo', score: 4000 }, zoe.data
 for (let i = 0; i < 20; i++) await appel('POST', 'score', { jeu: 'memory', score: 100 + i }, lou.jeton);
 assert.equal((await appel('POST', 'score', { jeu: 'memory', score: 500 }, lou.jeton)).status, 429);
 
+// la cave : le meilleur temps gagne
+assert.equal((await appel('POST', 'score', { jeu: 'envers', score: 20 }, zoe.data.jeton)).status, 400, 'temps impossible');
+r = await appel('POST', 'score', { jeu: 'envers', score: 300 }, zoe.data.jeton);
+assert.equal(r.data.rang, 1); assert.equal(r.data.record, true);
+r = await appel('POST', 'score', { jeu: 'envers', score: 420 }, zoe.data.jeton);
+assert.equal(r.data.record, false); assert.equal(r.data.meilleur, 300);
+await appel('POST', 'score', { jeu: 'envers', score: 250 }, max.jeton);
+r = await appel('GET', 'classement?jeu=envers&score=280', null, zoe.data.jeton);
+assert.deepEqual(r.data.top.map((t) => [t.pseudo, t.score]), [['Max', 250], ['Zoé', 300]]);
+assert.equal(r.data.moi.rang, 2); assert.equal(r.data.potentiel, 2);
+r = await appel('GET', 'classement?jeu=envers&portee=jour', null);
+assert.deepEqual(r.data.top.map((t) => [t.pseudo, t.score]), [['Max', 250], ['Zoé', 300]]);
+
+// records d'avant le classement, gardés dans le navigateur
+const ana = (await appel('POST', 'pseudo', { pseudo: 'Ana' })).data;
+r = await appel('POST', 'import', { records: { envers: 200, culture: 1300, memory: 999999, inconnu: 5, quiz: 'x' } }, ana.jeton);
+assert.deepEqual(r.data.importes.sort(), ['culture', 'envers']);
+r = await appel('GET', 'classement?jeu=envers');
+assert.deepEqual(r.data.top.map((t) => t.pseudo), ['Ana', 'Max', 'Zoé']);
+await appel('POST', 'import', { records: { envers: 260 } }, ana.jeton);
+assert.equal((await appel('GET', 'classement?jeu=envers')).data.top[0].score, 200, 'un import moins bon ne remplace pas le record');
+assert.equal((await appel('GET', 'classement?jeu=envers&portee=jour')).data.top.length, 2, 'les imports ne vont pas dans le classement du jour');
+assert.equal((await appel('POST', 'import', { records: { envers: 200 } })).status, 401);
+
 // administration
 assert.equal((await appel('POST', 'admin', { action: 'effacer-pseudo', pseudo: 'Max' })).status, 403);
 env.ADMIN_KEY = 'secret';
 assert.equal((await appel('POST', 'admin', { action: 'effacer-pseudo', pseudo: 'max' }, null, { 'X-Admin-Key': 'secret' })).status, 200);
 r = await appel('GET', 'classement?jeu=culture');
-assert.deepEqual(r.data.top.map((t) => t.pseudo), ['Lou', 'Zoé']);
+assert.deepEqual(r.data.top.map((t) => t.pseudo), ['Ana', 'Lou', 'Zoé']);
 
 // sans base : message clair
 const sansBase = await onRequest({ request: new Request('https://x/api/config'), env: {} });
