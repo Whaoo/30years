@@ -74,7 +74,13 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
     puis le Golem (au plus 12 mini-golems), graine du jour, bonus de temps, écran de fin commun, « Reprendre la vague » après un K.O.
   - `QUIZ` (« Qui fête quand ? », `always`) : ouvert toute l'année depuis la liste des anniversaires.
   - `CANDLES` (« Souffle les bougies », `birthdayOnly`) : bouton du compte à rebours, uniquement le jour J.
-  - Les adresses `/aventure`, `/monts`, `/reveillon`, `/chrono`, `/quiz` et `/bougies` ouvrent ces jeux à tout moment pour tester.
+  - `FREE_GAMES` : jeux libres sans lien avec les pingouins ni le calendrier, ouverts toute l'année (liens sous la liste « Ensuite »
+    et dans la tuile des mini-jeux) : `CULTURE` (« Le Grand Quiz », 9 thèmes + « Le Juste Titre ») et `GEO` (« Où est-ce ? », placer
+    villes et villages sur la carte de France). Ce sont des pages autonomes dans `public/jeux/` affichées dans un cadre (`FrameGame.jsx`) ;
+    elles renvoient leur score par `postMessage` (`{ type: '30years:score', game, score }`). Le record du site ne compte que les parties
+    solo de 10 questions de culture G / de 10 lieux. Contours de la carte : IGN Admin Express via france-geojson (Licence ouverte).
+  - Les adresses `/aventure`, `/monts`, `/reveillon`, `/chrono`, `/quiz` et `/bougies` ouvrent ces jeux à tout moment pour tester ;
+    `/culture` et `/ou-est-ce` ouvrent les jeux libres (adresses à partager).
 - `src/games/GameCanvas.jsx` : moteur commun des jeux canvas (boucle, mise à l'échelle, clavier, souris, tactile).
   `fixedStep` : mise à jour à pas fixe de 1/120 s (obligatoire pour les jeux de décembre, sinon la partie dépend de la fréquence de l'écran).
   Les gestionnaires `pointer*` reçoivent l'identifiant du doigt (multi-touch).

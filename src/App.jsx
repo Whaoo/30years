@@ -8,7 +8,7 @@ import Icon from './components/Icons';
 import StatTiles from './components/StatTiles';
 import GamesTile from './components/GamesTile';
 import GameModal from './components/GameModal';
-import { ADVENTURE, ALL_GAMES, CANDLES, MONTS, QUIZ, getGame, isUnlocked } from './games';
+import { ADVENTURE, ALL_GAMES, CANDLES, CULTURE, FREE_GAMES, GEO, MONTS, QUIZ, getGame, isUnlocked } from './games';
 import { episodeState, latestOpenFilm, loadQuest } from './december/quest';
 import { parisDay } from './december/seed';
 import { filmById, isQuestSeason, questEpisode } from './december/calendar';
@@ -42,8 +42,8 @@ const FilmPlayer = lazy(() => import('./components/FilmPlayer'));
 const FilmPromo = lazy(() => import('./components/FilmPromo'));
 const laterKey = (now) => `30years:filmLater:${parisDay(now)}`;
 
-// Adresses directes, pratiques pour tester : /aventure, /bougies, /quiz
-const PATH_GAMES = { '/aventure': ADVENTURE.id, '/monts': MONTS.id, '/reveillon': 'reveillon', '/chrono': 'chrono', '/bougies': CANDLES.id, '/quiz': QUIZ.id };
+// Adresses directes, pratiques pour tester (et à partager pour les jeux libres) : /aventure, /bougies, /quiz, /culture, /ou-est-ce
+const PATH_GAMES = { '/aventure': ADVENTURE.id, '/monts': MONTS.id, '/reveillon': 'reveillon', '/chrono': 'chrono', '/bougies': CANDLES.id, '/quiz': QUIZ.id, '/culture': CULTURE.id, '/ou-est-ce': GEO.id };
 function pathGame() {
     return PATH_GAMES[window.location.pathname.replace(/\/+$/, '')] || null;
 }
@@ -325,7 +325,9 @@ function App() {
     // Les jeux de la quête reçoivent la date (graine du jour) et un retour vers la carte de la quête
     const gameProps = (id) => {
         if (id === CANDLES.id) return { people: isToday ? group : [] };
-        if (getGame(id)?.quest) {
+        const g = getGame(id);
+        if (g?.frame) return { src: g.frame, title: g.title, gameId: g.id };
+        if (g?.quest) {
             return {
                 now,
                 onExit: () => {
@@ -408,6 +410,7 @@ function App() {
                                 restLabel={restLabel}
                                 play={play}
                                 onQuiz={() => openGame(QUIZ.id)}
+                                extraGames={FREE_GAMES.map((g) => ({ id: g.id, label: g.short, title: g.title, onPlay: () => openGame(g.id) }))}
                             />
                             <StatTiles tiles={tiles} />
                         </aside>

@@ -260,7 +260,37 @@ export const CANDLES = {
     component: lazy(() => import('./CandlesGame'))
 };
 
-export const ALL_GAMES = [...GAMES, QUIZ, CANDLES, ...QUEST_GAMES];
+// Jeux libres, sans lien avec les pingouins ni le calendrier : ouverts toute l'année.
+// Ce sont des pages autonomes de public/jeux/, affichées dans un cadre (FrameGame) ; `frame` donne leur adresse.
+export const CULTURE = {
+    id: 'culture',
+    title: 'Le Grand Quiz',
+    short: 'Culture G',
+    eyebrow: 'Culture générale · toute l’année',
+    always: true,
+    icon: 'question',
+    unit: 'pts',
+    frame: '/jeux/grand-quiz.html',
+    help: '9 thèmes au choix, ou « Le Juste Titre » pour compléter des titres de chansons. 20 secondes par question, clic ou touches A à D. Le record compte les parties solo de 10 questions de culture G.',
+    component: lazy(() => import('./FrameGame'))
+};
+
+export const GEO = {
+    id: 'geo',
+    title: 'Où est-ce ?',
+    short: 'Où est-ce',
+    eyebrow: 'Géographie · toute l’année',
+    always: true,
+    icon: 'map',
+    unit: 'pts',
+    frame: '/jeux/ou-est-ce.html',
+    help: 'Place la ville ou le village sur la carte : jusqu’à 1 000 points par lieu selon la distance. Molette ou pincement pour zoomer. Le record compte les parties solo de 10 lieux.',
+    component: lazy(() => import('./FrameGame'))
+};
+
+export const FREE_GAMES = [CULTURE, GEO];
+
+export const ALL_GAMES = [...GAMES, QUIZ, ...FREE_GAMES, CANDLES, ...QUEST_GAMES];
 
 export function getGame(id) {
     return ALL_GAMES.find((g) => g.id === id) || null;
