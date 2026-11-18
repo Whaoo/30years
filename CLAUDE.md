@@ -72,7 +72,7 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
 - La cave a son classement (`ENVERS_BOARD` dans `src/envers/config.js`, le meilleur temps gagne, `CHRONOS` dans `classement/api.js`) :
   fenêtre `BoardModal.jsx` ouverte à la remontée.
 - Bouton « Classements » de l'en-tête (ordinateur ; menu « Jeux » sur téléphone ; bouton du bandeau des jeux tant qu'il est affiché, car il le recouvre) :
-  `BoardModal.jsx` avec une pastille par jeu (`boardGames` dans `App.jsx` : la cave pour qui l'a finie, les jeux libres, le quiz, les bougies,
+  `BoardModal.jsx` avec une pastille par jeu (`boardGames` dans `App.jsx` : la cave, les jeux libres, le quiz, les bougies,
   puis les jeux de décembre déjà ouverts). Sans pseudo, un record déjà fait dans ce navigateur est montré en « Toi ? » avec sa place,
   et choisir un pseudo l'envoie (import).
 - Anciens records : `importerRecords()` envoie les `30years:best:<jeu>` du navigateur (`POST /api/import`, classement « Toujours » seulement,

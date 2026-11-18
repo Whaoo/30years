@@ -20,7 +20,7 @@ import { useWeather } from './hooks/useWeather';
 import { useNow } from './hooks/useNow';
 import { useDialMode } from './hooks/useDialMode';
 import { usePenguinPlay } from './hooks/usePenguinPlay';
-import { ENVERS_BOARD, announceActive, dismissAnnounce, enversDone, formatTime, isEnversOpen } from './envers/config';
+import { ENVERS_BOARD, announceActive, dismissAnnounce, formatTime, isEnversOpen } from './envers/config';
 import { config as classementEnLigne, importerSiBesoin } from './utils/leaderboard';
 import NewsBanner from './envers/NewsBanner';
 import GamesNews from './components/GamesNews';
@@ -181,10 +181,10 @@ function App() {
     }, [isToday, firstId, wave]);
 
     const enversOpen = isEnversOpen(now);
-    // Les classements de tous les jeux ouverts (bouton « Classements ») ; la cave seulement pour qui l'a finie (elle reste secrète)
+    // Les classements de tous les jeux ouverts (bouton « Classements »), la cave en premier
     const boardGames = enLigne
         ? [
-            ...(enversDone() ? [ENVERS_BOARD] : []),
+            ENVERS_BOARD,
             CULTURE, GEO, QUIZ, CANDLES,
             ...[ADVENTURE, ...GAMES].filter((g) => isUnlocked(g, advent, now))
         ]
