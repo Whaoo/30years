@@ -20,8 +20,9 @@ const JEUX = {
     quiz: 1500, bougies: 20000, culture: 1500, geo: 10000
 };
 // Jeux où le plus petit score gagne (un temps, en secondes), avec le temps minimal plausible
-// La cave (L'Envers) : record = temps total pour éclairer la cave et retrouver le message
-const CHRONOS = { envers: { min: 45 } };
+// La cave (L'Envers) : record = temps total pour éclairer la cave et retrouver le message.
+// Un habitué qui connaît les cachettes la boucle en moins de 30 s (record à 27 s) : le seuil n'écarte que l'absurde.
+const CHRONOS = { envers: { min: 10 } };
 JEUX.envers = 6 * 3600;
 // Jeux de la quête : le classement du jour retient le premier essai (comme le « score officiel » du site)
 const PREMIER_ESSAI = new Set(['monts', 'reveillon', 'chrono', 'aventure']);

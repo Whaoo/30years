@@ -61,7 +61,7 @@ for (let i = 0; i < 20; i++) await appel('POST', 'score', { jeu: 'memory', score
 assert.equal((await appel('POST', 'score', { jeu: 'memory', score: 500 }, lou.jeton)).status, 429);
 
 // la cave : le meilleur temps gagne
-assert.equal((await appel('POST', 'score', { jeu: 'envers', score: 20 }, zoe.data.jeton)).status, 400, 'temps impossible');
+assert.equal((await appel('POST', 'score', { jeu: 'envers', score: 5 }, zoe.data.jeton)).status, 400, 'temps impossible');
 r = await appel('POST', 'score', { jeu: 'envers', score: 300 }, zoe.data.jeton);
 assert.equal(r.data.rang, 1); assert.equal(r.data.record, true);
 r = await appel('POST', 'score', { jeu: 'envers', score: 420 }, zoe.data.jeton);

@@ -60,7 +60,8 @@ export async function retrouverPseudo(pseudo, code) {
 
 // Les records faits dans ce navigateur avant le classement (`30years:best:<jeu>`, la cave comprise)
 // rejoignent le classement « Toujours » : une fois par pseudo et par navigateur.
-const KEY_IMPORT = '30years:import';
+// « :2 » : nouvel import pour tous, après la baisse du temps minimal de la cave (des records de moins de 45 s avaient été refusés)
+const KEY_IMPORT = '30years:import:2';
 function recordsLocaux() {
     const out = {};
     try {
