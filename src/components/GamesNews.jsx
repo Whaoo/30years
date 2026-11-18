@@ -1,7 +1,8 @@
 import Icon from './Icons';
 
 // Bandeau d'annonce des deux jeux libres (18-25 novembre 2026), avec un bouton pour chacun
-export default function GamesNews({ games, onPlay, onClose }) {
+// et un pour les classements (il cache le bouton « Classements » de l'en-tête tant qu'il est affiché)
+export default function GamesNews({ games, onPlay, onBoards, onClose }) {
     return (
         <div className="news news--jeux" role="status">
             <span className="news__badge" aria-hidden="true"><Icon name="trophy" size={22} /></span>
@@ -15,6 +16,12 @@ export default function GamesNews({ games, onPlay, onClose }) {
                             {g.title}
                         </button>
                     ))}
+                    {onBoards && (
+                        <button type="button" className="news__btn news__btn--soft" onClick={onBoards}>
+                            <Icon name="trophy" size={16} />
+                            Classements
+                        </button>
+                    )}
                 </span>
             </div>
             <button type="button" className="news__close" onClick={onClose} aria-label="Fermer le message">

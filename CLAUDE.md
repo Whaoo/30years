@@ -70,7 +70,11 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
   en montrant la place qu'aurait ce score ; ensuite chaque score part tout seul. Onglets « Toujours » et « Aujourd'hui »
   (jeux de la quête : premier essai du jour, comme le score officiel). Si l'API ne répond pas (`npm run dev`, base absente), rien ne s'affiche.
 - La cave a son classement (`ENVERS_BOARD` dans `src/envers/config.js`, le meilleur temps gagne, `CHRONOS` dans `classement/api.js`) :
-  fenêtre `BoardModal.jsx` ouverte à la remontée, et lien « Cave : classement » (menu « Jeux » sur téléphone) pour ceux qui l'ont déjà finie.
+  fenêtre `BoardModal.jsx` ouverte à la remontée.
+- Bouton « Classements » de l'en-tête (ordinateur ; menu « Jeux » sur téléphone ; bouton du bandeau des jeux tant qu'il est affiché, car il le recouvre) :
+  `BoardModal.jsx` avec une pastille par jeu (`boardGames` dans `App.jsx` : la cave pour qui l'a finie, les jeux libres, le quiz, les bougies,
+  puis les jeux de décembre déjà ouverts). Sans pseudo, un record déjà fait dans ce navigateur est montré en « Toi ? » avec sa place,
+  et choisir un pseudo l'envoie (import).
 - Anciens records : `importerRecords()` envoie les `30years:best:<jeu>` du navigateur (`POST /api/import`, classement « Toujours » seulement,
   le meilleur est gardé) juste après le premier pseudo, ou au chargement du site pour ceux qui en avaient déjà un (une fois par pseudo, `30years:import:2` : le « :2 » a relancé l'import pour tous après la baisse du temps minimal de la cave à 10 s).
 - Garde-fous : score maximal par jeu (`JEUX` dans `classement/api.js`, à compléter pour un nouveau jeu), 20 parties par joueur et par 10 min,

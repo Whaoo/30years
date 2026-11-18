@@ -7,7 +7,7 @@ import UpcomingList from './components/UpcomingList';
 import GameTiles from './components/GameTiles';
 import GamesTile from './components/GamesTile';
 import GameModal from './components/GameModal';
-import { ADVENTURE, ALL_GAMES, CANDLES, CULTURE, FREE_GAMES, GEO, QUIZ, getGame, isUnlocked } from './games';
+import { ADVENTURE, ALL_GAMES, CANDLES, CULTURE, FREE_GAMES, GAMES, GEO, QUIZ, getGame, isUnlocked } from './games';
 import { clearBests, loadBests, saveScore } from './games/scores';
 import AdventCalendar from './components/AdventCalendar';
 import Gags from './components/Gags';
@@ -89,7 +89,7 @@ function App() {
     const [gamesNewsHidden, setGamesNewsHidden] = useState(false);
     // Classements en ligne : disponibles si l'API répond ; la cave a son classement dans une fenêtre à part
     const [enLigne, setEnLigne] = useState(false);
-    const [caveBoard, setCaveBoard] = useState(null);
+    const [board, setBoard] = useState(null); // fenêtre des classements : { jeu, fin }
     useEffect(() => {
         classementEnLigne().then((c) => setEnLigne(!!c));
         importerSiBesoin(); // anciens records de ce navigateur, pour ceux qui ont déjà un pseudo
@@ -99,7 +99,7 @@ function App() {
     const touchY = useRef(null);
 
     const gameOpen = useRef(false);
-    gameOpen.current = !!gameId || envers || !!caveBoard; // partie, cave ou classement de la cave ouverts : pas de rechargement ni de passage
+    gameOpen.current = !!gameId || envers || !!board; // partie, cave ou classements ouverts : pas de rechargement ni de passage
     const reloadPending = useRef(false);
     const toastTimer = useRef();
     const confettiTimer = useRef();
@@ -181,7 +181,15 @@ function App() {
     }, [isToday, firstId, wave]);
 
     const enversOpen = isEnversOpen(now);
-    const caveLink = enLigne && enversOpen && enversDone() ? () => setCaveBoard({ fin: null }) : null;
+    // Les classements de tous les jeux ouverts (bouton « Classements ») ; la cave seulement pour qui l'a finie (elle reste secrète)
+    const boardGames = enLigne
+        ? [
+            ...(enversDone() ? [ENVERS_BOARD] : []),
+            CULTURE, GEO, QUIZ, CANDLES,
+            ...[ADVENTURE, ...GAMES].filter((g) => isUnlocked(g, advent, now))
+        ]
+        : [];
+    const openBoards = boardGames.length ? () => setBoard({ jeu: boardGames[0].id, fin: null }) : null;
     // Deux annonces successives : la cave jusqu'au 18/11 à 9 h, puis les jeux libres (même fermé, le bandeau des jeux ne rend pas la place à la cave)
     const gamesNews = gamesNewsActive(now, isToday) && !gamesNewsHidden;
     const news = announceActive(now, isToday) && !newsHidden && !gamesNewsWindow(now, isToday);
@@ -261,7 +269,7 @@ function App() {
         if (enversPath()) window.history.replaceState(null, '', '/');
         if (result?.kind === 'win') {
             const record = saveScore('envers', Math.round(result.time), true);
-            classementEnLigne().then((c) => { if (c) setCaveBoard({ fin: { score: Math.round(result.time), n: Date.now() } }); });
+            classementEnLigne().then((c) => { if (c) setBoard({ jeu: ENVERS_BOARD.id, fin: { jeu: ENVERS_BOARD.id, score: Math.round(result.time), n: Date.now() } }); });
             boom();
             flash(`Bravo ! Cave éclairée et message retrouvé en ${formatTime(result.time)}${record ? ' · nouveau record' : ''}.`);
         } else if (result?.kind === 'quit') {
@@ -271,8 +279,8 @@ function App() {
         if (reloadPending.current && result?.kind !== 'win') window.location.reload();
     }, [boom, flash]);
 
-    const closeCaveBoard = useCallback(() => {
-        setCaveBoard(null);
+    const closeBoard = useCallback(() => {
+        setBoard(null);
         if (reloadPending.current) window.location.reload();
     }, []);
 
@@ -358,7 +366,8 @@ function App() {
                     onLogo={onLogo}
                     onAdventure={isUnlocked(ADVENTURE, advent, now) ? () => openGame(ADVENTURE.id) : null}
                     games={[QUIZ, ...FREE_GAMES].map((g) => ({ id: g.id, title: g.title, icon: g.icon, onPlay: () => openGame(g.id) }))
-                        .concat(caveLink ? [{ id: 'cave', title: 'Classement de la cave', icon: 'trophy', onPlay: caveLink }] : [])}
+                        .concat(openBoards ? [{ id: 'classements', title: 'Classements', icon: 'trophy', onPlay: openBoards }] : [])}
+                    onBoards={openBoards}
                 />
 
                 <main className={`main${isAvent ? ' main--avent' : ''}`}>
@@ -373,7 +382,6 @@ function App() {
                             restLabel={restLabel}
                             play={play}
                             onQuiz={isAvent ? null : () => openGame(QUIZ.id)}
-                            extraGames={!isAvent && caveLink ? [{ id: 'cave', label: 'Cave : classement', title: 'Classement de la cave', onPlay: caveLink }] : []}
                         />
                         {isAvent
                             ? <GamesTile openCount={advent.openCount} bests={bests} onPlay={openGame} />
@@ -387,7 +395,7 @@ function App() {
             </div>
 
             {stage > 0 && !envers && <Crack stage={stage} />}
-            {gamesNews && !gameId && !envers && !caveBoard && (
+            {gamesNews && !gameId && !envers && !board && (
                 <GamesNews
                     games={FREE_GAMES}
                     onPlay={(id) => {
@@ -395,13 +403,14 @@ function App() {
                         setGamesNewsHidden(true);
                         openGame(id);
                     }}
+                    onBoards={openBoards}
                     onClose={() => {
                         dismissGamesNews();
                         setGamesNewsHidden(true);
                     }}
                 />
             )}
-            {news && !gameId && !envers && !caveBoard && (
+            {news && !gameId && !envers && !board && (
                 <NewsBanner
                     onClose={() => {
                         dismissAnnounce();
@@ -441,9 +450,9 @@ function App() {
                     gameProps={gameProps(gameId)}
                 />
             )}
-            {caveBoard && !envers && (
+            {board && !envers && (
                 <Suspense fallback={null}>
-                    <BoardModal game={ENVERS_BOARD} fin={caveBoard.fin} onClose={closeCaveBoard} />
+                    <BoardModal games={boardGames} jeu={board.jeu} fin={board.fin} onPick={(jeu) => setBoard((b) => ({ ...b, jeu }))} onClose={closeBoard} />
                 </Suspense>
             )}
             {envers && (

@@ -65,6 +65,7 @@ export function formatTime(sec) {
 export const ENVERS_BOARD = {
     id: 'envers',
     title: 'L’Envers, la cave',
+    short: 'La cave',
     unit: 's',
     lowerIsBetter: true,
     format: (s) => formatTime(s)
