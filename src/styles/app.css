@@ -110,12 +110,11 @@ html, body, #root { height: 100%; }
 .app .adv-btn { color: #fff; }
 .adv-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(124, 92, 255, 0.45); }
 .adv-btn span { white-space: nowrap; }
-/* Bouton « Classements » : discret, à côté des vues */
-.boards-btn { display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 18px 0 15px; border: 0; border-radius: 999px; font: 700 15px 'DM Sans', sans-serif; cursor: pointer; transition: transform 0.2s; }
+/* Bouton « Classements » : juste le trophée, rond, à côté des vues */
+.boards-btn { display: grid; place-items: center; width: 52px; height: 52px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; transition: transform 0.2s; }
 .app .boards-btn { color: #fff; }
 .boards-btn:hover { transform: translateY(-2px); }
 .boards-btn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
-@media (max-width: 1100px) { .boards-btn { padding: 0; width: 52px; justify-content: center; } .boards-btn span { display: none; } }
 .segs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; }
 .seg {
   display: flex; align-items: center; gap: 8px;

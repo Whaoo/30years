@@ -69,8 +69,7 @@ export default function Header({ theme, weather, isAvent, isDecember, daysToStar
                 )}
                 {onBoards && (
                     <button type="button" className="boards-btn glass hide-sm" onClick={onBoards} aria-label="Classements de tous les jeux" title="Classements">
-                        <Icon name="trophy" size={18} />
-                        <span>Classements</span>
+                        <Icon name="trophy" size={20} />
                     </button>
                 )}
                 <nav className="segs glass" aria-label="Choix de la vue">
