@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import Icon from './Icons';
 import { formatScore } from '../games';
+import { getBest } from '../games/scores';
 import { chargerTurnstile, choisirPseudo, classement, config, envoyerScore, importerRecords, moi, retrouverPseudo } from '../utils/leaderboard';
 
 // Panneau « Classement » de la fenêtre de jeu.
 // En fin de partie (fin = nouveau `fin.n`) : avec un pseudo, le score part tout seul ; sans pseudo, on le demande une fois,
 // en montrant la place que ce score obtiendrait. Le pseudo est ensuite gardé dans le navigateur.
+// Ouvert hors fin de partie, sans pseudo, avec un record déjà fait dans ce navigateur (`ancien`, ex. la cave finie avant
+// l'arrivée des classements) : on montre la place de ce record et on propose le pseudo ; le record part alors par l'import.
 const rangTxt = (r) => (r === 1 ? '1er' : `${r}e`);
 
 export default function Leaderboard({ game, fin, onClose }) {
@@ -16,6 +19,11 @@ export default function Leaderboard({ game, fin, onClose }) {
     const [message, setMessage] = useState('');
     const [resultat, setResultat] = useState(null);
     const [attente, setAttente] = useState(null); // score de fin de partie pas encore envoyé (pas de pseudo)
+    const [ancien] = useState(() => {
+        if (fin || moi()) return null;
+        const b = Math.round(getBest(game.id) ?? 0);
+        return b > 0 ? b : null;
+    });
     const [form, setForm] = useState('pseudo'); // pseudo | code | masque
     const [saisie, setSaisie] = useState({ pseudo: '', code: '' });
     const [envoi, setEnvoi] = useState(false);
@@ -27,6 +35,8 @@ export default function Leaderboard({ game, fin, onClose }) {
 
     const fmt = (sc) => (game.format ? game.format(sc) : formatScore(game, sc));
     const meilleurQue = (a, b) => (game.lowerIsBetter ? a < b : a > b);
+    // le score « Toi ? » à glisser dans la liste : fin de partie pas encore envoyée, ou ancien record (classement « Toujours » seulement)
+    const propose = (p) => (attente != null ? attente : !joueur && p === 'tout' ? ancien : null);
     const charger = async (p = portee, score = null) => {
         try {
             const b = await classement(game.id, p, score);
@@ -65,7 +75,7 @@ export default function Leaderboard({ game, fin, onClose }) {
 
     // ouverture sans partie terminée : on montre juste le classement
     useEffect(() => {
-        if (!fin) charger(portee);
+        if (!fin) charger(portee, propose(portee));
         config().then((c) => setCaptcha((x) => ({ ...x, cle: c?.captcha || null })));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -85,7 +95,7 @@ export default function Leaderboard({ game, fin, onClose }) {
         return () => { annule = true; if (id != null && window.turnstile) window.turnstile.remove(id); };
     }, [joueur, form, captcha.cle]);
 
-    const changerPortee = (p) => { setPortee(p); setEtat('chargement'); charger(p, attente); };
+    const changerPortee = (p) => { setPortee(p); setEtat('chargement'); charger(p, propose(p)); };
 
     const valider = async (e) => {
         e.preventDefault();
@@ -114,10 +124,11 @@ export default function Leaderboard({ game, fin, onClose }) {
     };
 
     const lignes = board ? [...board.top] : [];
+    const essai = propose(portee);
     // sans pseudo : la place qu'aurait ce score, glissée dans la liste
-    if (board && attente != null && board.potentiel != null) {
-        const ligne = { rang: board.potentiel, pseudo: 'Toi ?', score: attente, fantome: true };
-        const i = lignes.findIndex((l) => meilleurQue(attente, l.score));
+    if (board && essai != null && board.potentiel != null) {
+        const ligne = { rang: board.potentiel, pseudo: 'Toi ?', score: essai, fantome: true };
+        const i = lignes.findIndex((l) => meilleurQue(essai, l.score));
         if (i >= 0) {
             lignes.splice(i, 0, ligne);
             for (let k = i + 1; k < lignes.length; k++) lignes[k] = { ...lignes[k], rang: lignes[k].rang + 1 }; // les suivants descendraient d'une place
@@ -134,6 +145,8 @@ export default function Leaderboard({ game, fin, onClose }) {
         else titre = `Pas de record cette fois (le tien : ${fmt(resultat.meilleur)}). Tu restes ${rangTxt(r.rang)} sur ${r.total}.`;
     } else if (attente != null && board?.potentiel) {
         titre = `Ce score te placerait ${rangTxt(board.potentiel)} ${portee === 'jour' ? 'aujourd’hui' : 'au classement'}.`;
+    } else if (essai != null && board?.potentiel) {
+        titre = `Ton record (${fmt(essai)}) te placerait ${rangTxt(board.potentiel)}. Choisis un pseudo pour l’inscrire au classement.`;
     }
 
     return (
@@ -150,7 +163,7 @@ export default function Leaderboard({ game, fin, onClose }) {
             {titre && <p className="lb__titre">{titre}</p>}
             {message && <p className="lb__msg">{message}</p>}
 
-            {!joueur && attente != null && form !== 'masque' && (
+            {!joueur && (attente != null || ancien != null) && form !== 'masque' && (
                 <form className="lb__form" onSubmit={valider}>
                     {form === 'pseudo' ? (
                         <>

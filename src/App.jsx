@@ -99,7 +99,7 @@ function App() {
     const touchY = useRef(null);
 
     const gameOpen = useRef(false);
-    gameOpen.current = !!gameId || envers;
+    gameOpen.current = !!gameId || envers || !!caveBoard; // partie, cave ou classement de la cave ouverts : pas de rechargement ni de passage
     const reloadPending = useRef(false);
     const toastTimer = useRef();
     const confettiTimer = useRef();
@@ -267,8 +267,14 @@ function App() {
         } else if (result?.kind === 'quit') {
             flash(`Retour à la surface : ${result.found} lettre${result.found > 1 ? 's' : ''} sur 11 gardée${result.found > 1 ? 's' : ''} pour la prochaine fois.`);
         }
-        if (reloadPending.current) window.location.reload();
+        // une victoire ouvre le classement (le score y part) : le rechargement horaire attend qu'on le ferme
+        if (reloadPending.current && result?.kind !== 'win') window.location.reload();
     }, [boom, flash]);
+
+    const closeCaveBoard = useCallback(() => {
+        setCaveBoard(null);
+        if (reloadPending.current) window.location.reload();
+    }, []);
 
     const onLogo = useCallback(() => {
         logoClicks.current += 1;
@@ -437,7 +443,7 @@ function App() {
             )}
             {caveBoard && !envers && (
                 <Suspense fallback={null}>
-                    <BoardModal game={ENVERS_BOARD} fin={caveBoard.fin} onClose={() => setCaveBoard(null)} />
+                    <BoardModal game={ENVERS_BOARD} fin={caveBoard.fin} onClose={closeCaveBoard} />
                 </Suspense>
             )}
             {envers && (
