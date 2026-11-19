@@ -275,7 +275,16 @@ export const REGATE = {
     help: '← → pour barrer (ou maintenir le clic à gauche, à droite). Face au vent, le bateau s’arrête : tire des bords à 45°. C : vue du dessus.',
     component: lazy(() => import('./FrameGame'))
 };
-export const DAILY_GAMES = [VOL, FUJI, GOLF, BALLON, REGATE];
+export const TOKYO = {
+    id: 'tokyo', title: 'Livraisons de nuit à Tokyo', short: 'Tokyo',
+    eyebrow: 'Jeu du jour · ven. 27 nov.',
+    from: new Date(2026, 10, 27, 9, 0),
+    icon: 'scooter', unit: 'pts', frame: '/jeux/tokyo.html',
+    pitch: 'Rapidité et itinéraire en scooter, de nuit',
+    help: '↑ gaz, ↓ frein, ← → pour tourner. Anneaux jaunes : récupérer ; bleus : livrer. Les sens uniques sont sur la carte en haut à droite. C : vue du dessus.',
+    component: lazy(() => import('./FrameGame'))
+};
+export const DAILY_GAMES = [VOL, FUJI, GOLF, BALLON, REGATE, TOKYO];
 // le dernier jeu du jour sorti (null avant le premier)
 export function dailyGame(now = new Date()) {
     return DAILY_GAMES.filter((g) => now >= g.from).sort((a, b) => b.from - a.from)[0] || null;
