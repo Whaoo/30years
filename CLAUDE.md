@@ -64,6 +64,9 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
     `TOKYO` (« Livraisons de nuit à Tokyo », 27/11) : `public/jeux/tokyo.html`, scooter dans un quartier 7×7 (sens uniques,
     rues en travaux, voitures qui roulent à gauche) ; 18 commandes du jour à récupérer puis livrer en 3 min (2 au plus à la fois),
     100 + 3 points par seconde d'avance, 50 en retard, −10 / s à contresens. Console `window.tokyo` (`start()`, `bot(n)`).
+    `TRAIN` (« Le Train de Noël », 30/11) : `public/jeux/train-de-noel.html`, un tunnel, 5 aiguillages, 6 gares de couleur ;
+    40 trains du jour (`SEQ`, la même suite pour tout le monde) de plus en plus rapprochés ; 100 par bonne gare + 10 par train
+    de série (jusqu'à +100). Console `window.train` (`autoplay(n)` : aiguilleur parfait).
   - Où on les trouve : deux tuiles sous la liste « Ensuite » (`GameTiles.jsx` : le jeu du jour + « Tous les jeux » qui ouvre `GamesList.jsx`),
     menu « Jeux » de l'en-tête sur téléphone (la colonne de droite y est masquée), tuile des mini-jeux en décembre ;
     bandeau du 18/11 à 9 h au 30/11 (`GamesNews.jsx` + `src/utils/gamesNews.js`, qui remplace le bandeau de la cave) : Le Grand Quiz et Où est-ce ?,

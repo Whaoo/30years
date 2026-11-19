@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Le Train de Noël</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Mono:wght@500;700&display=swap">
+<style>
+/* Village enneigé, un tunnel, six gares de couleur : on bascule les aiguillages pour que chaque petit train arrive
+   à la gare de sa couleur. Logique et réflexes. Styles communs dans lib/pixel.js. */
+:root { --accent: #d0343a; --accent-ink: #fff; }
+#stage { background: #1e2448; cursor: pointer; }
+.tag.tc .p { padding: 1px 5px; background: var(--accent); color: #fff; }
+.tag.tc .g { color: #9fe0a8; }
+#next { position: absolute; left: 50%; top: calc(max(6px, env(safe-area-inset-top, 0px)) + 22px); transform: translateX(-50%); display: flex; gap: 6px; align-items: center; padding: 4px 8px 3px; background: rgba(18, 20, 28, 0.7); font: 400 8px/1 var(--pixel); color: var(--soft); text-transform: uppercase; pointer-events: none; }
+#next i { width: 10px; height: 10px; box-shadow: 0 0 0 1px #000; }
+#next i + i { width: 7px; height: 7px; opacity: 0.8; }
+.menu #next { display: none; }
+#legend { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+#legend li { display: flex; align-items: center; gap: 6px; padding: 5px 6px; border: 1px solid var(--line); font: 400 8px/1 var(--pixel); color: var(--paper); text-transform: uppercase; }
+#legend li i { width: 10px; height: 10px; flex: none; }
+</style>
+</head>
+<body>
+<div id="app" class="menu">
+  <div id="stage">
+    <canvas id="gl"></canvas>
+    <canvas id="hud"></canvas>
+    <div class="tag tl" id="lTag" hidden><span class="sq"></span><span id="lWagon">Train 0/40</span></div>
+    <div class="tag tc" id="tTag" hidden><span class="g" id="tOk">✓ 0</span><span class="w" id="tStreak">Série ×0</span><span class="p" id="tScore">0 PTS</span></div>
+    <div id="next" hidden>Prochains <i id="n1"></i><i id="n2"></i></div>
+    <div id="feed" aria-live="polite"></div>
+    <div class="over" id="intro">
+      <div class="card card--wide">
+        <div class="col">
+          <p class="eyebrow">Logique · jeu du jour</p>
+          <h1>Le Train de <span>Noël</span></h1>
+          <p>Le village prépare Noël et les petits trains de cadeaux sortent du tunnel les uns après les autres. Bascule les aiguillages pour que chacun arrive à la gare de sa couleur. Ils vont de plus en plus vite…</p>
+          <ul id="legend"></ul>
+          <div class="actions"><button class="go" id="goPlay" type="button">Ouvrir la ligne · 40 trains</button></div>
+          <p class="rec" id="rec"></p>
+        </div>
+        <div class="col">
+          <p class="eyebrow">Comment marquer</p>
+          <ul class="goals" id="goals"></ul>
+          <p class="tip">Regarde d’abord le plan : chaque aiguillage partage les gares en deux groupes. Prépare l’aiguillage avant que le train arrive, puis remets-le pour le suivant.</p>
+        </div>
+        <div class="keys" id="keys"></div>
+      </div>
+    </div>
+    <div class="over" id="results" hidden>
+      <div class="card">
+        <p class="eyebrow" id="resEyebrow">Fin du service</p>
+        <h2 id="resTitle">Tous les trains sont arrivés</h2>
+        <dl class="score" id="resRows"></dl>
+        <div class="total"><div><p class="rec" id="resSub">Total</p><strong id="resTotal">0</strong></div><div class="mention" id="resMention">B</div></div>
+        <p class="rec" id="resRec"></p>
+        <div class="actions"><button class="go" id="again" type="button">Rejouer</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="bar">
+    <span class="logo"><svg width="12" height="10" viewBox="0 0 12 10" aria-hidden="true"><path fill="#d0343a" d="M1 2h6v5H1zM7 4h4v3H7zM2 0h2v2H2z"/><circle cx="3" cy="8.5" r="1.5" fill="#e9e4ee"/><circle cx="9" cy="8.5" r="1.5" fill="#e9e4ee"/></svg>Le Train de Noël</span>
+    <span class="hints"><span><b>Clic</b>Basculer un aiguillage</span><span><b>1 à 5</b>Aiguillages au clavier</span></span>
+    <span class="grow"></span>
+    <button type="button" id="sndBtn"><svg width="9" height="8" viewBox="0 0 9 8" aria-hidden="true"><path fill="currentColor" d="M0 2h2l3-2v8L2 6H0z"/></svg><span id="sndLabel">Son coupé</span></button>
+    <button type="button" id="fsBtn"><svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true"><path fill="none" stroke="currentColor" d="M.5 3V.5H3M5 .5h2.5V3M7.5 5v2.5H5M3 7.5H.5V5"/></svg><span id="fsLabel">Plein écran</span></button>
+  </div>
+</div>
+
+<script src="lib/three.min.js"></script>
+<script src="lib/pixel.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  if (!window.THREE || !window.Pixel) { document.querySelector('.card p:not(.eyebrow)').textContent = 'La bibliothèque 3D n’a pas pu se charger. Recharge la page.'; return; }
+  const { TAU, clamp, lerp, smooth, store, report, isTouch, GEO, mtx, fmtInt, css } = Pixel;
+  const stage = $('stage');
+  const feed = Pixel.feeder($('feed'));
+  const snd = Pixel.sound();
+  Pixel.bar({ sound: snd, feed });
+
+  // ================================================================ le réseau : un tunnel, 5 aiguillages, 6 gares (x vers la droite, z vers le bas)
+  const STATIONS = [
+    { id: 'A', name: 'rouge', col: 0xd0343a },
+    { id: 'B', name: 'verte', col: 0x3fa04a },
+    { id: 'C', name: 'bleue', col: 0x2f6fd8 },
+    { id: 'D', name: 'jaune', col: 0xf2c81e },
+    { id: 'E', name: 'violette', col: 0x9a5ad8 },
+    { id: 'F', name: 'orange', col: 0xf08a3c }
+  ];
+  // nœuds : T tunnel, S1…S5 aiguillages, A…F gares ; arêtes : tracés en angles droits (arrondis plus bas)
+  const NODES = {
+    T: { p: [0, -26] }, S1: { p: [0, -16], sw: 1 }, S2: { p: [-14, -8], sw: 2 }, S3: { p: [14, -8], sw: 3 }, S4: { p: [-14, 3], sw: 4 }, S5: { p: [14, 3], sw: 5 },
+    A: { p: [-27, 17] }, B: { p: [-20, 17] }, C: { p: [-8, 17] }, D: { p: [8, 17] }, E: { p: [20, 17] }, F: { p: [27, 17] }
+  };
+  const EDGES = [
+    ['T', 'S1', [[0, -26], [0, -16]]],
+    ['S1', 'S2', [[0, -16], [-14, -16], [-14, -8]]], ['S1', 'S3', [[0, -16], [14, -16], [14, -8]]],
+    ['S2', 'A', [[-14, -8], [-27, -8], [-27, 17]]], ['S2', 'S4', [[-14, -8], [-14, 3]]],
+    ['S4', 'B', [[-14, 3], [-20, 3], [-20, 17]]], ['S4', 'C', [[-14, 3], [-8, 3], [-8, 17]]],
+    ['S3', 'S5', [[14, -8], [14, 3]]], ['S3', 'F', [[14, -8], [27, -8], [27, 17]]],
+    ['S5', 'D', [[14, 3], [8, 3], [8, 17]]], ['S5', 'E', [[14, 3], [20, 3], [20, 17]]]
+  ];
+  // tracé dense, coins arrondis (rayon 2,5 m)
+  function rounded(pts, R) {
+    const out = [pts[0]];
+    for (let i = 1; i < pts.length - 1; i++) {
+      const [ax, az] = pts[i - 1], [bx, bz] = pts[i], [cx, cz] = pts[i + 1];
+      const l1 = Math.hypot(bx - ax, bz - az), l2 = Math.hypot(cx - bx, cz - bz), r = Math.min(R, l1 / 2, l2 / 2);
+      const p1 = [bx - (bx - ax) / l1 * r, bz - (bz - az) / l1 * r], p2 = [bx + (cx - bx) / l2 * r, bz + (cz - bz) / l2 * r];
+      out.push(p1);
+      for (let t = 0.125; t < 1; t += 0.125) { const u = 1 - t; out.push([u * u * p1[0] + 2 * u * t * bx + t * t * p2[0], u * u * p1[1] + 2 * u * t * bz + t * t * p2[1]]); }
+      out.push(p2);
+    }
+    out.push(pts[pts.length - 1]);
+    const cum = [0]; for (let i = 1; i < out.length; i++) cum.push(cum[i - 1] + Math.hypot(out[i][0] - out[i - 1][0], out[i][1] - out[i - 1][1]));
+    return { pts: out, cum, L: cum[cum.length - 1] };
+  }
+  const edges = EDGES.map(([a, b, pts]) => Object.assign({ a, b }, rounded(pts, 2.5)));
+  const outOf = (n) => edges.filter((e) => e.a === n);
+  // état des aiguillages : 0 = première sortie, 1 = deuxième ; quelles gares derrière chaque sortie
+  const SW = ['S1', 'S2', 'S3', 'S4', 'S5'];
+  const swState = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0 };
+  function leaves(n) { const o = outOf(n); return o.length ? o.flatMap((e) => leaves(e.b)) : [n]; }
+  function pointAt(e, s, out) {
+    s = clamp(s, 0, e.L);
+    let i = 1; while (i < e.cum.length - 1 && e.cum[i] < s) i++;
+    const t = (s - e.cum[i - 1]) / Math.max(1e-6, e.cum[i] - e.cum[i - 1]), a = e.pts[i - 1], b = e.pts[i];
+    out.x = lerp(a[0], b[0], t); out.z = lerp(a[1], b[1], t); out.h = Math.atan2(b[0] - a[0], -(b[1] - a[1]));
+    return out;
+  }
+
+  // ---------------------------------------------------------------- la suite des 40 trains du jour (les mêmes pour tout le monde)
+  const N_TRAINS = 40;
+  const rr = Pixel.rng(Pixel.daySeed('train-noel'));
+  const SEQ = [];
+  for (let k = 0; k < N_TRAINS; k++) {
+    let c; do { c = Math.floor(rr() * 6); } while (SEQ.length >= 2 && SEQ[k - 1] === c && SEQ[k - 2] === c);
+    SEQ.push(c);
+  }
+  const gapAt = (k) => lerp(4.4, 2.3, k / (N_TRAINS - 1));          // écart entre deux départs (s)
+  const speedAt = (k) => lerp(3.6, 5.6, k / (N_TRAINS - 1));        // vitesse du train n° k (m/s)
+
+  // ================================================================ rendu : village sous la neige, à la tombée du jour
+  const PAL = [0x0b0d1a, 0x141833, 0x1e2448, 0x2a3160, 0x3a427a, 0x565f9e, 0x7f86b8, 0xa8b0d8, 0xd0d8f0, 0xeef2fb, 0xffffff,
+    0xd0343a, 0xa8242e, 0x6e1a24, 0xff6a5a, 0x3fa04a, 0x2f6a3a, 0x1e3a2e, 0x7cbc62, 0x2f6fd8, 0x1f4a9a, 0x7fb0f0,
+    0xf2c81e, 0xb8901a, 0xfff2a0, 0x9a5ad8, 0x6a3aa0, 0xc8a0f0, 0xf08a3c, 0xb85e36, 0xffc890,
+    0x4a2e22, 0x6e3f2c, 0x94573a, 0xd29a64, 0x24242e, 0x34343f, 0x4a4a58, 0x6a6878, 0x8f8c9c, 0xb8b4c0, 0xffd060];
+  const V = Pixel.view({ stage, gl: $('gl'), hud: $('hud'), palette: PAL, fov: 40, near: 1, far: 1200, target: 560 });
+  const { scene, camera, hud } = V;
+  const text = Pixel.hudText(hud), line = Pixel.hudLine(hud);
+  const HAZE = 0x3a427a;
+  const fogU = Pixel.fog({ near: 120, far: 520, haze: HAZE, sun: new THREE.Vector3(0.3, 0.8, 0.4).normalize() });
+  scene.add(new THREE.HemisphereLight(0xb8c4f0, 0x3a427a, 1.05));
+  const dl = new THREE.DirectionalLight(0xffd8b0, 0.35); dl.position.set(-40, 60, 30); scene.add(dl);
+  const skyMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, uniforms: Object.assign({}, fogU),
+    vertexShader: 'varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: `uniform vec3 haze; varying vec3 vDir; ${Pixel.GLSL.hash}
+      void main(){ vec3 d = normalize(vDir); float e = d.y; float az = atan(d.x, -d.z);
+        vec3 c = mix(vec3(0.42, 0.36, 0.6), vec3(0.1, 0.12, 0.28), smoothstep(0.0, 0.6, e));
+        if (hash12(floor(vec2(az * 260.0, e * 260.0))) > 0.995 && e > 0.2) c = vec3(1.0);
+        if (e < 0.0) c = haze; gl_FragColor = vec4(c, 1.0); }`
+  });
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(900, 24, 12), skyMat); sky.renderOrder = -10; sky.frustumCulled = false; scene.add(sky);
+  // la neige au sol, avec des ondulations ; collines blanches autour
+  const ground = (() => {
+    const g = new THREE.PlaneGeometry(420, 420, 120, 120).rotateX(-Math.PI / 2), p = g.attributes.position, col = new Float32Array(p.count * 3), c = new THREE.Color();
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), z = p.getZ(i), d = Math.max(Math.abs(x) - 38, Math.abs(z + 2) - 30, 0);
+      const h = d > 0 ? smooth(0, 60, d) * 30 * Pixel.fbm(x / 420 + 0.5, z / 420 + 0.5, 6, 3, 3) : (Pixel.fbm(x / 420 + 0.5, z / 420 + 0.5, 30, 2, 8) - 0.5) * 0.3;
+      p.setY(i, h);
+      c.set(Pixel.fbm(x / 420 + 0.5, z / 420 + 0.5, 40, 2, 5) > 0.55 ? 0xd0d8f0 : 0xeef2fb);
+      col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+    }
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.computeVertexNormals();
+    return new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true }));
+  })();
+  scene.add(ground);
+  // rails : traverses en bois et deux rails ; le tunnel ; les gares ; le village
+  const ballast = [], parts = [], glow = [];
+  for (const e of edges) {
+    const P = { x: 0, z: 0, h: 0 };
+    for (let s = 0.4; s < e.L; s += 0.9) { pointAt(e, s, P); parts.push({ geo: GEO.BOX, m: mtx(P.x, 0.1, P.z, -P.h, 1.9, 0.14, 0.32), c: 0x6e3f2c }); }
+    for (let s = 0; s < e.L; s += 0.5) { pointAt(e, s + 0.25, P); for (const sd of [-0.62, 0.62]) parts.push({ geo: GEO.BOX, m: mtx(P.x + Math.cos(P.h) * sd, 0.24, P.z + Math.sin(P.h) * sd, -P.h, 0.1, 0.1, 0.56), c: 0x8f8c9c }); ballast.push({ geo: GEO.BOX, m: mtx(P.x, 0.04, P.z, -P.h, 2.4, 0.08, 0.6), c: 0x6a6878 }); }
+  }
+  // le tunnel dans un rocher enneigé
+  parts.push({ geo: GEO.ICO, m: mtx(0, 2, -31, 0.3, 9, 6, 6), c: 0x6a6878 });
+  parts.push({ geo: GEO.ICO, m: mtx(0, 5.6, -31.5, 0.6, 7, 3, 5), c: 0xeef2fb });
+  parts.push({ geo: GEO.BOX, m: mtx(0, 1.8, -26.2, 0, 4.2, 3.6, 0.6), c: 0x94573a });
+  parts.push({ geo: GEO.BOX, m: mtx(0, 1.5, -26.1, 0, 3, 3, 0.65), c: 0x0b0d1a });
+  // les gares : chalet au toit de couleur, quai, fanion
+  for (const st of STATIONS) {
+    const [x, z] = NODES[st.id].p;
+    parts.push({ geo: GEO.BOX, m: mtx(x, 0.25, z + 0.6, 0, 3.4, 0.5, 2.2), c: 0xb8b4c0 });
+    parts.push({ geo: GEO.BOX, m: mtx(x, 1.5, z + 3.2, 0, 4, 3, 2.8), c: 0xd29a64 });
+    parts.push({ geo: GEO.CONE4, m: mtx(x, 3.9, z + 3.2, Math.PI / 4, 3.4, 1.9, 2.6), c: st.col });
+    parts.push({ geo: GEO.BOX, m: mtx(x, 4.4, z + 3.2, 0, 2.8, 0.3, 0.5), c: 0xffffff });
+    glow.push({ geo: GEO.BOX, m: mtx(x - 0.9, 1.6, z + 1.78, 0, 0.8, 0.8, 0.05), c: 0xfff2a0 });
+    glow.push({ geo: GEO.BOX, m: mtx(x + 0.9, 1.6, z + 1.78, 0, 0.8, 0.8, 0.05), c: 0xfff2a0 });
+    parts.push({ geo: GEO.CYL, m: mtx(x + 1.9, 1.6, z - 0.3, 0, 0.06, 3.2, 0.06), c: 0x4a4a58 });
+    glow.push({ geo: GEO.BOX, m: mtx(x + 2.5, 2.8, z - 0.3, 0, 1.2, 0.8, 0.06), c: st.col });
+  }
+  // sapins illuminés, le grand sapin au centre, chalets du village
+  const r2 = Pixel.rng(11);
+  const nearTrack = (x, z) => edges.some((e) => e.pts.some((p) => Math.hypot(p[0] - x, p[1] - z) < 3));
+  for (let k = 0; k < 520; k++) {
+    const x = (r2() - 0.5) * 180, z = (r2() - 0.5) * 150 - 5;
+    if (nearTrack(x, z) || (Math.abs(x) < 31 && z > 14 && z < 24) || (Math.abs(x) < 6 && Math.abs(z - 6) < 6)) continue;
+    const inBoard = Math.abs(x) < 32 && z > -30 && z < 22; if (inBoard && r2() < 0.6) continue;
+    const y = 0, h = 2.4 + r2() * 3.2;
+    parts.push({ geo: GEO.CONE7, m: mtx(x, y + h * 0.55, z, r2(), h * 0.38, h, h * 0.38), c: r2() < 0.5 ? 0x1e3a2e : 0x2f6a3a });
+    parts.push({ geo: GEO.CONE7, m: mtx(x, y + h * 0.92, z, r2(), h * 0.2, h * 0.3, h * 0.2), c: 0xeef2fb });
+    if (inBoard && r2() < 0.7) for (let q = 0; q < 5; q++) { const a = r2() * TAU, hh = 0.3 + r2() * 0.6; glow.push({ geo: GEO.BOX, m: mtx(x + Math.cos(a) * h * 0.38 * (1 - hh), y + h * hh * 0.95 + 0.4, z + Math.sin(a) * h * 0.38 * (1 - hh), 0, 0.18, 0.18, 0.18), c: [0xd0343a, 0xf2c81e, 0x7fb0f0, 0xffd060][q % 4] }); }
+  }
+  // le grand sapin
+  for (let k = 0; k < 4; k++) parts.push({ geo: GEO.CONE7, m: mtx(0, 2.4 + k * 2, 6, k, 4.6 - k, 3.6, 4.6 - k), c: 0x2f6a3a });
+  for (let k = 0; k < 40; k++) { const a = k * 2.4, hh = (k % 20) / 20; glow.push({ geo: GEO.BOX, m: mtx(Math.cos(a) * (4.2 - hh * 3.4), 1.2 + hh * 7.6, 6 + Math.sin(a) * (4.2 - hh * 3.4), 0, 0.3, 0.3, 0.3), c: [0xd0343a, 0xf2c81e, 0x7fb0f0, 0xffd060, 0x3fa04a][k % 5] }); }
+  glow.push({ geo: GEO.ICO, m: mtx(0, 10.4, 6, 0, 0.7, 0.7, 0.7), c: 0xffd060 });
+  scene.add(Pixel.litMesh(parts)); scene.add(Pixel.glowMesh(glow));
+  scene.add(new THREE.Mesh(Pixel.mergeParts(ballast), new THREE.MeshLambertMaterial({ vertexColors: true })));
+  // neige qui tombe
+  const SN = 700, snPos = new Float32Array(SN * 3);
+  for (let i = 0; i < SN; i++) { snPos[i * 3] = (Math.random() - 0.5) * 120; snPos[i * 3 + 1] = Math.random() * 40; snPos[i * 3 + 2] = (Math.random() - 0.5) * 100; }
+  const snowGeo = new THREE.BufferGeometry(); snowGeo.setAttribute('position', new THREE.BufferAttribute(snPos, 3));
+  const snow = new THREE.Points(snowGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 2, sizeAttenuation: false })); scene.add(snow);
+  // aiguillages : une lanterne et deux petits rails lumineux (sortie active dorée, l'autre éteinte)
+  const switches = {};
+  for (const n of SW) {
+    const [x, z] = NODES[n].p, outs = outOf(n), marks = [];
+    for (const e of outs) {
+      const seg = new THREE.Group(), P = { x: 0, z: 0, h: 0 };
+      for (let s = 0.6; s < 4.2; s += 0.6) { pointAt(e, s, P); const m = new THREE.Mesh(GEO.BOX, new THREE.MeshBasicMaterial({ color: 0xffd060 })); m.scale.set(0.5, 0.12, 0.5); m.position.set(P.x, 0.35, P.z); seg.add(m); }
+      scene.add(seg); marks.push(seg);
+    }
+    const post = new THREE.Mesh(GEO.CYL, new THREE.MeshLambertMaterial({ color: 0x4a4a58 })); post.scale.set(0.12, 2.2, 0.12); post.position.set(x - 1.6, 1.1, z - 1.6); scene.add(post);
+    const lamp = new THREE.Mesh(GEO.BOX, new THREE.MeshBasicMaterial({ color: 0xffd060 })); lamp.scale.set(0.5, 0.5, 0.5); lamp.position.set(x - 1.6, 2.3, z - 1.6); scene.add(lamp);
+    switches[n] = { marks, lamp, flash: 0 };
+  }
+  function refreshSwitches() {
+    for (const n of SW) {
+      const s = switches[n];
+      s.marks.forEach((g, i) => g.children.forEach((m) => { m.material.color.set(i === swState[n] ? 0xffd060 : 0x34343f); m.visible = true; }));
+    }
+  }
+  // un petit train : locomotive à la couleur de sa gare
+  function buildTrain(col) {
+    const g = new THREE.Group(), lam = (c) => new THREE.MeshLambertMaterial({ color: c, flatShading: true });
+    const add = (geo, mat, x, y, z, sx, sy, sz) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); g.add(m); return m; };
+    add(GEO.BOX, lam(col), 0, 0.85, 0.2, 1.3, 0.9, 2.2);
+    add(GEO.BOX, lam(col), 0, 1.5, 0.75, 1.3, 1.0, 1.0);
+    add(GEO.BOX, lam(0x24242e), 0, 2.05, 0.75, 1.45, 0.12, 1.15);
+    add(GEO.CYL, lam(0x24242e), 0, 1.65, -0.55, 0.22, 0.6, 0.22);
+    add(GEO.BOX, lam(0xffd060), 0, 0.85, 0.2, 1.34, 0.14, 2.24);
+    add(GEO.BOX, new THREE.MeshBasicMaterial({ color: 0xfff2a0 }), 0, 0.95, -0.92, 0.35, 0.3, 0.05);
+    for (const z of [-0.5, 0.5]) for (const x of [-0.62, 0.62]) add(GEO.CYL, lam(0x14141c), x, 0.42, z, 0.3, 0.12, 0.3).rotation.z = Math.PI / 2;
+    // un cadeau sur le toit
+    add(GEO.BOX, lam(0xffffff), 0, 1.45, -0.2, 0.55, 0.45, 0.55);
+    add(GEO.BOX, lam(col), 0, 1.45, -0.2, 0.58, 0.48, 0.14);
+    g.rotation.order = 'YXZ';
+    scene.add(g);
+    return g;
+  }
+  const fx = Pixel.puffs(scene, 160);
+
+  // ================================================================ service
+  let mode = 'menu', T = 0, time = 0, launched = 0, nextAt = 0, trains = [], ok = 0, miss = 0, streak = 0, best = 0, score = 0;
+  function startGame() {
+    for (const t of trains) scene.remove(t.g);
+    trains = []; launched = 0; nextAt = 1.5; T = 0; ok = 0; miss = 0; streak = 0; best = 0; score = 0;
+    for (const n of SW) swState[n] = 0;
+    refreshSwitches();
+    mode = 'play';
+    $('intro').hidden = true; $('results').hidden = true; $('app').classList.remove('menu');
+    for (const id of ['lTag', 'tTag', 'next']) $(id).hidden = false;
+    feed('Ouverture de la ligne !', 'gold');
+  }
+  function toggle(n) {
+    if (mode !== 'play' && mode !== 'menu') return;
+    swState[n] = 1 - swState[n]; switches[n].flash = 0.3;
+    refreshSwitches();
+    snd.tone(520, 0, 0.05, 0.7, 'triangle'); snd.tone(780, 0.04, 0.05, 0.5, 'triangle');
+  }
+  function arrive(t, st) {
+    const good = STATIONS[t.c].id === st;
+    if (good) {
+      ok++; streak++; best = Math.max(best, streak);
+      const pts = 100 + Math.min(100, (streak - 1) * 10);
+      score += pts;
+      feed('Gare ' + STATIONS[t.c].name + ' ✓  +' + pts + (streak > 1 ? '  série ×' + streak : ''), 'good');
+      [784, 1047].forEach((f, i) => snd.tone(f, i * 0.07, 0.12));
+      fx.confetti(new THREE.Vector3(t.g.position.x, 2, t.g.position.z), [STATIONS[t.c].col, 0xffd060, 0xffffff], 18);
+    } else {
+      miss++; streak = 0;
+      const where = STATIONS.find((s) => s.id === st);
+      feed('Train ' + STATIONS[t.c].name.replace(/e$/, '') + ' en gare ' + where.name + ' ✗', 'bad');
+      snd.tone(200, 0, 0.25, 0.8, 'sawtooth');
+      for (let i = 0; i < 10; i++) fx.emit(new THREE.Vector3(t.g.position.x, 1.5, t.g.position.z), 0.5, 1.4, 1, 0xb8b4c0, 0x6a6878, new THREE.Vector3((Math.random() - 0.5) * 2, 2, (Math.random() - 0.5) * 2));
+    }
+  }
+  const P = { x: 0, z: 0, h: 0 };
+  function step(dt) {
+    time += dt; fx.step(dt);
+    for (const n of SW) if (switches[n].flash > 0) switches[n].flash -= dt;
+    if (mode !== 'play') return;
+    T += dt;
+    if (launched < N_TRAINS && T >= nextAt) {
+      const k = launched++;
+      trains.push({ k, c: SEQ[k], e: edges[0], s: 0, v: speedAt(k), g: buildTrain(STATIONS[SEQ[k]].col), done: 0 });
+      nextAt = T + gapAt(k);
+      snd.tone(392, 0, 0.12, 0.6, 'triangle'); snd.tone(330, 0.13, 0.15, 0.6, 'triangle');
+    }
+    for (const t of trains) {
+      if (t.done) { t.done += dt; continue; }
+      t.s += t.v * dt;
+      while (t.s >= t.e.L) {
+        const n = t.e.b;
+        if (NODES[n].sw) { t.s -= t.e.L; t.e = outOf(n)[swState[n]]; }
+        else { t.done = dt; arrive(t, n); break; }
+      }
+      pointAt(t.e, t.s, P);
+      t.g.position.set(P.x, 0.12, P.z); t.g.rotation.y = -P.h;
+      if (Math.random() < dt * 3) fx.emit(new THREE.Vector3(P.x - Math.sin(P.h) * 0.6, 2.4, P.z + Math.cos(P.h) * 0.6), 0.3, 1.2, 1.4, 0xeef2fb, 0xa8b0d8, new THREE.Vector3(0, 1, 0));
+    }
+    // les trains arrivés s'effacent en entrant dans la gare
+    for (let i = trains.length - 1; i >= 0; i--) { const t = trains[i]; if (t.done > 0.8) { scene.remove(t.g); trains.splice(i, 1); } else if (t.done) t.g.position.y = 0.12 - t.done * 0.6; }
+    if (launched >= N_TRAINS && trains.length === 0) finish();
+  }
+  function finish() {
+    mode = 'done';
+    $('resRows').innerHTML = `<dt>Trains à la bonne gare</dt><dd class="n">${ok} / ${N_TRAINS}</dd><dd>${ok * 100}</dd>`
+      + `<dt>Bonus de série</dt><dd class="n">meilleure série ×${best}</dd><dd class="pos">+${score - ok * 100}</dd>`
+      + `<dt>Trains égarés</dt><dd class="n">${miss}</dd><dd></dd>`;
+    $('resTotal').textContent = fmtInt(score) + ' pts';
+    $('resSub').textContent = ok + ' trains sur ' + N_TRAINS;
+    const mention = score >= MENTIONS[0] ? 'S' : score >= MENTIONS[1] ? 'A' : score >= MENTIONS[2] ? 'B' : 'C';
+    $('resMention').textContent = mention;
+    $('resTitle').textContent = miss === 0 ? 'Zéro retard, zéro erreur !' : ok >= 34 ? 'Joyeux Noël au village !' : 'Tous les trains sont arrivés';
+    const prev = Number(store.get(REC_KEY)) || 0;
+    if (score > prev) store.set(REC_KEY, String(score));
+    $('resRec').textContent = (Pixel.EMBED ? 'Score envoyé au classement · ' : '') + (score > prev ? (prev ? 'Nouveau record ! L’ancien : ' + fmtInt(prev) + ' pts' : 'Premier record') : 'Record : ' + fmtInt(prev) + ' pts');
+    report('train', score);
+    $('results').hidden = false; $('app').classList.add('menu');
+    for (const id of ['lTag', 'next']) $(id).hidden = true;
+    snd.win();
+  }
+  const MENTIONS = [6500, 5000, 3500];
+  const REC_KEY = 'train-de-noel:record';
+
+  // ================================================================ caméra, dessin
+  const tmpV = new THREE.Vector3();
+  function placeCamera() {
+    const a = V.RW / V.RH;
+    if (mode === 'menu') { const t = time * 0.08; camera.position.set(Math.sin(t) * 70, 52, 58 + Math.cos(t) * 20); camera.lookAt(0, 0, -3); return; }
+    if (a < 1) { const d = 90 / a; camera.position.set(0, d * 0.97, d * 0.22 - 2); camera.lookAt(0, 0, -3.5); }
+    else { camera.position.set(0, 66, 40); camera.lookAt(0, 0, -2.5); }
+  }
+  function project(x, y, z) { tmpV.set(x, y, z).project(camera); return tmpV.z > 1 ? null : [(tmpV.x * 0.5 + 0.5) * V.RW, (-tmpV.y * 0.5 + 0.5) * V.RH]; }
+  function render() {
+    // neige
+    const p = snowGeo.attributes.position;
+    for (let i = 0; i < SN; i++) { let y = p.getY(i) - 0.05; if (y < 0) y += 40; p.setY(i, y); p.setX(i, p.getX(i) + Math.sin(time + i) * 0.01); }
+    p.needsUpdate = true;
+    for (const n of SW) { const s = switches[n]; s.lamp.scale.setScalar(0.5 + (s.flash > 0 ? s.flash * 1.5 : 0)); }
+    placeCamera();
+    camera.updateMatrixWorld();
+    fogU.camPos.value.copy(camera.position); sky.position.copy(camera.position);
+    V.render();
+    drawHud();
+    if (mode === 'play') {
+      $('lWagon').textContent = 'Train ' + launched + '/' + N_TRAINS;
+      $('tOk').textContent = '✓ ' + ok;
+      $('tStreak').textContent = 'Série ×' + streak;
+      $('tScore').textContent = fmtInt(score) + ' PTS';
+      const n1 = SEQ[launched], n2 = SEQ[launched + 1];
+      $('n1').style.background = n1 != null ? css(STATIONS[n1].col) : 'transparent';
+      $('n2').style.background = n2 != null ? css(STATIONS[n2].col) : 'transparent';
+    }
+  }
+  // pastilles des aiguillages : un numéro et une flèche vers la sortie active ; repères des gares
+  function drawHud() {
+    if (mode === 'done') return;
+    for (const n of SW) {
+      const [x, z] = NODES[n].p, c = project(x, 0.4, z);
+      if (!c) continue;
+      const e = outOf(n)[swState[n]], q = { x: 0, z: 0, h: 0 }; pointAt(e, 3.2, q);
+      const tip = project(q.x, 0.4, q.z);
+      const R = 7;
+      hud.fillStyle = 'rgba(20,20,28,0.85)'; hud.fillRect(Math.round(c[0] - R), Math.round(c[1] - R), 2 * R + 1, 2 * R + 1);
+      hud.fillStyle = switches[n].flash > 0 ? '#ffffff' : '#ffd060';
+      hud.fillRect(Math.round(c[0] - R), Math.round(c[1] - R), 2 * R + 1, 1); hud.fillRect(Math.round(c[0] - R), Math.round(c[1] + R), 2 * R + 1, 1);
+      hud.fillRect(Math.round(c[0] - R), Math.round(c[1] - R), 1, 2 * R + 1); hud.fillRect(Math.round(c[0] + R), Math.round(c[1] - R), 1, 2 * R + 1);
+      if (tip) { const dx = tip[0] - c[0], dy = tip[1] - c[1], l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l; line(c[0] - ux * 4, c[1] - uy * 4, c[0] + ux * 5, c[1] + uy * 5, '#ffd060'); line(c[0] + ux * 5, c[1] + uy * 5, c[0] + ux * 2 - uy * 3, c[1] + uy * 2 + ux * 3, '#ffd060'); line(c[0] + ux * 5, c[1] + uy * 5, c[0] + ux * 2 + uy * 3, c[1] + uy * 2 - ux * 3, '#ffd060'); }
+      if (!isTouch) text(String(NODES[n].sw), c[0] + R + 2, c[1] - R, '#ffd060');
+    }
+  }
+
+  // ================================================================ commandes : clic (ou doigt) sur un aiguillage, touches 1 à 5
+  stage.addEventListener('pointerdown', (e) => {
+    if (mode !== 'play' || e.target.closest('button, .card')) return;
+    const [lx, ly] = V.toLow(e.clientX, e.clientY);
+    let bestN = null, bd = 1e9;
+    for (const n of SW) { const [x, z] = NODES[n].p, c = project(x, 0.4, z); if (!c) continue; const d = Math.hypot(c[0] - lx, c[1] - ly); if (d < bd) { bd = d; bestN = n; } }
+    const lim = (isTouch ? 34 : 24) / V.px;
+    if (bestN && bd < lim) toggle(bestN);
+  });
+  window.addEventListener('keydown', (e) => {
+    if (/^Digit[1-5]$/.test(e.code) || /^Numpad[1-5]$/.test(e.code)) { toggle('S' + e.code.slice(-1)); return; }
+    if (e.code === 'KeyM') $('sndBtn').click();
+  });
+  $('goPlay').addEventListener('click', (e) => { e.stopPropagation(); startGame(); });
+  $('again').addEventListener('click', (e) => { e.stopPropagation(); startGame(); });
+
+  function refreshIntro() {
+    $('legend').innerHTML = STATIONS.map((s) => `<li><i style="background:${css(s.col)}"></i>Gare ${s.name}</li>`).join('');
+    const G2 = [
+      ['Bonne gare', '100', 'Chaque train qui arrive à la gare de sa couleur.'],
+      ['Série', '+10 par train', 'Les bonnes arrivées d’affilée ajoutent 10 de plus à chaque fois, jusqu’à +100. Une erreur remet la série à zéro.'],
+      ['Mauvaise gare', '0', 'Le train est perdu pour la tournée, et la série repart de zéro.'],
+      ['Cadence', 'accélère', '40 trains en tout, de plus en plus rapprochés et rapides. Les deux prochains sont annoncés en haut.']
+    ];
+    $('goals').innerHTML = G2.map(([a, b, c]) => `<li><i></i><span>${a}</span><b>${b}</b><small>${c}</small></li>`).join('');
+    $('keys').innerHTML = isTouch
+      ? '<b>Toucher</b><span>une pastille dorée bascule l’aiguillage</span><b>Flèche</b><span>la sortie que prendra le prochain train</span><b>Rails dorés</b><span>la voie ouverte</span><b>En haut</b><span>les deux prochains trains</span>'
+      : '<b>Clic</b><span>sur une pastille dorée : bascule l’aiguillage</span><b>1 à 5</b><span>les mêmes aiguillages au clavier</span><b>Flèche</b><span>la sortie que prendra le prochain train</span><b>En haut</b><span>les deux prochains trains</span>';
+    const r = Number(store.get(REC_KEY)) || 0;
+    $('rec').textContent = r ? 'Ton record : ' + fmtInt(r) + ' pts' : 'Pas encore de score : à toi de jouer';
+  }
+  refreshIntro(); refreshSwitches();
+
+  const L = Pixel.loop(step, render);
+  window.train = {
+    start: startGame, toggle, swState, edges, NODES, SEQ, leaves, outOf,
+    pause(p) { L.paused = p; }, sim: L.sim,
+    state: () => ({ mode, T, launched, ok, miss, streak, best, score, trains: trains.map((t) => ({ k: t.k, c: t.c, e: t.e.a + '>' + t.e.b, s: +t.s.toFixed(1) })) }),
+    // aiguilleur parfait : règle chaque aiguillage pour le premier train qui doit encore y passer
+    autoplay(n, err) {
+      for (let i = 0; i < n && mode === 'play'; i++) {
+        for (const sw of SW) {
+          let first = null, fd = 1e9;
+          for (const t of trains) { if (t.done) continue; const dist = distTo(t, sw); if (dist != null && dist < fd) { fd = dist; first = t; } }
+          if (first && fd > 0.3) {
+            const want = outOf(sw).findIndex((e) => leaves(e.b).includes(STATIONS[first.c].id));
+            if (want >= 0 && swState[sw] !== want && !(err && Math.random() < err)) toggle(sw);
+          }
+        }
+        L.sim(1);
+      }
+    }
+  };
+  // distance (le long des voies) d'un train jusqu'à un aiguillage, s'il doit y passer
+  function distTo(t, sw) {
+    let e = t.e, d = e.L - t.s;
+    for (let g = 0; g < 6; g++) {
+      if (e.b === sw) return d;
+      const n = e.b; if (!NODES[n].sw) return null;
+      // le train ira vers la sortie qui mène à sa gare (si elle est bien réglée) : on suit celle-là
+      const outs = outOf(n), k = outs.findIndex((x) => leaves(x.b).includes(STATIONS[t.c].id));
+      e = outs[k >= 0 ? k : swState[n]]; d += e.L;
+    }
+    return null;
+  }
+})();
+</script>
+</body>
+</html>

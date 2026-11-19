@@ -284,7 +284,16 @@ export const TOKYO = {
     help: '↑ gaz, ↓ frein, ← → pour tourner. Anneaux jaunes : récupérer ; bleus : livrer. Les sens uniques sont sur la carte en haut à droite. C : vue du dessus.',
     component: lazy(() => import('./FrameGame'))
 };
-export const DAILY_GAMES = [VOL, FUJI, GOLF, BALLON, REGATE, TOKYO];
+export const TRAIN = {
+    id: 'train', title: 'Le Train de Noël', short: 'Train de Noël',
+    eyebrow: 'Jeu du jour · lun. 30 nov.',
+    from: new Date(2026, 10, 30, 9, 0),
+    icon: 'train', unit: 'pts', frame: '/jeux/train-de-noel.html',
+    pitch: 'Aiguillages : chaque train à la gare de sa couleur',
+    help: 'Clique (ou touche) une pastille dorée pour basculer l’aiguillage ; 1 à 5 au clavier. La flèche montre la sortie que prendra le prochain train.',
+    component: lazy(() => import('./FrameGame'))
+};
+export const DAILY_GAMES = [VOL, FUJI, GOLF, BALLON, REGATE, TOKYO, TRAIN];
 // le dernier jeu du jour sorti (null avant le premier)
 export function dailyGame(now = new Date()) {
     return DAILY_GAMES.filter((g) => now >= g.from).sort((a, b) => b.from - a.from)[0] || null;
