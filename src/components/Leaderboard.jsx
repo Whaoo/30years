@@ -9,7 +9,13 @@ import { chargerTurnstile, choisirPseudo, classement, config, envoyerScore, impo
 // en montrant la place que ce score obtiendrait. Le pseudo est ensuite gardé dans le navigateur.
 // Ouvert hors fin de partie, sans pseudo, avec un record déjà fait dans ce navigateur (`ancien`, ex. la cave finie avant
 // l'arrivée des classements) : on montre la place de ce record et on propose le pseudo ; le record part alors par l'import.
+// Podium (les 3 premiers en marches) et classement en direct : tant que le panneau est ouvert et l'onglet visible,
+// il se recharge toutes les 20 s ; les lignes qui changent clignotent. Après 5 min sans changement il s'arrête
+// (« en pause ») et repart dès qu'on revient sur l'onglet : peu d'appels à la base.
 const rangTxt = (r) => (r === 1 ? '1er' : `${r}e`);
+const DIRECT_MS = 20000;
+const DIRECT_CALMES = 15;
+const signature = (b) => (b ? b.top.map((l) => `${l.pseudo}:${l.score}`).join('|') + '#' + b.total : '');
 
 export default function Leaderboard({ game, fin, onClose }) {
     const [joueur, setJoueur] = useState(moi);
@@ -32,6 +38,10 @@ export default function Leaderboard({ game, fin, onClose }) {
     const [captcha, setCaptcha] = useState({ cle: null, jeton: null });
     const captchaBox = useRef(null);
     const vu = useRef(0);
+    const [direct, setDirect] = useState(false);
+    const [neufs, setNeufs] = useState(() => new Set()); // pseudos dont la ligne vient de changer
+    const boardRef = useRef(null);
+    boardRef.current = board;
 
     const fmt = (sc) => (game.format ? game.format(sc) : formatScore(game, sc));
     const meilleurQue = (a, b) => (game.lowerIsBetter ? a < b : a > b);
@@ -97,6 +107,39 @@ export default function Leaderboard({ game, fin, onClose }) {
 
     const changerPortee = (p) => { setPortee(p); setEtat('chargement'); charger(p, propose(p)); };
 
+    // classement en direct
+    const essaiDirect = propose(portee);
+    useEffect(() => {
+        if (etat !== 'pret') return undefined;
+        let calmes = 0, enCours = false, fini = false, efface = null;
+        const tick = async () => {
+            if (fini || enCours || document.hidden || calmes >= DIRECT_CALMES) return;
+            enCours = true;
+            try {
+                const b = await classement(game.id, portee, essaiDirect);
+                if (fini) return;
+                const avant = boardRef.current;
+                if (signature(b) !== signature(avant)) {
+                    calmes = 0;
+                    const old = new Map((avant?.top || []).map((l) => [l.pseudo, l.score]));
+                    setNeufs(new Set(b.top.filter((l) => old.get(l.pseudo) !== l.score).map((l) => l.pseudo)));
+                    clearTimeout(efface);
+                    efface = setTimeout(() => setNeufs(new Set()), 2600);
+                    setBoard(b);
+                    // ma place a pu bouger : le message « tu es 2e sur 5 » suit
+                    if (b.moi) setResultat((r) => (r ? (portee === 'jour' ? { ...r, jour: { rang: b.moi.rang, total: b.total } } : { ...r, rang: b.moi.rang, total: b.total }) : r));
+                } else calmes++;
+            } catch { /* réseau : on réessaiera au prochain tour */ }
+            finally { enCours = false; }
+            setDirect(!fini && calmes < DIRECT_CALMES && !document.hidden);
+        };
+        const id = setInterval(tick, DIRECT_MS);
+        const vis = () => { if (!document.hidden) { calmes = 0; tick(); } setDirect(!document.hidden); };
+        document.addEventListener('visibilitychange', vis);
+        setDirect(!document.hidden);
+        return () => { fini = true; clearInterval(id); clearTimeout(efface); document.removeEventListener('visibilitychange', vis); setDirect(false); };
+    }, [etat, game.id, portee, essaiDirect]);
+
     const valider = async (e) => {
         e.preventDefault();
         if (envoi) return;
@@ -136,6 +179,10 @@ export default function Leaderboard({ game, fin, onClose }) {
         else if (board.potentiel <= 10 || lignes.length < 10) lignes.push(ligne);
     }
     const moiHorsTop = board?.moi && !board.top.some((l) => l.moi) ? board.moi : null;
+    // podium : les 3 premières lignes, sauf quand « Toi ? » s'y glisse (la liste seule montre mieux la place qu'il prendrait)
+    const podium = lignes.length > 0 && !lignes.slice(0, 3).some((l) => l.fantome) ? lignes.slice(0, 3) : null;
+    const reste = podium ? lignes.slice(3) : lignes;
+    const classeLigne = (l) => `lb__li${l.moi ? ' is-moi' : ''}${l.fantome ? ' is-fantome' : ''}${l.rang <= 3 ? ` is-podium is-p${l.rang}` : ''}${neufs.has(l.pseudo) ? ' is-neuf' : ''}`;
 
     let titre = null;
     if (resultat) {
@@ -209,10 +256,25 @@ export default function Leaderboard({ game, fin, onClose }) {
             {etat === 'pret' && board && (
                 lignes.length === 0
                     ? <p className="lb__vide">{portee === 'jour' ? 'Personne n’a encore joué aujourd’hui.' : 'Personne au classement pour l’instant : à toi l’honneur !'}</p>
-                    : (
-                        <ol className="lb__list">
-                            {lignes.map((l, i) => (
-                                <li key={`${l.rang}-${l.pseudo}-${i}`} className={`lb__li${l.moi ? ' is-moi' : ''}${l.fantome ? ' is-fantome' : ''}${l.rang <= 3 ? ` is-podium is-p${l.rang}` : ''}`}>
+                    : (<>
+                        {podium && (
+                            <ol className="lb__podium" aria-label="Podium">
+                                {[0, 1, 2].map((k) => {
+                                    const l = podium[k];
+                                    if (!l) return <li key={k} className={`lb__marche is-vide is-m${k + 1}`} aria-hidden="true"><span className="lb__nom">libre</span><span className="lb__socle">{rangTxt(k + 1)}</span></li>;
+                                    return (
+                                        <li key={k} className={`lb__marche is-m${k + 1}${l.moi ? ' is-moi' : ''}${neufs.has(l.pseudo) ? ' is-neuf' : ''}`}>
+                                            <span className="lb__nom" title={l.pseudo}>{l.pseudo}</span>
+                                            <span className="lb__score">{fmt(l.score)}</span>
+                                            <span className="lb__socle">{rangTxt(l.rang)}</span>
+                                        </li>
+                                    );
+                                })}
+                            </ol>
+                        )}
+                        <ol className="lb__list" start={reste[0]?.rang}>
+                            {reste.map((l, i) => (
+                                <li key={`${l.rang}-${l.pseudo}-${i}`} className={classeLigne(l)}>
                                     <span className="lb__rang">{l.rang}</span>
                                     <span className="lb__nom">{l.pseudo}</span>
                                     <span className="lb__score">{fmt(l.score)}</span>
@@ -226,9 +288,14 @@ export default function Leaderboard({ game, fin, onClose }) {
                                 </li>
                             )}
                         </ol>
-                    )
+                    </>)
             )}
-            {board && board.total > 0 && <p className="lb__pied">{board.total} joueur{board.total > 1 ? 's' : ''}{portee === 'jour' ? ' aujourd’hui' : ''}{joueur ? ` · tu joues en tant que ${joueur.pseudo}` : ''}</p>}
+            {board && board.total > 0 && (
+                <p className="lb__pied">
+                    <span className={`lb__direct${direct ? ' is-on' : ''}`} title={direct ? 'Mis à jour toutes les 20 secondes' : 'Mise à jour en pause : reviens sur l’onglet pour la relancer'}>{direct ? 'En direct' : 'En pause'}</span>
+                    {board.total} joueur{board.total > 1 ? 's' : ''}{portee === 'jour' ? ' aujourd’hui' : ''}{joueur ? ` · tu joues en tant que ${joueur.pseudo}` : ''}
+                </p>
+            )}
         </aside>
     );
 }

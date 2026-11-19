@@ -304,6 +304,24 @@ html, body, #root { height: 100%; }
 .tile--game:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 .tile__value--game { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: clamp(13px, min(2.6vh, 1.5vw), 26px); letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; }
 .tile__value--game svg { flex: none; }
+.tile__eyebrow { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 800 11px 'DM Sans', sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.tile--game .tile__label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Fenêtre « Tous les jeux » */
+.glist { display: flex; flex-direction: column; gap: 10px; width: min(480px, 100%); max-height: min(720px, 100%); min-height: 0; padding: 14px; border-radius: 20px; background: rgba(14, 18, 44, 0.98); border: 1px solid rgba(255, 255, 255, 0.14); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); color: #fff; animation: fadeIn 0.2s ease-out; }
+.glist__head { display: flex; align-items: center; gap: 8px; }
+.glist__title { margin: 0; flex: 1 1 auto; display: flex; align-items: center; gap: 8px; font: 800 18px 'Bricolage Grotesque', 'DM Sans', sans-serif; }
+.glist__list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; min-height: 0; }
+.glist__item { width: 100%; display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 10px; padding: 10px 12px; border: 0; border-radius: 14px; background: rgba(255, 255, 255, 0.07); color: #fff; text-align: left; font: inherit; cursor: pointer; transition: background 0.15s; }
+.glist__item:hover { background: rgba(255, 255, 255, 0.15); }
+.glist__item:focus-visible, .glist__boards:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.glist__icon { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: rgba(255, 255, 255, 0.1); color: var(--accent); }
+.glist__txt { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.glist__txt b { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 15px; }
+.glist__txt b em { font-style: normal; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; background: var(--accent); color: #14172b; }
+.glist__txt > span { font-size: 13px; color: rgba(255, 255, 255, 0.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.glist__rec { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 13px; color: rgba(255, 255, 255, 0.8); white-space: nowrap; }
+.glist__boards { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; border: 0; background: var(--accent); color: #14172b; font: 800 13px 'DM Sans', sans-serif; cursor: pointer; }
+.glist__pied { margin: 0; font-size: 12px; color: rgba(255, 255, 255, 0.65); }
 .progress { height: 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.16); overflow: hidden; }
 .progress__bar { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #9fd8ff, #ffd36e); }
 
@@ -548,6 +566,29 @@ html, body, #root { height: 100%; }
 .lb__li.is-p1 .lb__rang { color: #ffd23f; } .lb__li.is-p2 .lb__rang { color: #dfe6f3; } .lb__li.is-p3 .lb__rang { color: #f0a868; }
 .lb__nom { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
 .lb__score { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+/* Podium : 2e, 1er, 3e en marches (l'ordre du HTML reste 1-2-3 pour les lecteurs d'écran) */
+.lb__podium { margin: 0; padding: 4px 0 0; list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 6px; }
+.lb__marche { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+.lb__marche.is-m1 { order: 2; } .lb__marche.is-m2 { order: 1; } .lb__marche.is-m3 { order: 3; }
+.lb__marche .lb__nom { max-width: 100%; font-size: 13px; }
+.lb__marche .lb__score { font-size: 12px; color: rgba(255, 255, 255, 0.85); }
+.lb__socle { align-self: stretch; display: grid; place-items: center; margin-top: 4px; border-radius: 10px 10px 4px 4px; font: 800 15px 'Bricolage Grotesque', 'DM Sans', sans-serif; color: #14172b; }
+.is-m1 .lb__socle { height: 54px; background: linear-gradient(180deg, #ffe27a, #f2b92c); font-size: 18px; }
+.is-m2 .lb__socle { height: 40px; background: linear-gradient(180deg, #f1f4fa, #c6cfdf); }
+.is-m3 .lb__socle { height: 30px; background: linear-gradient(180deg, #f6c08f, #d98b4e); }
+.lb__marche.is-vide .lb__nom { color: rgba(255, 255, 255, 0.45); font-weight: 600; }
+.lb__marche.is-vide .lb__socle { opacity: 0.35; }
+.lb__marche.is-moi .lb__nom { color: var(--accent); }
+.lb__marche.is-moi .lb__socle { box-shadow: 0 0 0 2px #fff; }
+/* En direct : une pastille qui respire, et les lignes qui viennent de changer s'allument un instant */
+.lb__direct { display: inline-flex; align-items: center; gap: 5px; margin-right: 8px; font-weight: 700; color: rgba(255, 255, 255, 0.55); }
+.lb__direct::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.lb__direct.is-on { color: #5be38f; }
+.lb__direct.is-on::before { animation: lbPouls 1.6s ease-in-out infinite; }
+@keyframes lbPouls { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.7); } }
+.lb__li.is-neuf, .lb__marche.is-neuf .lb__socle { animation: lbNeuf 2.4s ease-out; }
+@keyframes lbNeuf { 0%, 30% { box-shadow: 0 0 0 2px #5be38f, 0 0 18px rgba(91, 227, 143, 0.6); } 100% { box-shadow: 0 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { .lb__direct.is-on::before, .lb__li.is-neuf, .lb__marche.is-neuf .lb__socle { animation: none; } }
 @media (max-width: 760px) {
   .game-body.has-board .lb { position: absolute; left: 0; right: 0; bottom: 0; max-height: 72%; z-index: 2; background: rgba(14, 18, 44, 0.98); box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.4); }
   .game-board-btn { padding: 8px 10px; font-size: 13px; }

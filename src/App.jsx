@@ -5,9 +5,10 @@ import Header from './components/Header';
 import Countdown from './components/Countdown';
 import UpcomingList from './components/UpcomingList';
 import GameTiles from './components/GameTiles';
+import GamesList from './components/GamesList';
 import GamesTile from './components/GamesTile';
 import GameModal from './components/GameModal';
-import { ADVENTURE, ALL_GAMES, CANDLES, CULTURE, FREE_GAMES, GAMES, GEO, QUIZ, getGame, isUnlocked } from './games';
+import { ADVENTURE, ALL_GAMES, CANDLES, CULTURE, FREE_GAMES, GAMES, GEO, QUIZ, dailyGame, getGame, isUnlocked } from './games';
 import { clearBests, loadBests, saveScore } from './games/scores';
 import AdventCalendar from './components/AdventCalendar';
 import Gags from './components/Gags';
@@ -87,6 +88,7 @@ function App() {
     const [stage, setStage] = useState(0); // passage : 0 rien, 1 ça gratte, 2 ça craque
     const [newsHidden, setNewsHidden] = useState(false);
     const [gamesNewsHidden, setGamesNewsHidden] = useState(false);
+    const [gamesList, setGamesList] = useState(false); // fenêtre « Tous les jeux »
     // Classements en ligne : disponibles si l'API répond ; la cave a son classement dans une fenêtre à part
     const [enLigne, setEnLigne] = useState(false);
     const [board, setBoard] = useState(null); // fenêtre des classements : { jeu, fin }
@@ -182,16 +184,22 @@ function App() {
 
     const enversOpen = isEnversOpen(now);
     // Les classements de tous les jeux ouverts (bouton « Classements »), la cave en premier
+    // Jeux libres déjà sortis (les jeux du jour s'ouvrent à leur date) et le dernier jeu du jour
+    const freeGames = FREE_GAMES.filter((g) => isUnlocked(g, advent, now));
+    const today = dailyGame(now);
     const boardGames = enLigne
         ? [
             ENVERS_BOARD,
-            CULTURE, GEO, QUIZ, CANDLES,
+            ...(today ? [today] : []),
+            ...freeGames.filter((g) => g !== today), QUIZ, CANDLES,
             ...[ADVENTURE, ...GAMES].filter((g) => isUnlocked(g, advent, now))
         ]
         : [];
-    const openBoards = boardGames.length ? () => setBoard({ jeu: boardGames[0].id, fin: null }) : null;
+    const openBoards = boardGames.length ? () => { setGamesList(false); setBoard({ jeu: (today || boardGames[0]).id, fin: null }); } : null;
     // Deux annonces successives : la cave jusqu'au 18/11 à 9 h, puis les jeux libres (même fermé, le bandeau des jeux ne rend pas la place à la cave)
-    const gamesNews = gamesNewsActive(now, isToday) && !gamesNewsHidden;
+    const newsGames = today ? [today] : [CULTURE, GEO];
+    const newsId = today ? today.id : 'quiz-geo';
+    const gamesNews = gamesNewsActive(now, isToday, newsId) && !gamesNewsHidden;
     const news = announceActive(now, isToday) && !newsHidden && !gamesNewsWindow(now, isToday);
 
     // Le passage vers l'Envers : trois coups vers le bas (molette ou glissé), sans pause de plus de 4 secondes
@@ -315,7 +323,9 @@ function App() {
         const g = getGame(id);
         if (!g) return;
         if (!isUnlocked(g, advent, now, { isBirthday: isToday })) {
-            flash(g.birthdayOnly ? 'Ce jeu n’apparaît que le jour d’un anniversaire.' : `${g.title} : disponible le ${g.door} décembre.`);
+            flash(g.birthdayOnly ? 'Ce jeu n’apparaît que le jour d’un anniversaire.'
+                : g.from ? `${g.title} : disponible ${g.from.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} à 9 h.`
+                : `${g.title} : disponible le ${g.door} décembre.`);
             return;
         }
         setGameId(id);
@@ -365,7 +375,7 @@ function App() {
                     onAvent={onAvent}
                     onLogo={onLogo}
                     onAdventure={isUnlocked(ADVENTURE, advent, now) ? () => openGame(ADVENTURE.id) : null}
-                    games={[QUIZ, ...FREE_GAMES].map((g) => ({ id: g.id, title: g.title, icon: g.icon, onPlay: () => openGame(g.id) }))
+                    games={[...(today ? [today] : []), QUIZ, ...freeGames.filter((g) => g !== today)].map((g) => ({ id: g.id, title: g.title, icon: g.icon, onPlay: () => openGame(g.id) }))
                         .concat(openBoards ? [{ id: 'classements', title: 'Classements', icon: 'trophy', onPlay: openBoards }] : [])}
                     onBoards={openBoards}
                 />
@@ -384,8 +394,8 @@ function App() {
                             onQuiz={isAvent ? null : () => openGame(QUIZ.id)}
                         />
                         {isAvent
-                            ? <GamesTile openCount={advent.openCount} bests={bests} onPlay={openGame} />
-                            : <GameTiles games={FREE_GAMES} bests={bests} onPlay={openGame} />}
+                            ? <GamesTile openCount={advent.openCount} now={now} bests={bests} onPlay={openGame} />
+                            : <GameTiles today={today} games={freeGames} bests={bests} onPlay={openGame} onAll={() => setGamesList(true)} />}
                     </aside>
                 </main>
 
@@ -395,17 +405,22 @@ function App() {
             </div>
 
             {stage > 0 && !envers && <Crack stage={stage} />}
-            {gamesNews && !gameId && !envers && !board && (
+            {gamesList && !gameId && !envers && !board && (
+                <GamesList games={freeGames} today={today} bests={bests} onPlay={(id) => { setGamesList(false); openGame(id); }} onBoards={openBoards} onClose={() => setGamesList(false)} />
+            )}
+            {gamesNews && !gameId && !envers && !board && !gamesList && (
                 <GamesNews
-                    games={FREE_GAMES}
+                    games={newsGames}
+                    daily={!!today}
+                    onAll={() => { dismissGamesNews(newsId); setGamesNewsHidden(true); setGamesList(true); }}
                     onPlay={(id) => {
-                        dismissGamesNews();
+                        dismissGamesNews(newsId);
                         setGamesNewsHidden(true);
                         openGame(id);
                     }}
                     onBoards={openBoards}
                     onClose={() => {
-                        dismissGamesNews();
+                        dismissGamesNews(newsId);
                         setGamesNewsHidden(true);
                     }}
                 />

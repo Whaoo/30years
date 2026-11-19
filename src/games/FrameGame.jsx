@@ -19,5 +19,5 @@ export default function FrameGame({ src, title, gameId, onScore }) {
     }, [gameId, onScore]);
 
     // le cadre prend le focus pour que le clavier serve tout de suite au jeu
-    return <iframe ref={frame} className="frame-game" src={src} title={title} onLoad={() => frame.current?.focus()} />;
+    return <iframe ref={frame} className="frame-game" src={src} title={title} allow="fullscreen" allowFullScreen onLoad={() => frame.current?.focus()} />;
 }

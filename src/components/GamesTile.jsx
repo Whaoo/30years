@@ -1,8 +1,8 @@
 import Icon from './Icons';
 import { FREE_GAMES, GAMES, QUIZ, formatScore } from '../games';
 
-// Tuile « Mini-jeux » de la vue Avent : un bouton par jeu, verrouillé jusqu'à sa porte (les quiz et Où est-ce ? sont toujours ouverts)
-export default function GamesTile({ openCount, bests, onPlay }) {
+// Tuile « Mini-jeux » de la vue Avent : un bouton par jeu, verrouillé jusqu'à sa porte (les quiz, Où est-ce ? et les jeux du jour de novembre sont ouverts)
+export default function GamesTile({ openCount, now = new Date(), bests, onPlay }) {
     return (
         <div className="tile glass games-tile">
             <div className="games-tile__head">
@@ -11,7 +11,7 @@ export default function GamesTile({ openCount, bests, onPlay }) {
             </div>
             <div className="games-tile__grid">
                 {[...GAMES, QUIZ, ...FREE_GAMES].map((g) => {
-                    const open = g.always || openCount >= g.door;
+                    const open = g.always || (g.from ? now >= g.from : openCount >= g.door);
                     return (
                         <button
                             key={g.id}

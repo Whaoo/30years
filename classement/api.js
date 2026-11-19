@@ -17,7 +17,9 @@ const JEUX = {
     snowball: 20000, chorale: 500, fishing: 20000, fort: 50000, flappy: 5000, traineau: 50000, curling: 20000,
     guirlande: 50000, runner: 100000, collegue: 20000, memory: 20000, relais: 100000, slide: 50000, tower: 50000,
     sled: 100000, ice: 100000, monts: 100000, reveillon: 100000, chrono: 60000, aventure: 200000,
-    quiz: 1500, bougies: 20000, culture: 1500, geo: 10000
+    quiz: 1500, bougies: 20000, culture: 1500, geo: 10000,
+    // jeux du jour (un par jour ouvré du 20 au 30 novembre)
+    vol: 20000
 };
 // Jeux où le plus petit score gagne (un temps, en secondes), avec le temps minimal plausible
 // La cave (L'Envers) : record = temps total pour éclairer la cave et retrouver le message.

@@ -219,7 +219,28 @@ export const GEO = {
     component: lazy(() => import('./FrameGame'))
 };
 
-export const FREE_GAMES = [CULTURE, GEO];
+// Les jeux du jour de fin novembre : un par jour ouvré, chacun s'ouvre à 9 h le jour dit (`from`).
+// Pages autonomes de public/jeux/ (rendu « pixel » en 3D, three.js dans public/jeux/lib/), score renvoyé par postMessage.
+export const VOL = {
+    id: 'vol',
+    title: 'Vol du soir',
+    short: 'Vol du soir',
+    eyebrow: 'Jeu du jour · ven. 20 nov.',
+    from: new Date(2026, 10, 20, 9, 0),
+    icon: 'plane',
+    unit: 'pts',
+    frame: '/jeux/vol-du-soir.html',
+    pitch: 'Jet de Noël : couronnes et cadeaux',
+    help: 'Clic maintenu ou Maj : turbo. F ou clic droit : larguer un cadeau. 3 minutes : enchaîne les couronnes, ne livre que les chalets dorés sur ta route.',
+    component: lazy(() => import('./FrameGame'))
+};
+export const DAILY_GAMES = [VOL];
+// le dernier jeu du jour sorti (null avant le premier)
+export function dailyGame(now = new Date()) {
+    return DAILY_GAMES.filter((g) => now >= g.from).sort((a, b) => b.from - a.from)[0] || null;
+}
+
+export const FREE_GAMES = [CULTURE, GEO, ...DAILY_GAMES];
 
 export const ALL_GAMES = [...GAMES, QUIZ, ...FREE_GAMES, CANDLES, ADVENTURE];
 

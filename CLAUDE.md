@@ -37,12 +37,20 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
   - `ADVENTURE` (« L'aventure de Flocon », `src/games/adventure/`) apparaît le 10/12/2026 (porte 10 + bouton de l'en-tête).
   - `QUIZ` (« Qui fête quand ? », `always`) : ouvert toute l'année depuis la liste des anniversaires.
   - `CANDLES` (« Souffle les bougies », `birthdayOnly`) : bouton du compte à rebours, uniquement le jour J.
-  - `FREE_GAMES` : jeux libres sans lien avec les pingouins ni le calendrier, ouverts toute l'année (deux tuiles cliquables sous la liste « Ensuite », `GameTiles.jsx`,
-    menu « Jeux » de l'en-tête sur téléphone où la colonne de droite est masquée, tuile des mini-jeux en décembre ;
-    annonce du 18/11 à 9 h au 25/11 : `GamesNews.jsx` + `src/utils/gamesNews.js`, qui remplace le bandeau de la cave) : `CULTURE` (« Le Grand Quiz », 9 thèmes + « Le Juste Titre ») et `GEO` (« Où est-ce ? », placer
-    villes et villages sur la carte de France). Ce sont des pages autonomes dans `public/jeux/` affichées dans un cadre (`FrameGame.jsx`) ;
+  - `FREE_GAMES` : jeux libres sans lien avec les pingouins ni le calendrier : `CULTURE` (« Le Grand Quiz », 9 thèmes + « Le Juste Titre »),
+    `GEO` (« Où est-ce ? », placer villes et villages sur la carte de France) et les jeux du jour (`DAILY_GAMES`).
+    Ce sont des pages autonomes dans `public/jeux/` affichées dans un cadre (`FrameGame.jsx`, plein écran autorisé) ;
     elles renvoient leur score par `postMessage` (`{ type: '30years:score', game, score }`). Le record du site ne compte que les parties
     solo de 10 questions de culture G / de 10 lieux. Contours de la carte : IGN Admin Express via france-geojson (Licence ouverte).
+  - Jeux du jour (`DAILY_GAMES`, un par jour ouvré du 20 au 30/11/2026) : chacun a une date `from` (9 h, heure du navigateur) et s'ouvre seul,
+    sans mise en ligne ce jour-là (`isUnlocked`) ; `dailyGame(now)` = le dernier sorti. Ajouter un jeu : sa page dans `public/jeux/`,
+    son entrée dans `src/games/index.js` (avec `from`) et son score maximal dans `JEUX` (`classement/api.js`).
+    `VOL` (« Vol du soir », 20/11) : `public/jeux/vol-du-soir.html`, jet de Noël en 3D pixel (three.js r149 servi par le site :
+    `public/jeux/lib/three.min.js`), mission de 3 min, console `window.vol` (`startMission()`, `bot(n)`, `endMission()`).
+  - Où on les trouve : deux tuiles sous la liste « Ensuite » (`GameTiles.jsx` : le jeu du jour + « Tous les jeux » qui ouvre `GamesList.jsx`),
+    menu « Jeux » de l'en-tête sur téléphone (la colonne de droite y est masquée), tuile des mini-jeux en décembre ;
+    bandeau du 18/11 à 9 h au 30/11 (`GamesNews.jsx` + `src/utils/gamesNews.js`, qui remplace le bandeau de la cave) : Le Grand Quiz et Où est-ce ?,
+    puis le jeu du jour ; fermé ou joué, il ne revient qu'avec le jeu suivant (`30years:jeux-news` = `vu:<id>`).
   - Les adresses `/aventure`, `/quiz` et `/bougies` ouvrent ces jeux à tout moment pour tester ;
     `/culture` et `/ou-est-ce` ouvrent les jeux libres (adresses à partager).
 - `src/games/GameCanvas.jsx` : moteur commun des jeux canvas (boucle, mise à l'échelle, clavier, souris, tactile).
@@ -69,10 +77,12 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
   (panneau « Classement » de la fenêtre de jeu). En fin de partie (score > 0), le panneau s'ouvre : sans pseudo, il le demande une fois
   en montrant la place qu'aurait ce score ; ensuite chaque score part tout seul. Onglets « Toujours » et « Aujourd'hui »
   (jeux de la quête : premier essai du jour, comme le score officiel). Si l'API ne répond pas (`npm run dev`, base absente), rien ne s'affiche.
+  Podium (les 3 premiers en marches) puis la suite de la liste ; classement en direct : rechargé toutes les 20 s tant que le panneau est ouvert
+  et l'onglet visible, lignes qui changent en surbrillance, arrêt après 5 min sans changement (repart au retour sur l'onglet).
 - La cave a son classement (`ENVERS_BOARD` dans `src/envers/config.js`, le meilleur temps gagne, `CHRONOS` dans `classement/api.js`) :
   fenêtre `BoardModal.jsx` ouverte à la remontée.
 - Bouton « Classements » de l'en-tête (ordinateur ; menu « Jeux » sur téléphone ; bouton du bandeau des jeux tant qu'il est affiché, car il le recouvre) :
-  `BoardModal.jsx` avec une pastille par jeu (`boardGames` dans `App.jsx` : la cave, les jeux libres, le quiz, les bougies,
+  `BoardModal.jsx` avec une pastille par jeu (`boardGames` dans `App.jsx` : la cave, le jeu du jour (ouvert par défaut), les autres jeux libres sortis, le quiz, les bougies,
   puis les jeux de décembre déjà ouverts). Sans pseudo, un record déjà fait dans ce navigateur est montré en « Toi ? » avec sa place,
   et choisir un pseudo l'envoie (import).
 - Anciens records : `importerRecords()` envoie les `30years:best:<jeu>` du navigateur (`POST /api/import`, classement « Toujours » seulement,

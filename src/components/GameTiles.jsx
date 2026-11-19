@@ -1,22 +1,33 @@
 import Icon from './Icons';
 import { formatScore } from '../games';
 
-// Les deux jeux de toute l'année, à la place des chiffres sous la liste « Ensuite » (grand écran)
-export default function GameTiles({ games, bests, onPlay }) {
+// Sous la liste « Ensuite » (grand écran) : le jeu du jour, et la porte vers tous les jeux libres
+export default function GameTiles({ today, games, bests, onPlay, onAll }) {
+    const first = today || games[0];
+    const autres = games.filter((g) => g !== first).map((g) => g.short || g.title);
     return (
         <div className="tiles">
-            {games.map((g) => (
-                <button key={g.id} type="button" className="tile glass tile--game" onClick={() => onPlay(g.id)} aria-label={`Jouer à ${g.title}`}>
+            {first && (
+                <button type="button" className="tile glass tile--game" onClick={() => onPlay(first.id)} aria-label={`Jouer à ${first.title}`}>
+                    <span className="tile__eyebrow">{today ? 'Jeu du jour' : 'À jouer'}</span>
                     <span className="tile__value tile__value--game">
-                        <Icon name={g.icon} size={22} />
-                        {g.title}
+                        <Icon name={first.icon} size={22} />
+                        {first.title}
                     </span>
                     <span className="tile__label">
-                        {g.pitch}
-                        {bests[g.id] != null && <> · record {formatScore(g, bests[g.id])}</>}
+                        {first.pitch}
+                        {bests[first.id] != null && <> · record {formatScore(first, bests[first.id])}</>}
                     </span>
                 </button>
-            ))}
+            )}
+            <button type="button" className="tile glass tile--game" onClick={onAll} aria-label="Tous les jeux">
+                <span className="tile__eyebrow">{games.length} jeux à jouer</span>
+                <span className="tile__value tile__value--game">
+                    <Icon name="grid" size={22} />
+                    Tous les jeux
+                </span>
+                <span className="tile__label">{autres.join(', ')}</span>
+            </button>
         </div>
     );
 }
