@@ -163,6 +163,41 @@ const PATHS = {
             <rect x="14" y="14" width="7" height="7" rx="1" />
         </>
     ),
+    flag: (
+        <>
+            <path d="M6 22V3" />
+            <path d="M6 3l11 4-11 4" />
+            <ellipse cx="13" cy="20" rx="5" ry="1.6" />
+        </>
+    ),
+    balloon: (
+        <>
+            <path d="M12 2a7 7 0 0 0-7 7c0 3.5 3 6.5 5 8h4c2-1.5 5-4.5 5-8a7 7 0 0 0-7-7Z" />
+            <path d="M10 17l.5 3h3l.5-3M12 2c-2 2-2.5 4.5-2.5 7s.5 5.5 2.5 8c2-2.5 2.5-5.5 2.5-8S14 4 12 2Z" />
+        </>
+    ),
+    sail: (
+        <>
+            <path d="M12 3v14M12 3l7 12h-7M12 6 6 15h6" />
+            <path d="M3 18h18l-2 3H5Z" />
+        </>
+    ),
+    scooter: (
+        <>
+            <circle cx="6" cy="17" r="2.5" />
+            <circle cx="18" cy="17" r="2.5" />
+            <path d="M8.5 17h6l3-7h-3M15 6h3l1 4M4 13h6l2 4" />
+            <rect x="4" y="7" width="5" height="5" rx="1" />
+        </>
+    ),
+    train: (
+        <>
+            <rect x="5" y="3" width="14" height="13" rx="3" />
+            <path d="M5 10h14M9 21l-2-3M15 21l2-3" />
+            <circle cx="9" cy="13" r="0.8" />
+            <circle cx="15" cy="13" r="0.8" />
+        </>
+    ),
     question: (
         <>
             <circle cx="12" cy="12" r="9" />

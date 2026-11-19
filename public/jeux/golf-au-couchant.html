@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Golf au couchant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Mono:wght@500;700&display=swap">
+<style>
+/* Mini-golf de 6 trous sur une falaise, au soleil couchant : on vise en tirant la balle vers soi (comme une fronde),
+   les courbes de niveau du green montrent les pentes. Styles communs dans lib/pixel.js. */
+:root { --accent: #f08a3c; --accent-ink: #14141c; }
+#stage { background: #e8a890; cursor: crosshair; }
+.tag.tc .p { padding: 1px 5px; background: var(--accent); color: var(--ink); }
+#power { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(260px, 60%); height: 10px; background: rgba(18, 20, 28, 0.7); box-shadow: 0 0 0 1px #000; pointer-events: none; }
+#power i { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, #9fd07a, #f6b84a 60%, #e8583a); }
+#power span { position: absolute; left: 0; right: 0; top: -14px; text-align: center; font: 400 8px/1 var(--pixel); color: var(--paper); text-transform: uppercase; }
+.menu #power { display: none; }
+.is-touch #power { bottom: 86px; }
+#cardHoles { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+#cardHoles li { display: grid; gap: 3px; justify-items: center; padding: 6px 2px; border: 1px solid var(--line); font: 400 8px/1 var(--pixel); color: var(--muted); text-transform: uppercase; }
+#cardHoles li b { font: 700 16px/1 var(--pixel); color: var(--paper); }
+</style>
+</head>
+<body>
+<div id="app" class="menu">
+  <div id="stage">
+    <canvas id="gl"></canvas>
+    <canvas id="hud"></canvas>
+    <button class="tag tl" id="camTag" type="button" title="Changer de vue (C)"><span class="sq"></span><span id="camLabel">01 / Balle</span></button>
+    <div class="tag tc" id="hTag" hidden><span id="hHole">Trou 1/6</span><span class="w" id="hPar">Par 2</span><span class="p" id="hStroke">Coup 1</span></div>
+    <div class="tag tr" id="sTag" hidden>0 PTS</div>
+    <div id="feed" aria-live="polite"></div>
+    <div id="power" hidden><span id="powerTxt">Puissance</span><i id="powerBar"></i></div>
+    <div class="touch"><div></div><div><button class="tb" id="tView" type="button">Vue</button></div></div>
+    <div class="over" id="intro">
+      <div class="card card--wide">
+        <div class="col">
+          <p class="eyebrow">Réflexion · jeu du jour</p>
+          <h1>Golf au <span>couchant</span></h1>
+          <p>Six trous de mini-golf posés sur une falaise, face à la mer, pendant que le soleil se couche. Pas de chrono : prends le temps de lire les pentes, de jouer les bandes, et de doser.</p>
+          <ul id="cardHoles"></ul>
+          <div class="actions">
+            <button class="go" id="goPlay" type="button">Jouer · 6 trous</button>
+          </div>
+          <p class="rec" id="rec"></p>
+        </div>
+        <div class="col">
+          <p class="eyebrow">Comment marquer</p>
+          <ul class="goals" id="goals"></ul>
+          <p class="tip">Avant de jouer, passe en vue du dessus (C) : les lignes claires du green sont des courbes de niveau. Serrées, la pente est forte ; la balle tourne toujours vers le bas.</p>
+        </div>
+        <div class="keys" id="keys"></div>
+      </div>
+    </div>
+    <div class="over" id="results" hidden>
+      <div class="card">
+        <p class="eyebrow" id="resEyebrow">Carte de score</p>
+        <h2 id="resTitle">Parcours terminé</h2>
+        <dl class="score" id="resRows"></dl>
+        <div class="total"><div><p class="rec" id="resSub">Total</p><strong id="resTotal">0</strong></div><div class="mention" id="resMention">B</div></div>
+        <p class="rec" id="resRec"></p>
+        <div class="actions"><button class="go" id="again" type="button">Rejouer</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="bar">
+    <span class="logo"><svg width="12" height="10" viewBox="0 0 12 10" aria-hidden="true"><path fill="#f08a3c" d="M2 0h1v10H2zM3 0l6 2-6 2z"/><path fill="#e9e4ee" d="M8 8h3v2H8z"/></svg>Golf au couchant</span>
+    <span class="hints"><span><b>Tirer</b>Viser et doser</span><span><b>&larr; &rarr;</b>Viser</span><span><b>&uarr; &darr;</b>Doser</span><span><b>Espace</b>Jouer</span><span><b>C</b>Vue du dessus</span></span>
+    <span class="grow"></span>
+    <button type="button" id="sndBtn"><svg width="9" height="8" viewBox="0 0 9 8" aria-hidden="true"><path fill="currentColor" d="M0 2h2l3-2v8L2 6H0z"/></svg><span id="sndLabel">Son coupé</span></button>
+    <button type="button" id="fsBtn"><svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true"><path fill="none" stroke="currentColor" d="M.5 3V.5H3M5 .5h2.5V3M7.5 5v2.5H5M3 7.5H.5V5"/></svg><span id="fsLabel">Plein écran</span></button>
+  </div>
+</div>
+
+<script src="lib/three.min.js"></script>
+<script src="lib/pixel.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  if (!window.THREE || !window.Pixel) { document.querySelector('.card p:not(.eyebrow)').textContent = 'La bibliothèque 3D n’a pas pu se charger. Recharge la page.'; return; }
+  const { TAU, clamp, lerp, smooth, angDiff, hash2, fbm, store, report, isTouch, GEO, mtx, fmtInt } = Pixel;
+  const stage = $('stage');
+  const feed = Pixel.feeder($('feed'));
+  const snd = Pixel.sound();
+  Pixel.bar({ sound: snd, feed });
+
+  // ================================================================ les six trous (mètres ; le départ en 0,0, on joue vers -z)
+  // path : axe du couloir, w : largeur ; tilt : pente générale (m par m, vers +x et +z) ; bumps : [x, z, rayon, hauteur]
+  // rocks : obstacles ronds [x, z, rayon] ; sand : bunkers [x, z, rayon] ; water : mares [x, z, rayon]
+  const HOLES = [
+    { name: 'Premier coup', par: 2, w: 4.6, path: [[0, 0], [0, -22]], cup: [0.4, -19.5], tilt: [0.022, 0], bumps: [[-1.2, -12, 2.4, 0.18]], rocks: [], sand: [], water: [] },
+    { name: 'Le virage', par: 3, w: 4.2, path: [[0, 0], [0, -16], [11, -25], [23, -25]], cup: [20.5, -25.4], tilt: [0, 0.012], bumps: [[9, -18, 3, 0.35]], rocks: [[4.2, -19.6, 1.1]], sand: [[16, -27, 1.4]], water: [] },
+    { name: 'La bosse', par: 3, w: 5.2, path: [[0, 0], [0, -28]], cup: [-0.8, -24.5], tilt: [0, 0], bumps: [[0, -13, 4.2, 0.95]], rocks: [], sand: [[1.6, -27.4, 1.3]], water: [[2.3, -18.5, 1.0]] },
+    { name: 'Le lac', par: 3, w: 5.4, path: [[0, 0], [-6, -12], [0, -24], [8, -31]], cup: [7, -30.4], tilt: [-0.01, 0], bumps: [], rocks: [[-4.6, -21, 0.8]], sand: [[5.2, -27.6, 1.5]], water: [[-2.2, -16.5, 2.1]] },
+    { name: 'Le volcan', par: 3, w: 7, path: [[0, 0], [0, -24]], cup: [0, -17.5], tilt: [0, 0.008], bumps: [[0, -17.5, 3.6, 1.2], [0, -17.5, 1.25, -0.42]], rocks: [[-2.4, -9, 0.7], [2.4, -9, 0.7]], sand: [[-2.4, -22.3, 1.3], [2.4, -22.3, 1.3]], water: [] },
+    { name: 'La falaise', par: 4, w: 4.8, path: [[0, 0], [0, -14], [-12, -22], [-12, -36], [-1, -44]], cup: [-2.8, -42.8], tilt: [0.018, 0], bumps: [[-6, -18, 2.8, 0.45]], rocks: [[-9.4, -29, 0.75], [-14.4, -32.5, 0.75]], sand: [[1.2, -11.5, 1.3]], water: [[-15.1, -26.2, 1.5]] }
+  ];
+  const BALL_R = 0.14, CUP_R = 0.3, G = 6.5, MU = 1.15, MU_SAND = 3.6, WALL_E = 0.62, VMAX = 11.5;
+  let H = null, hi = 0;
+  function prepHole(i) {
+    const d = HOLES[i];
+    const segs = [];
+    for (let k = 0; k < d.path.length - 1; k++) {
+      const [ax, az] = d.path[k], [bx, bz] = d.path[k + 1], L = Math.hypot(bx - ax, bz - az);
+      segs.push({ ax, az, bx, bz, L, tx: (bx - ax) / L, tz: (bz - az) / L });
+    }
+    let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
+    for (const [x, z] of d.path) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
+    const m = d.w / 2 + 1.2;
+    return { d, segs, hw: d.w / 2, bounds: { x0: x0 - m, x1: x1 + m, z0: z0 - m, z1: z1 + m }, cup: { x: d.cup[0], z: d.cup[1] }, tee: { x: d.path[0][0], z: d.path[0][1] - 1.2 } };
+  }
+  // distance signée au bord du couloir (négative dedans)
+  function sd(x, z, h) {
+    h = h || H; let best = 1e9;
+    for (const s of h.segs) {
+      const px = x - s.ax, pz = z - s.az, t = clamp(px * s.tx + pz * s.tz, 0, s.L);
+      const dx = px - s.tx * t, dz = pz - s.tz * t, dd = dx * dx + dz * dz;
+      if (dd < best) best = dd;
+    }
+    return Math.sqrt(best) - h.hw;
+  }
+  function sdGrad(x, z, h) { const e = 0.02; const gx = sd(x + e, z, h) - sd(x - e, z, h), gz = sd(x, z + e, h) - sd(x, z - e, h); const l = Math.hypot(gx, gz) || 1; return [gx / l, gz / l]; }
+  function height(x, z, h) {
+    h = h || H; const d = h.d; let y = d.tilt[0] * x + d.tilt[1] * z;
+    for (const [bx, bz, r, a] of d.bumps) { const q = ((x - bx) ** 2 + (z - bz) ** 2) / (r * r); y += a * Math.exp(-q); }
+    return y;
+  }
+  function slope(x, z, h) {
+    h = h || H; const d = h.d; let gx = d.tilt[0], gz = d.tilt[1];
+    for (const [bx, bz, r, a] of d.bumps) { const q = ((x - bx) ** 2 + (z - bz) ** 2) / (r * r), e = a * Math.exp(-q) * -2 / (r * r); gx += e * (x - bx); gz += e * (z - bz); }
+    return [gx, gz];
+  }
+  const inCircles = (list, x, z, pad) => list.some(([cx, cz, r]) => (x - cx) ** 2 + (z - cz) ** 2 < (r + (pad || 0)) ** 2);
+
+  // ================================================================ physique de la balle (pas de 1/120 s, sans hasard)
+  // b = { x, z, vx, vz } ; renvoie un événement : 'rest' | 'holed' | 'water' | 'wall' (rebond) | null
+  function physStep(b, dt, h, ev) {
+    h = h || H;
+    const [gx, gz] = slope(b.x, b.z, h);
+    let ax = -G * gx, az = -G * gz;
+    const sp = Math.hypot(b.vx, b.vz);
+    const mu = inCircles(h.d.sand, b.x, b.z) ? MU_SAND : MU;
+    if (sp === 0 && Math.hypot(ax, az) < mu * 0.95) return 'rest';
+    // près du trou, la balle lente « tombe » vers le centre
+    const cx = h.cup.x - b.x, cz = h.cup.z - b.z, cd = Math.hypot(cx, cz);
+    if (cd < CUP_R + 0.08 && sp < 1.2) { ax += cx / (cd || 1) * 3; az += cz / (cd || 1) * 3; }
+    // la pente accélère, puis le frottement freine (sans jamais faire repartir la balle en arrière)
+    b.vx += ax * dt; b.vz += az * dt;
+    let sp2 = Math.hypot(b.vx, b.vz);
+    const dec = mu * dt;
+    if (sp2 <= dec) { b.vx = 0; b.vz = 0; sp2 = 0; } else { b.vx *= (sp2 - dec) / sp2; b.vz *= (sp2 - dec) / sp2; sp2 -= dec; }
+    b.x += b.vx * dt; b.z += b.vz * dt;
+    // bandes du couloir
+    const s = sd(b.x, b.z, h);
+    if (s > -BALL_R) {
+      const [nx, nz] = sdGrad(b.x, b.z, h);
+      b.x -= (s + BALL_R) * nx; b.z -= (s + BALL_R) * nz;
+      const vn = b.vx * nx + b.vz * nz;
+      if (vn > 0) { b.vx -= (1 + WALL_E) * vn * nx; b.vz -= (1 + WALL_E) * vn * nz; if (ev && vn > 0.6) ev.wall = vn; }
+    }
+    // rochers et bornes
+    for (const [rx, rz, r] of h.d.rocks) {
+      const dx = b.x - rx, dz = b.z - rz, dd = Math.hypot(dx, dz), m = r + BALL_R;
+      if (dd < m) {
+        const nx = dx / (dd || 1), nz = dz / (dd || 1);
+        b.x = rx + nx * m; b.z = rz + nz * m;
+        const vn = b.vx * nx + b.vz * nz;
+        if (vn < 0) { b.vx -= (1 + WALL_E) * vn * nx; b.vz -= (1 + WALL_E) * vn * nz; if (ev && -vn > 0.6) ev.wall = -vn; }
+      }
+    }
+    // l'eau
+    if (inCircles(h.d.water, b.x, b.z, -BALL_R * 0.3)) return 'water';
+    // le trou : lent, la balle tombe ; trop vite, elle passe par-dessus en étant un peu déviée
+    const cd2 = Math.hypot(h.cup.x - b.x, h.cup.z - b.z), sp3 = Math.hypot(b.vx, b.vz);
+    if (cd2 < CUP_R - BALL_R * 0.4) {
+      if (sp3 < 1.9) return 'holed';
+      // trop vite : elle saute par-dessus le trou, freinée et un peu déviée selon le côté où elle passe
+      if (!b.lip) { const side = Math.sign((h.cup.x - b.x) * b.vz - (h.cup.z - b.z) * b.vx) || 1, a = side * 0.25 * (1 - cd2 / CUP_R); const c = Math.cos(a), s2 = Math.sin(a); const vx = b.vx * c - b.vz * s2; b.vz = b.vx * s2 + b.vz * c; b.vx = vx; b.vx *= 0.8; b.vz *= 0.8; b.lip = 1; if (ev) ev.lip = 1; }
+    } else b.lip = 0;
+    if (sp2 < 0.035 && Math.hypot(G * gx, G * gz) < mu * 0.95) { b.vx = 0; b.vz = 0; return 'rest'; }
+    return null;
+  }
+  // une frappe simulée jusqu'au bout (pour les tests et le pilote d'essai)
+  function simulate(x, z, ang, pow, h) {
+    h = h || H;
+    const v = 0.6 + (VMAX - 0.6) * clamp(pow, 0, 1);
+    const b = { x, z, vx: Math.sin(ang) * v, vz: -Math.cos(ang) * v };
+    for (let i = 0; i < 120 * 40; i++) { const e = physStep(b, 1 / 120, h); if (e) return { x: b.x, z: b.z, res: e, t: i / 120 }; }
+    return { x: b.x, z: b.z, res: 'rest', t: 40 };
+  }
+
+  // ================================================================ rendu
+  const PAL = [0x2e2a5a, 0x46407a, 0x6a5a96, 0x9a6fa8, 0xc77f9e, 0xe68f8a, 0xf2a774, 0xf7c27e, 0xfbe0a8, 0xfff4e0,
+    0x3f4277, 0x5a5c92, 0x7f7fb0, 0xb1a8cf, 0xe6dcef,
+    0xa8242e, 0xd0343a, 0xe8583a, 0xf08a3c, 0xf6b84a,
+    0x1e3a2e, 0x24503a, 0x2f6a3a, 0x3f8a4a, 0x5ba85a, 0x7cbc62, 0x9fd07a, 0xc4e2a0, 0x6b7a4e, 0x8f8a52,
+    0x4a2e22, 0x6e3f2c, 0x94573a, 0xb8774a, 0xd29a64, 0xe4c08c, 0xf0dcae,
+    0x24242e, 0x34343f, 0x4a4a58, 0x6a6878, 0x8f8c9c, 0xb8b4c0, 0xe8e4e0, 0xffffff, 0x14141c,
+    0x1f3a66, 0x2a4a6e, 0x3d6688, 0x5a86a4, 0x8fb0c4, 0xbfe6ff, 0xfff2b0, 0xffd060];
+  const V = Pixel.view({ stage, gl: $('gl'), hud: $('hud'), palette: PAL, fov: 58, near: 0.1, far: 3000 });
+  const { scene, camera, hud } = V;
+  const text = Pixel.hudText(hud), line = Pixel.hudLine(hud);
+  const SUN = new THREE.Vector3(0.86, 0.1, -0.5).normalize();
+  const HAZE = 0xeaa48c;
+  const fogU = Pixel.fog({ near: 60, far: 900, haze: HAZE, sun: SUN });
+  scene.add(new THREE.HemisphereLight(0xc0b0e0, 0x6a4a40, 0.95));
+  const dl = new THREE.DirectionalLight(0xffc89a, 0.85); dl.position.copy(SUN).multiplyScalar(100); scene.add(dl);
+
+  // ciel du soir, soleil sur la mer, îles au loin
+  const skyMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, uniforms: Object.assign({ time: { value: 0 } }, fogU),
+    vertexShader: 'varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: `uniform vec3 sunDir, haze; uniform float time; varying vec3 vDir;
+      ${Pixel.GLSL.hash} ${Pixel.GLSL.noise}
+      float vn(float x, float s){ float i = floor(x), f = fract(x); f = f*f*(3.0-2.0*f); return mix(hash12(vec2(i, s)), hash12(vec2(i + 1.0, s)), f); }
+      void main(){
+        vec3 d = normalize(vDir); float e = d.y; float az = atan(d.x, -d.z);
+        vec3 c = mix(haze, vec3(0.98, 0.7, 0.5), smoothstep(0.0, 0.06, e));
+        c = mix(c, vec3(0.86, 0.52, 0.6), smoothstep(0.06, 0.2, e));
+        c = mix(c, vec3(0.34, 0.3, 0.55), smoothstep(0.2, 0.7, e));
+        float sd = dot(d, sunDir);
+        c += vec3(0.3, 0.14, 0.02) * pow(max(sd, 0.0), 10.0);
+        if (sd > 0.9982) c = vec3(1.0, 0.92, 0.7);
+        if (e > 0.02 && e < 0.4) {
+          float n = vn2(vec2((az / 6.2831853 + 0.5) * 36.0, e * 30.0)) * 0.6 + vn2(vec2((az / 6.2831853 + 0.5) * 120.0, e * 80.0)) * 0.4;
+          float th = 0.64 + 0.12 * smoothstep(0.04, 0.38, e);
+          if (n > th) { float k = (n - th) / (1.0 - th); c = k < 0.2 ? vec3(0.6, 0.34, 0.52) : (k < 0.5 ? vec3(0.98, 0.62, 0.5) : vec3(1.0, 0.85, 0.66)); }
+        }
+        // îles basses à l'horizon, côté mer
+        float isl = 0.012 * smoothstep(0.3, 0.8, vn(az * 7.0, 4.0)) + 0.01 * vn(az * 23.0, 5.0) * step(0.5, vn(az * 4.0, 6.0));
+        if (e < isl && d.x > 0.2) c = mix(vec3(0.4, 0.3, 0.5), haze, 0.4);
+        if (e < 0.0) c = haze;
+        gl_FragColor = vec4(c, 1.0);
+      }`
+  });
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(2000, 32, 16), skyMat); sky.renderOrder = -10; sky.frustumCulled = false; scene.add(sky);
+
+  // la mer, en contrebas de la falaise (côté +x, vers le soleil)
+  const seaMat = new THREE.ShaderMaterial({
+    uniforms: Object.assign({ time: { value: 0 } }, fogU),
+    vertexShader: 'varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
+    fragmentShader: `uniform float time, fogNear, fogFar; uniform vec3 camPos, haze, sunDir; varying vec3 vW;
+      ${Pixel.GLSL.hash} ${Pixel.GLSL.fog}
+      void main(){
+        vec3 c = vec3(0.28, 0.36, 0.6); vec3 v = normalize(vW - camPos);
+        float sun = max(dot(normalize(vec2(v.x, v.z)), normalize(sunDir.xz)), 0.0);
+        c = mix(c, vec3(0.95, 0.6, 0.48), pow(sun, 8.0) * 0.7);
+        vec2 p = vW.xz / vec2(14.0, 3.0) + vec2(0.0, time * 0.3); vec2 cell = floor(p); vec2 f = fract(p);
+        float dash = step(0.82, hash12(cell)) * step(f.x, 0.5) * step(0.4, f.y) * step(f.y, 0.6);
+        c = mix(c, mix(vec3(0.7, 0.78, 0.9), vec3(1.0, 0.85, 0.6), pow(sun, 3.0)), dash);
+        gl_FragColor = vec4(mix(c, haze, fogK(vW) * 0.85), 1.0);
+      }`
+  });
+  const sea = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000).rotateX(-Math.PI / 2), seaMat); sea.position.set(1700, -34, 0); scene.add(sea);
+
+  // le plateau autour du trou : herbe d'automne, falaise qui tombe dans la mer à +x
+  const groundMat = new THREE.ShaderMaterial({
+    uniforms: Object.assign({}, fogU),
+    vertexShader: 'attribute vec3 color; varying vec3 vC; varying vec3 vW; varying vec3 vN; void main(){ vC = color; vN = normal; vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
+    fragmentShader: `uniform vec3 sunDir, camPos, haze; uniform float fogNear, fogFar; varying vec3 vC; varying vec3 vW; varying vec3 vN;
+      ${Pixel.GLSL.hash} ${Pixel.GLSL.fog}
+      void main(){
+        vec3 col = vC * (0.92 + 0.16 * hash12(floor(vW.xz * 1.5)));
+        float ndl = max(dot(normalize(vN), sunDir), 0.0);
+        col *= vec3(0.58, 0.52, 0.7) + vec3(0.72, 0.5, 0.36) * ndl;
+        gl_FragColor = vec4(mix(col, haze, fogK(vW)), 1.0);
+      }`
+  });
+  let groundMesh = null, greenMesh = null, decoMesh = null, glowDeco = null, waterMeshes = [];
+  function cliffX(z) { return 34 + 10 * Math.sin(z * 0.035) + 6 * Math.sin(z * 0.11 + 1); }
+  function groundH(x, z) {
+    const n = fbm(x / 400 + 0.5, z / 400 + 0.5, 6, 3, 21) - 0.5;
+    let y = -0.9 + n * 6 * smooth(10, 60, Math.hypot(x, z + 20));
+    const c = cliffX(z);
+    y -= smooth(c - 2, c + 6, x) * 36;
+    return y;
+  }
+  function buildGround() {
+    const N = 160, S = 520, cx = 0, cz = -20;
+    const R = N + 1, pos = new Float32Array(R * R * 3), col = new Float32Array(R * R * 3);
+    const C1 = new THREE.Color(0x4a6a3a), C2 = new THREE.Color(0x8f7a46), C3 = new THREE.Color(0xa8583a), C4 = new THREE.Color(0x6a6080), tmp = new THREE.Color();
+    for (let j = 0; j <= N; j++) for (let i = 0; i <= N; i++) {
+      const x = cx - S / 2 + i * S / N, z = cz - S / 2 + j * S / N, k = j * R + i, y = groundH(x, z);
+      pos[k * 3] = x; pos[k * 3 + 1] = y; pos[k * 3 + 2] = z;
+      const n = fbm(x / 300 + 0.5, z / 300 + 0.5, 8, 2, 7);
+      tmp.copy(n < 0.45 ? C1 : n < 0.58 ? C2 : C3);
+      if (y < -6) tmp.copy(C4);
+      col[k * 3] = tmp.r; col[k * 3 + 1] = tmp.g; col[k * 3 + 2] = tmp.b;
+    }
+    const idx = []; for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const a = j * R + i, b = a + 1, c = a + R, d = c + 1; idx.push(a, c, b, b, c, d); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals();
+    groundMesh = new THREE.Mesh(g, groundMat); groundMesh.frustumCulled = false; scene.add(groundMesh);
+  }
+  buildGround();
+
+  // le green : maillage qui épouse le couloir, rayures de tonte, courbes de niveau, bunkers
+  const greenMat = new THREE.ShaderMaterial({
+    uniforms: Object.assign({ showLines: { value: 1 } }, fogU),
+    vertexShader: 'attribute float sand; varying float vS; varying vec3 vW; varying vec3 vN; void main(){ vS = sand; vN = normal; vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
+    fragmentShader: `uniform vec3 sunDir, camPos, haze; uniform float fogNear, fogFar, showLines; varying float vS; varying vec3 vW; varying vec3 vN;
+      ${Pixel.GLSL.hash} ${Pixel.GLSL.fog}
+      void main(){
+        vec3 col = mod(floor(vW.z / 1.6), 2.0) < 1.0 ? vec3(0.36, 0.66, 0.36) : vec3(0.31, 0.6, 0.33);
+        // courbes de niveau : une ligne claire tous les 5 cm de dénivelé
+        float hl = fract((vW.y + 10.0) / 0.05);
+        if (showLines > 0.5 && hl < 0.09) col = mix(col, vec3(0.8, 0.92, 0.64), 0.8);
+        if (vS > 0.5) col = vec3(0.92, 0.8, 0.58) * (0.94 + 0.1 * hash12(floor(vW.xz * 6.0)));
+        float ndl = max(dot(normalize(vN), sunDir), 0.0);
+        col *= vec3(0.62, 0.58, 0.72) + vec3(0.66, 0.46, 0.32) * ndl;
+        gl_FragColor = vec4(mix(col, haze, fogK(vW)), 1.0);
+      }`
+  });
+  const waterMat = new THREE.ShaderMaterial({
+    uniforms: Object.assign({ time: { value: 0 } }, fogU),
+    vertexShader: 'varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
+    fragmentShader: `uniform float time; uniform vec3 camPos, sunDir, haze; uniform float fogNear, fogFar; varying vec3 vW;
+      ${Pixel.GLSL.hash} ${Pixel.GLSL.fog}
+      void main(){ vec3 c = vec3(0.25, 0.42, 0.66); vec2 p = vW.xz * vec2(2.0, 5.0) + vec2(time * 0.6, 0.0);
+        if (step(0.86, hash12(floor(p))) * step(fract(p.x), 0.5) > 0.5) c = vec3(0.8, 0.88, 0.95);
+        gl_FragColor = vec4(mix(c, haze, fogK(vW)), 1.0); }`
+  });
+  function buildHole() {
+    for (const m of [greenMesh, decoMesh, glowDeco, ...waterMeshes]) if (m) { scene.remove(m); m.geometry.dispose(); }
+    waterMeshes = [];
+    const b = H.bounds, cell = 0.3;
+    const nx = Math.ceil((b.x1 - b.x0) / cell), nz = Math.ceil((b.z1 - b.z0) / cell), R = nx + 1;
+    const vx = new Float32Array((nx + 1) * (nz + 1)), vz = new Float32Array((nx + 1) * (nz + 1)), inside = new Uint8Array((nx + 1) * (nz + 1));
+    for (let j = 0; j <= nz; j++) for (let i = 0; i <= nx; i++) {
+      let x = b.x0 + i * cell, z = b.z0 + j * cell; const k = j * R + i;
+      const s = sd(x, z);
+      inside[k] = s < 0 ? 1 : 0;
+      if (s > 0 && s < cell * 1.6) { const [gx, gz] = sdGrad(x, z); x -= gx * s; z -= gz * s; }
+      vx[k] = x; vz[k] = z;
+    }
+    const pos = [], sand = [], idx = [], map = new Int32Array((nx + 1) * (nz + 1)).fill(-1);
+    const vid = (k) => { if (map[k] < 0) { map[k] = pos.length / 3; pos.push(vx[k], height(vx[k], vz[k]) + 0.01, vz[k]); sand.push(inCircles(H.d.sand, vx[k], vz[k]) ? 1 : 0); } return map[k]; };
+    for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+      const a = j * R + i, bb = a + 1, c = a + R, d = c + 1;
+      if (inside[a] + inside[bb] + inside[c] + inside[d] === 0) continue;
+      if (inside[a] || inside[c] || inside[bb]) idx.push(vid(a), vid(c), vid(bb));
+      if (inside[bb] || inside[c] || inside[d]) idx.push(vid(bb), vid(c), vid(d));
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('sand', new THREE.Float32BufferAttribute(sand, 1)); g.setIndex(idx); g.computeVertexNormals();
+    greenMesh = new THREE.Mesh(g, greenMat); scene.add(greenMesh);
+    // les bandes en bois, posées sur le bord ; un socle de pierre sous le green
+    const parts = [], glow = [];
+    const wallAt = (x, z) => {
+      const [gx, gz] = sdGrad(x, z), y = height(x, z), ry = Math.atan2(gz, -gx) + Math.PI / 2;
+      parts.push({ geo: GEO.BOX, m: mtx(x + gx * 0.1, y + 0.1, z + gz * 0.1, ry, 0.36, 0.26, 0.2), c: 0x8a5034 });
+      parts.push({ geo: GEO.BOX, m: mtx(x + gx * 0.1, y - 0.45, z + gz * 0.1, ry, 0.38, 0.9, 0.24), c: 0x6a6080 });
+    };
+    for (const s of H.segs) for (const side of [-1, 1]) for (let t = 0; t <= s.L; t += 0.28) {
+      const x = s.ax + s.tx * t - s.tz * side * H.hw, z = s.az + s.tz * t + s.tx * side * H.hw;
+      if (Math.abs(sd(x, z)) < 0.03) wallAt(x, z);
+    }
+    for (const [px, pz] of H.d.path) for (let a = 0; a < TAU; a += 0.09) {
+      const x = px + Math.cos(a) * H.hw, z = pz + Math.sin(a) * H.hw;
+      if (Math.abs(sd(x, z)) < 0.03) wallAt(x, z);
+    }
+    // rochers, mares, trou, drapeau
+    for (const [x, z, r] of H.d.rocks) {
+      const y = height(x, z);
+      parts.push({ geo: GEO.ICO, m: mtx(x, y + r * 0.35, z, hash2(x * 10 | 0, z * 10 | 0, 3) * 3, r * 1.05, r * 0.8, r * 1.05), c: 0x7f7894 });
+      parts.push({ geo: GEO.ICO, m: mtx(x + r * 0.3, y + r * 0.75, z - r * 0.2, 1, r * 0.5, r * 0.45, r * 0.5), c: 0x9a94ae });
+    }
+    for (const [x, z, r] of H.d.water) {
+      const w = new THREE.Mesh(new THREE.CircleGeometry(r, 28).rotateX(-Math.PI / 2), waterMat);
+      w.position.set(x, height(x, z) + 0.03, z); scene.add(w); waterMeshes.push(w);
+      for (let a = 0; a < TAU; a += 0.5) parts.push({ geo: GEO.ICO, m: mtx(x + Math.cos(a) * r, height(x, z) + 0.05, z + Math.sin(a) * r, a, 0.22, 0.12, 0.22), c: 0x8f8c9c });
+    }
+    const cy = height(H.cup.x, H.cup.z);
+    parts.push({ geo: GEO.CYL, m: mtx(H.cup.x, cy - 0.04, H.cup.z, 0, CUP_R, 0.1, CUP_R), c: 0x14141c });
+    parts.push({ geo: GEO.CYL, m: mtx(H.cup.x, cy + 1.25, H.cup.z, 0, 0.035, 2.5, 0.035), c: 0xe8e4e0 });
+    // tapis de départ
+    parts.push({ geo: GEO.BOX, m: mtx(H.tee.x, height(H.tee.x, H.tee.z) + 0.015, H.tee.z, 0, 1.4, 0.03, 1.0), c: 0x2f6a3a });
+    // arbres et lanternes autour : pins, érables, quelques lanternes de pierre allumées
+    let rr = Pixel.rng(hi * 977 + 31);
+    const bb = H.bounds;
+    for (let t = 0; t < 700; t++) {
+      const x = lerp(bb.x0 - 40, bb.x1 + 40, rr()), z = lerp(bb.z0 - 50, bb.z1 + 30, rr());
+      const s = sd(x, z); if (s < 2.5 || x > cliffX(z) - 4) continue;
+      // près du green, des arbres plus petits et plus rares (la vue du dessus reste lisible)
+      if (s < 9 && rr() < 0.75) continue;
+      const y = groundH(x, z), k = rr(), sc = smooth(2, 16, s) * 0.6 + 0.4;
+      if (k < 0.45) { const hgt = (3 + rr() * 3) * sc; parts.push({ geo: GEO.CYL, m: mtx(x, y + hgt * 0.2, z, 0, 0.18, hgt * 0.4, 0.18), c: 0x4a2e22 }); parts.push({ geo: GEO.CONE7, m: mtx(x, y + hgt * 0.65, z, rr(), (1.3 + rr()) * sc, hgt * 0.75, (1.3 + rr()) * sc), c: rr() < 0.5 ? 0x24503a : 0x2f6a3a }); }
+      else if (k < 0.85) { const hgt = (2.4 + rr() * 2) * sc; parts.push({ geo: GEO.CYL, m: mtx(x, y + hgt * 0.25, z, 0, 0.16, hgt * 0.5, 0.16), c: 0x4a2e22 }); parts.push({ geo: GEO.ICO, m: mtx(x, y + hgt * 0.7, z, rr() * 3, (1.2 + rr()) * sc, (1 + rr() * 0.6) * sc, (1.2 + rr()) * sc), c: [0xd0343a, 0xe8583a, 0xf08a3c, 0xf6b84a][Math.floor(rr() * 4)] }); }
+      else if (k < 0.9 && s < 7) { parts.push({ geo: GEO.BOX, m: mtx(x, y + 0.5, z, 0, 0.3, 1.0, 0.3), c: 0x8f8c9c }); parts.push({ geo: GEO.BOX, m: mtx(x, y + 1.1, z, 0, 0.6, 0.12, 0.6), c: 0x8f8c9c }); glow.push({ geo: GEO.BOX, m: mtx(x, y + 0.95, z, 0, 0.22, 0.2, 0.22), c: 0xffd060 }); }
+    }
+    decoMesh = Pixel.litMesh(parts); scene.add(decoMesh);
+    glowDeco = Pixel.glowMesh(glow); scene.add(glowDeco);
+    flag.position.set(H.cup.x, cy + 2.2, H.cup.z);
+  }
+  // le drapeau (il flotte), la balle et son ombre, la flèche de visée
+  const flag = new THREE.Mesh(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, -0.5, 0, 0.75, -0.25, 0], 3)), new THREE.MeshBasicMaterial({ color: 0xd0343a, side: THREE.DoubleSide }));
+  scene.add(flag);
+  const ballMesh = new THREE.Mesh(new THREE.SphereGeometry(BALL_R, 10, 8), new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x404040 }));
+  const ballShadow = new THREE.Mesh(new THREE.CircleGeometry(BALL_R * 1.1, 10).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x14141c, transparent: true, opacity: 0.4, depthWrite: false }));
+  scene.add(ballMesh, ballShadow);
+  const fx = Pixel.puffs(scene, 120);
+
+  // ================================================================ partie
+  const ball = { x: 0, z: 0, vx: 0, vz: 0 };
+  const aim = { ang: 0, pow: 0.35, dragging: false, sx: 0, sy: 0 };
+  let mode = 'menu', strokes = 0, total = 0, card = [], rest = { x: 0, z: 0 }, wait = 0, time = 0, camMode = 0;
+  const CAMS = ['Balle', 'Dessus'];
+  function setCam(i) { camMode = ((i % 2) + 2) % 2; $('camLabel').textContent = '0' + (camMode + 1) + ' / ' + CAMS[camMode]; camS.init = false; }
+  function startHole(i) {
+    hi = i; H = prepHole(i); buildHole();
+    ball.x = H.tee.x; ball.z = H.tee.z; ball.vx = ball.vz = 0; rest = { x: ball.x, z: ball.z };
+    aim.ang = Math.atan2(H.d.path[1][0] - H.d.path[0][0], -(H.d.path[1][1] - H.d.path[0][1]));
+    aim.pow = 0.35; strokes = 0; mode = 'aim'; camS.init = false;
+    feed('Trou ' + (i + 1) + ' · ' + H.d.name + ' · par ' + H.d.par, 'gold');
+  }
+  function startGame() {
+    total = 0; card = [];
+    $('intro').hidden = true; $('results').hidden = true; $('app').classList.remove('menu');
+    $('hTag').hidden = false; $('sTag').hidden = false;
+    startHole(0);
+  }
+  function shoot() {
+    if (mode !== 'aim' || aim.pow < 0.02) return;
+    const v = 0.6 + (VMAX - 0.6) * aim.pow;
+    ball.vx = Math.sin(aim.ang) * v; ball.vz = -Math.cos(aim.ang) * v;
+    rest = { x: ball.x, z: ball.z };
+    strokes++; mode = 'roll';
+    snd.noise(0.08, 1800, 0.8); snd.tone(1200, 0, 0.05, 0.6);
+  }
+  const NAMES = { '-3': 'Albatros !', '-2': 'Eagle !', '-1': 'Birdie !', '0': 'Par', '1': 'Bogey', '2': 'Double bogey' };
+  function holePoints(st, par, holed) { if (!holed) return 0; if (st === 1) return 500; return clamp((par - st + 3) * 100, 0, 500); }
+  function endHole(holed) {
+    const pts = holePoints(strokes, H.d.par, holed);
+    total += pts;
+    card.push({ name: H.d.name, par: H.d.par, strokes, holed, pts });
+    if (holed) {
+      const diff = strokes - H.d.par;
+      feed((strokes === 1 ? 'Trou en un !' : NAMES[diff] || (diff > 0 ? '+' + diff : String(diff))) + (pts ? '  +' + pts : '  · 0 point'), pts >= 400 ? 'gold' : pts >= 300 ? 'good' : '');
+      fx.confetti(new THREE.Vector3(H.cup.x, height(H.cup.x, H.cup.z) + 0.3, H.cup.z), [0xd0343a, 0xffd060, 0x5ba85a, 0xffffff], pts >= 400 ? 40 : 18);
+      [523, 659, 784].forEach((f, i) => snd.tone(f, i * 0.09, 0.18));
+    } else feed('Balle ramassée : 0 point', 'bad');
+    mode = 'holed'; wait = 2.2;
+  }
+  function finish() {
+    mode = 'done';
+    const st = card.reduce((a, c) => a + c.strokes, 0), par = card.reduce((a, c) => a + c.par, 0), diff = st - par;
+    $('resRows').innerHTML = card.map((c, i) => `<dt>${i + 1}. ${c.name}</dt><dd class="n">par ${c.par} · ${c.holed ? c.strokes + (c.strokes > 1 ? ' coups' : ' coup') : 'ramassée'}</dd><dd class="${c.pts >= 400 ? 'pos' : ''}">${c.pts}</dd>`).join('');
+    $('resTotal').textContent = fmtInt(total) + ' pts';
+    $('resSub').textContent = st + ' coups · ' + (diff === 0 ? 'le par' : diff < 0 ? diff + ' sous le par' : '+' + diff + ' au-dessus du par');
+    const mention = total >= MENTIONS[0] ? 'S' : total >= MENTIONS[1] ? 'A' : total >= MENTIONS[2] ? 'B' : 'C';
+    $('resMention').textContent = mention;
+    $('resTitle').textContent = diff < 0 ? 'Sous le par !' : diff === 0 ? 'Pile le par' : 'Parcours terminé';
+    const prev = Number(store.get(REC_KEY)) || 0;
+    if (total > prev) store.set(REC_KEY, String(total));
+    $('resRec').textContent = (Pixel.EMBED ? 'Score envoyé au classement · ' : '') + (total > prev ? (prev ? 'Nouveau record ! L’ancien : ' + fmtInt(prev) + ' pts' : 'Premier record') : 'Record : ' + fmtInt(prev) + ' pts');
+    report('golf', total);
+    $('results').hidden = false; $('app').classList.add('menu'); $('hTag').hidden = true; $('power').hidden = true;
+    snd.win();
+  }
+  const MENTIONS = [2300, 2000, 1700];
+  const REC_KEY = 'golf-au-couchant:record';
+
+  function step(dt) {
+    time += dt;
+    fx.step(dt);
+    if (mode === 'aim' && !aim.dragging) {
+      const k = keys;
+      const turn = (k.has('ArrowRight') || k.has('KeyD') ? 1 : 0) - (k.has('ArrowLeft') || k.has('KeyA') ? 1 : 0);
+      aim.ang += turn * dt * (k.has('ShiftLeft') || k.has('ShiftRight') ? 0.2 : 0.7);
+      const p = (k.has('ArrowUp') || k.has('KeyW') ? 1 : 0) - (k.has('ArrowDown') || k.has('KeyS') ? 1 : 0);
+      aim.pow = clamp(aim.pow + p * dt * 0.35, 0, 1);
+    }
+    if (mode === 'roll') {
+      const ev = {};
+      const e = physStep(ball, dt, H, ev);
+      if (ev.wall) snd.tone(320 + ev.wall * 40, 0, 0.05, Math.min(1, ev.wall / 4), 'triangle');
+      if (e === 'holed') { ball.x = H.cup.x; ball.z = H.cup.z; endHole(true); }
+      else if (e === 'water') {
+        strokes++;
+        const y = height(ball.x, ball.z);
+        for (let i = 0; i < 14; i++) fx.emit(new THREE.Vector3(ball.x, y + 0.1, ball.z), 0.25, 0.1, 0.8, 0xbfe6ff, 0xffffff, new THREE.Vector3((Math.random() - 0.5) * 3, 3 + Math.random() * 2, (Math.random() - 0.5) * 3), 9);
+        snd.noise(0.4, 900, 1);
+        feed('Plouf : +1 coup, on rejoue d’où tu étais', 'bad');
+        ball.x = rest.x; ball.z = rest.z; ball.vx = ball.vz = 0;
+        if (strokes >= H.d.par + 3) endHole(false); else mode = 'aim';
+      } else if (e === 'rest') {
+        if (strokes >= H.d.par + 3) endHole(false);
+        else {
+          mode = 'aim';
+          // on vise le trou par défaut ; la puissance reste celle du coup d'avant
+          aim.ang = Math.atan2(H.cup.x - ball.x, -(H.cup.z - ball.z));
+          const dcup = Math.hypot(H.cup.x - ball.x, H.cup.z - ball.z);
+          if (dcup < 3) feed('À ' + dcup.toFixed(1).replace('.', ',') + ' m du trou');
+        }
+      }
+    }
+    if (mode === 'holed') { wait -= dt; if (wait <= 0) { if (hi + 1 < HOLES.length) startHole(hi + 1); else finish(); } }
+    if (mode === 'menu') { aim.ang += dt * 0.08; }
+  }
+
+  // ================================================================ caméras
+  const camS = { pos: new THREE.Vector3(), yaw: 0, init: false };
+  const tmpV = new THREE.Vector3(), tmpW = new THREE.Vector3();
+  function updateCamera(dt) {
+    if (!H) return;
+    const by = height(ball.x, ball.z);
+    if (camMode === 1 || mode === 'menu') {
+      const b = H.bounds, cx = (b.x0 + b.x1) / 2, cz = (b.z0 + b.z1) / 2, size = Math.max(b.x1 - b.x0, (b.z1 - b.z0) * V.RW / V.RH * 0.8);
+      const hgt = mode === 'menu' ? 26 : size * 0.78 + 5;
+      if (mode === 'menu') {
+        const a = aim.ang;
+        tmpV.set(cx + Math.sin(a) * 20, 21, cz + Math.cos(a) * 20);
+        camera.position.copy(tmpV); camera.lookAt(cx, 0, cz);
+      } else {
+        tmpV.set(cx, hgt, cz + hgt * 0.28);
+        if (!camS.init) { camS.pos.copy(tmpV); camS.init = true; }
+        camS.pos.lerp(tmpV, 1 - Math.exp(-dt * 4));
+        camera.position.copy(camS.pos); camera.lookAt(cx, 0, cz - 0.5);
+      }
+      return;
+    }
+    let yaw = aim.ang;
+    if (mode === 'roll' && Math.hypot(ball.vx, ball.vz) > 0.8) yaw = Math.atan2(ball.vx, -ball.vz);
+    if (!camS.init) camS.yaw = yaw;
+    camS.yaw += angDiff(yaw, camS.yaw) * (1 - Math.exp(-dt * (mode === 'roll' ? 1.6 : 6)));
+    const fx2 = Math.sin(camS.yaw), fz = -Math.cos(camS.yaw);
+    const back = mode === 'roll' ? 6.5 : 5.2, up = mode === 'roll' ? 3.2 : 2.3;
+    tmpV.set(ball.x - fx2 * back, 0, ball.z - fz * back);
+    tmpV.y = Math.max(by, H && sd(tmpV.x, tmpV.z) < 0 ? height(tmpV.x, tmpV.z) : groundH(tmpV.x, tmpV.z)) + up;
+    if (!camS.init) { camS.pos.copy(tmpV); camS.init = true; }
+    camS.pos.lerp(tmpV, 1 - Math.exp(-dt * (mode === 'roll' ? 3 : 10)));
+    camera.position.copy(camS.pos);
+    camera.lookAt(tmpW.set(ball.x + fx2 * 6, by + 0.2, ball.z + fz * 6));
+  }
+
+  // ================================================================ dessin : balle, drapeau, flèche de visée, ATH
+  function render() {
+    if (!H) { startHole(0); mode = 'menu'; }
+    const by = height(ball.x, ball.z);
+    ballMesh.position.set(ball.x, by + BALL_R + 0.01 - (mode === 'holed' ? 0.3 : 0), ball.z);
+    ballShadow.position.set(ball.x + 0.05, by + 0.015, ball.z - 0.03); ballShadow.visible = mode !== 'holed';
+    flag.rotation.y = Math.sin(time * 1.3) * 0.4 + 0.6;
+    updateCamera(1 / 60);
+    camera.updateMatrixWorld();
+    fogU.camPos.value.copy(camera.position);
+    skyMat.uniforms.time.value = time; seaMat.uniforms.time.value = time; waterMat.uniforms.time.value = time;
+    sky.position.copy(camera.position);
+    V.render();
+    drawHud();
+    if (mode !== 'menu' && mode !== 'done') {
+      $('hHole').textContent = 'Trou ' + (hi + 1) + '/' + HOLES.length;
+      $('hPar').textContent = 'Par ' + H.d.par;
+      $('hStroke').textContent = mode === 'holed' ? (strokes === 1 ? 'Trou en un' : strokes + ' coups') : 'Coup ' + (strokes + (mode === 'aim' ? 1 : 0));
+      $('sTag').textContent = fmtInt(total) + ' PTS';
+    }
+    $('power').hidden = mode !== 'aim';
+    $('powerBar').style.width = Math.round(aim.pow * 100) + '%';
+    $('powerTxt').textContent = 'Puissance ' + Math.round(aim.pow * 100) + ' %';
+  }
+  function project(x, y, z) { tmpV.set(x, y, z).project(camera); return tmpV.z > 1 ? null : [(tmpV.x * 0.5 + 0.5) * V.RW, (-tmpV.y * 0.5 + 0.5) * V.RH]; }
+  function drawHud() {
+    if (mode !== 'aim') return;
+    // la flèche : la direction et la force, sur 4 m au plus (pas la trajectoire : à toi de lire la pente)
+    const len = 0.6 + aim.pow * 3.6, sx = Math.sin(aim.ang), sz = -Math.cos(aim.ang);
+    let prev = null;
+    for (let t = 0.25; t <= len; t += 0.12) {
+      const x = ball.x + sx * t, z = ball.z + sz * t, p = project(x, height(x, z) + 0.03, z);
+      if (p && prev && Math.floor(t / 0.24) % 2 === 0) line(prev[0], prev[1], p[0], p[1], t > len * 0.7 ? '#ffd060' : '#ffffff');
+      prev = p;
+    }
+    const tip = project(ball.x + sx * (len + 0.05), height(ball.x + sx * len, ball.z + sz * len) + 0.03, ball.z + sz * (len + 0.05));
+    const l1 = project(ball.x + sx * (len - 0.35) + sz * 0.22, height(ball.x, ball.z) + 0.03, ball.z + sz * (len - 0.35) - sx * 0.22);
+    const l2 = project(ball.x + sx * (len - 0.35) - sz * 0.22, height(ball.x, ball.z) + 0.03, ball.z + sz * (len - 0.35) + sx * 0.22);
+    if (tip && l1 && l2) { line(tip[0], tip[1], l1[0], l1[1], '#ffd060'); line(tip[0], tip[1], l2[0], l2[1], '#ffd060'); }
+    // distance au trou
+    const dcup = Math.hypot(H.cup.x - ball.x, H.cup.z - ball.z);
+    const fp = project(H.cup.x, height(H.cup.x, H.cup.z) + 2.9, H.cup.z);
+    if (fp) { const s = dcup.toFixed(1).replace('.', ',') + ' M'; const w = s.length * 4 + 3; hud.fillStyle = 'rgba(20,20,28,0.8)'; hud.fillRect(Math.round(fp[0] - w / 2), Math.round(fp[1] - 8), w, 7); text(s, fp[0], fp[1] - 7, '#fff2b0', 'c'); }
+  }
+
+  // ================================================================ commandes : tirer la balle vers soi (fronde), clavier, tactile
+  const keys = new Set();
+  function aimFromDrag(dx, dy) {
+    // vecteur tiré à l'écran → direction opposée sur le sol, dans le repère de la caméra
+    const yaw = camMode === 1 ? 0 : camS.yaw;
+    const fxw = Math.sin(yaw), fzw = -Math.cos(yaw), rxw = Math.cos(yaw), rzw = Math.sin(yaw);
+    const wx = fxw * dy - rxw * dx, wz = fzw * dy - rzw * dx;
+    const L = Math.hypot(dx, dy), full = Math.min(stage.clientWidth, stage.clientHeight) * 0.42;
+    if (L > 6) aim.ang = Math.atan2(wx, -wz);
+    aim.pow = clamp(L / full, 0, 1);
+  }
+  stage.addEventListener('pointerdown', (e) => {
+    if (mode !== 'aim' || e.target.closest('button, .card') || e.button === 2) return;
+    aim.dragging = true; aim.sx = e.clientX; aim.sy = e.clientY; aim.ang0 = aim.ang; aim.pow0 = aim.pow;
+    stage.setPointerCapture(e.pointerId);
+  });
+  stage.addEventListener('pointermove', (e) => { if (aim.dragging) aimFromDrag(e.clientX - aim.sx, e.clientY - aim.sy); });
+  stage.addEventListener('pointerup', (e) => {
+    if (!aim.dragging) return; aim.dragging = false;
+    const L = Math.hypot(e.clientX - aim.sx, e.clientY - aim.sy);
+    if (L < 12) { aim.ang = aim.ang0; aim.pow = aim.pow0; return; } // un simple clic ne tire pas
+    shoot();
+  });
+  stage.addEventListener('pointercancel', () => { if (aim.dragging) { aim.dragging = false; aim.ang = aim.ang0; aim.pow = aim.pow0; } });
+  stage.addEventListener('contextmenu', (e) => { e.preventDefault(); if (aim.dragging) { aim.dragging = false; aim.ang = aim.ang0; aim.pow = aim.pow0; } });
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
+    if (e.code === 'KeyC') { setCam(camMode + 1); return; }
+    if (e.code === 'KeyM') { $('sndBtn').click(); return; }
+    if ((e.code === 'Space' || e.code === 'Enter') && mode === 'aim') { shoot(); return; }
+    if (e.code === 'Escape' && aim.dragging) { aim.dragging = false; aim.ang = aim.ang0; aim.pow = aim.pow0; return; }
+    keys.add(e.code);
+  });
+  window.addEventListener('keyup', (e) => keys.delete(e.code));
+  window.addEventListener('blur', () => keys.clear());
+  $('camTag').addEventListener('click', (e) => { e.stopPropagation(); setCam(camMode + 1); });
+  $('tView').addEventListener('click', (e) => { e.stopPropagation(); setCam(camMode + 1); });
+  $('goPlay').addEventListener('click', (e) => { e.stopPropagation(); startGame(); });
+  $('again').addEventListener('click', (e) => { e.stopPropagation(); startGame(); });
+
+  // ================================================================ accueil
+  function refreshIntro() {
+    $('cardHoles').innerHTML = HOLES.map((h, i) => `<li title="${h.name}">Trou ${i + 1}<b>${h.par}</b>par</li>`).join('');
+    const G2 = [
+      ['Trou en un', '500', 'Le rêve : la balle entre au premier coup.'],
+      ['Sous le par', '400 · 300', 'Le par d’un trou, c’est le nombre de coups prévus : un coup de moins (birdie) rapporte 400, le par 300.'],
+      ['Au-dessus', '200 · 100', 'Un coup de trop 200, deux coups de trop 100. Au-delà, la balle est ramassée : 0.'],
+      ['L’eau', '+1 coup', 'La balle revient là où tu as tiré. Le sable, lui, la freine net.']
+    ];
+    $('goals').innerHTML = G2.map(([a, b, c]) => `<li><i></i><span>${a}</span><b>${b}</b><small>${c}</small></li>`).join('');
+    $('keys').innerHTML = isTouch
+      ? '<b>Tirer vers soi</b><span>pose le doigt, tire en arrière comme une fronde : la longueur dose la force</span><b>Lâcher</b><span>joue le coup</span><b>Vue</b><span>green vu du dessus</span><b>Clic court</b><span>ne tire pas</span>'
+      : '<b>Tirer vers soi</b><span>clic, tire en arrière comme une fronde, lâche pour jouer</span><b>← → · ↑ ↓</b><span>viser · doser (Maj : plus fin)</span><b>Espace</b><span>jouer le coup</span><b>C</b><span>vue du dessus</span>';
+    const r = Number(store.get(REC_KEY)) || 0;
+    $('rec').textContent = r ? 'Ton record : ' + fmtInt(r) + ' pts' : 'Pas encore de score : à toi de jouer';
+  }
+  refreshIntro();
+  setCam(0);
+  H = prepHole(0); buildHole(); ball.x = H.tee.x; ball.z = H.tee.z;
+
+  const L = Pixel.loop(step, render);
+  window.golf = {
+    start: startGame, startHole, setCam, shoot, simulate, HOLES,
+    pause(p) { L.paused = p; }, sim: L.sim,
+    aim(ang, pow) { aim.ang = ang; aim.pow = pow; },
+    state: () => ({ mode, hole: hi, strokes, total, ball: { ...ball }, aim: { ang: aim.ang, pow: aim.pow }, card, cup: H && H.cup, tee: H && H.tee }),
+    // joue un coup et attend qu'il se termine
+    play(ang, pow) { aim.ang = ang; aim.pow = pow; shoot(); let n = 0; while (mode === 'roll' && n++ < 120 * 40) step(1 / 120); return { mode, strokes, ball: { x: ball.x, z: ball.z } }; },
+    next() { let n = 0; while (mode === 'holed' && n++ < 120 * 5) step(1 / 120); return mode; }
+  };
+})();
+</script>
+</body>
+</html>

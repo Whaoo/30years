@@ -248,7 +248,16 @@ export const FUJI = {
     help: 'Flèches ou souris pour diriger (l’accélérateur est automatique), Espace pour déraper, Maj ou F pour le turbo, ↓ pour freiner. 3 tours : le meilleur temps gagne.',
     component: lazy(() => import('./FrameGame'))
 };
-export const DAILY_GAMES = [VOL, FUJI];
+export const GOLF = {
+    id: 'golf', title: 'Golf au couchant', short: 'Golf',
+    eyebrow: 'Jeu du jour · mar. 24 nov.',
+    from: new Date(2026, 10, 24, 9, 0),
+    icon: 'flag', unit: 'pts', frame: '/jeux/golf-au-couchant.html',
+    pitch: 'Mini-golf de 6 trous face à la mer',
+    help: 'Tire la balle vers toi comme une fronde (ou ← → pour viser, ↑ ↓ pour doser, Espace pour jouer). C : vue du dessus pour lire les pentes.',
+    component: lazy(() => import('./FrameGame'))
+};
+export const DAILY_GAMES = [VOL, FUJI, GOLF];
 // le dernier jeu du jour sorti (null avant le premier)
 export function dailyGame(now = new Date()) {
     return DAILY_GAMES.filter((g) => now >= g.from).sort((a, b) => b.from - a.from)[0] || null;

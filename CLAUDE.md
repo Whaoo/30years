@@ -50,6 +50,10 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
     `FUJI` (« Col du Fuji », 23/11) : `public/jeux/col-du-fuji.html`, contre-la-montre de 3 tours (trois couleurs, mêmes performances),
     fantôme du meilleur chrono (`col-du-fuji:fantome:1`) ou « fantôme du col » simulé au chargement ; score = temps en centièmes
     (`lowerIsBetter`, `format`, `CHRONOS.fuji`) ; console `window.fuji` (`setup('race')`, `bot(n, { k, turbo, drift })`, `state()`).
+    Les jeux suivants partagent `public/jeux/lib/pixel.js` (rendu basse résolution + palette, ATH, messages, pas fixe, son, styles communs,
+    `Pixel.report(jeu, score)`). `GOLF` (« Golf au couchant », 24/11) : `public/jeux/golf-au-couchant.html`, 6 trous de mini-golf
+    (`HOLES` : couloir, pentes, rochers, sable, eau), physique sans hasard ; points par trou (trou en un 500, birdie 400, par 300…) ;
+    console `window.golf` (`simulate(x, z, angle, puissance)`, `play(angle, puissance)`).
   - Où on les trouve : deux tuiles sous la liste « Ensuite » (`GameTiles.jsx` : le jeu du jour + « Tous les jeux » qui ouvre `GamesList.jsx`),
     menu « Jeux » de l'en-tête sur téléphone (la colonne de droite y est masquée), tuile des mini-jeux en décembre ;
     bandeau du 18/11 à 9 h au 30/11 (`GamesNews.jsx` + `src/utils/gamesNews.js`, qui remplace le bandeau de la cave) : Le Grand Quiz et Où est-ce ?,
