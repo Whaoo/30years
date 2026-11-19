@@ -58,6 +58,9 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
     monter, descendre ou attendre, chaque étage (1 à 4) a son vent (parfois différent à l'ouest et à l'est). 5 ciels générés
     chaque jour (`Pixel.daySeed`), le plus court trajet calculé par parcours en largeur (`solve`) sert d'objectif ;
     400 par ciel à l'objectif, −40 par tour en plus, + 1 point par seconde sous 10 min. Console `window.ballon` (`autoplay()`).
+    `REGATE` (« Régate du lac », 26/11) : `public/jeux/regate.html`, dériveur autour de 3 bouées : vitesse selon l'angle au vent
+    (zone interdite sous 40°), risées et vent qui oscille tirés de la date ; temps en centièmes (`CHRONOS.regate`), fantôme du jour.
+    Console `window.regate` (`setup('race')`, `bot(n)`).
   - Où on les trouve : deux tuiles sous la liste « Ensuite » (`GameTiles.jsx` : le jeu du jour + « Tous les jeux » qui ouvre `GamesList.jsx`),
     menu « Jeux » de l'en-tête sur téléphone (la colonne de droite y est masquée), tuile des mini-jeux en décembre ;
     bandeau du 18/11 à 9 h au 30/11 (`GamesNews.jsx` + `src/utils/gamesNews.js`, qui remplace le bandeau de la cave) : Le Grand Quiz et Où est-ce ?,

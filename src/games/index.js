@@ -266,7 +266,16 @@ export const BALLON = {
     help: '↑ monter, ↓ descendre, Espace attendre : chaque étage a son vent (échelle à droite). Se poser sur les villages dorés pour livrer. R pour refaire un ciel.',
     component: lazy(() => import('./FrameGame'))
 };
-export const DAILY_GAMES = [VOL, FUJI, GOLF, BALLON];
+export const REGATE = {
+    id: 'regate', title: 'Régate du lac', short: 'Régate',
+    eyebrow: 'Jeu du jour · jeu. 26 nov.',
+    from: new Date(2026, 10, 26, 9, 0),
+    icon: 'sail', unit: '', lowerIsBetter: true, format: chrono, frame: '/jeux/regate.html',
+    pitch: 'Tirer des bords autour de trois bouées',
+    help: '← → pour barrer (ou maintenir le clic à gauche, à droite). Face au vent, le bateau s’arrête : tire des bords à 45°. C : vue du dessus.',
+    component: lazy(() => import('./FrameGame'))
+};
+export const DAILY_GAMES = [VOL, FUJI, GOLF, BALLON, REGATE];
 // le dernier jeu du jour sorti (null avant le premier)
 export function dailyGame(now = new Date()) {
     return DAILY_GAMES.filter((g) => now >= g.from).sort((a, b) => b.from - a.from)[0] || null;

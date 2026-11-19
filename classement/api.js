@@ -19,13 +19,14 @@ const JEUX = {
     sled: 100000, ice: 100000, monts: 100000, reveillon: 100000, chrono: 60000, aventure: 200000,
     quiz: 1500, bougies: 20000, culture: 1500, geo: 10000,
     // jeux du jour (un par jour ouvré du 20 au 30 novembre)
-    vol: 20000, fuji: 60000, golf: 3000, montgolfiere: 3000
+    vol: 20000, fuji: 60000, golf: 3000, montgolfiere: 3000, regate: 90000
 };
 // Jeux où le plus petit score gagne (un temps, en secondes), avec le temps minimal plausible
 // La cave (L'Envers) : record = temps total pour éclairer la cave et retrouver le message.
 // Un habitué qui connaît les cachettes la boucle en moins de 30 s (record à 27 s) : le seuil n'écarte que l'absurde.
 // Col du Fuji : 3 tours en centièmes de seconde (le pilote d'essai le plus rapide fait 3:01)
-const CHRONOS = { envers: { min: 10 }, fuji: { min: 16000 } };
+// Régate du lac : centièmes de seconde aussi (le barreur d'essai fait un peu plus de 3 min)
+const CHRONOS = { envers: { min: 10 }, fuji: { min: 16000 }, regate: { min: 12000 } };
 JEUX.envers = 6 * 3600;
 // Jeux de la quête : le classement du jour retient le premier essai (comme le « score officiel » du site)
 const PREMIER_ESSAI = new Set(['monts', 'reveillon', 'chrono', 'aventure']);
