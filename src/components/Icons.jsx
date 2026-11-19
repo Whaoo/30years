@@ -163,6 +163,17 @@ const PATHS = {
             <rect x="14" y="14" width="7" height="7" rx="1" />
         </>
     ),
+    history: (
+        <>
+            <path d="M3 12a9 9 0 1 0 2.6-6.4L3 8" />
+            <path d="M3 3v5h5M12 7v5l3.5 2" />
+        </>
+    ),
+    lantern: (
+        <>
+            <path d="M8 4h8M9 4l-1 3h8l-1-3M7 7h10v2H7zM8 9l1 7h6l1-7M6 16h12M10 16v3h4v-3M8 21h8" />
+        </>
+    ),
     flag: (
         <>
             <path d="M6 22V3" />

@@ -1,12 +1,15 @@
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import Icon from './Icons';
 import { formatScore } from '../games';
-import { config } from '../utils/leaderboard';
+import { config, moi } from '../utils/leaderboard';
+import { questionPour } from '../utils/avis';
+import AvisPopup from './AvisPopup';
+import PseudoGate, { pseudoPlusTard } from './PseudoGate';
 
 const Leaderboard = lazy(() => import('./Leaderboard'));
 
 // Fenêtre plein écran qui accueille un mini-jeu (chargé à la demande)
-export default function GameModal({ game, best, onScore, onClose, gameProps }) {
+export default function GameModal({ game, best, onScore, onClose, gameProps, now }) {
     const closeRef = useRef(null);
 
     useEffect(() => {
@@ -21,13 +24,29 @@ export default function GameModal({ game, best, onScore, onClose, gameProps }) {
     const [enLigne, setEnLigne] = useState(false);
     const [boardOpen, setBoardOpen] = useState(false);
     const [fin, setFin] = useState(null);
-    useEffect(() => {
-        let vivant = true;
-        config().then((c) => vivant && setEnLigne(!!c));
-        return () => { vivant = false; };
-    }, []);
+    // Avant le jeu : une question éventuelle (avis), puis le pseudo s'il n'y en a pas encore. null = on vérifie.
+    const [etape, setEtape] = useState(null);
+    const [question] = useState(() => questionPour(game, now));
+    const [suggestion, setSuggestion] = useState('');
     const enLigneRef = useRef(false);
     enLigneRef.current = enLigne;
+    const pseudoAvant = () => enLigneRef.current && !moi() && !pseudoPlusTard();
+    useEffect(() => {
+        let vivant = true;
+        // l'API ne répond pas vite : on joue sans attendre
+        const t = setTimeout(() => vivant && setEtape((e) => e || 'jeu'), 2500);
+        config().then((c) => {
+            if (!vivant) return;
+            setEnLigne(!!c); enLigneRef.current = !!c;
+            setEtape((e) => e || (c && question ? 'avis' : pseudoAvant() ? 'pseudo' : 'jeu'));
+        });
+        return () => { vivant = false; clearTimeout(t); };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    const apresAvis = (estLaPersonne) => {
+        if (estLaPersonne && question) setSuggestion(question.pour);
+        setEtape(pseudoAvant() ? 'pseudo' : 'jeu');
+    };
 
     // Fin de partie : record local comme avant, puis le classement s'ouvre avec ce score
     const handleScore = useCallback((score) => {
@@ -69,9 +88,15 @@ export default function GameModal({ game, best, onScore, onClose, gameProps }) {
                 </header>
                 <div className={`game-body${boardOpen ? ' has-board' : ''}`}>
                     <div className="game-stage">
-                        <Suspense fallback={<p className="game-loading">Chargement…</p>}>
-                            <Game onScore={handleScore} {...gameProps} />
-                        </Suspense>
+                        {etape === 'jeu' ? (
+                            <Suspense fallback={<p className="game-loading">Chargement…</p>}>
+                                <Game onScore={handleScore} {...gameProps} />
+                            </Suspense>
+                        ) : etape === 'avis' ? (
+                            <AvisPopup question={question} jeu={game.id} onDone={apresAvis} />
+                        ) : etape === 'pseudo' ? (
+                            <PseudoGate game={game} suggestion={suggestion} onDone={() => setEtape('jeu')} />
+                        ) : <p className="game-loading">Chargement…</p>}
                     </div>
                     {boardOpen && (
                         <Suspense fallback={null}>

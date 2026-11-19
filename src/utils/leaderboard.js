@@ -107,6 +107,12 @@ export async function envoyerScore(jeu, score, portee = 'tout') {
     }
 }
 
+// réponse à une question posée avant un jeu (src/utils/avis.js)
+export function envoyerAvis(corps) {
+    const j = moi();
+    return api('avis', { methode: 'POST', corps, jeton: j?.jeton });
+}
+
 export function classement(jeu, portee = 'tout', score = null) {
     const j = moi();
     const q = new URLSearchParams({ jeu, portee });

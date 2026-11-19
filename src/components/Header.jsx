@@ -46,7 +46,7 @@ function GamesMenu({ games }) {
     );
 }
 
-export default function Header({ theme, weather, isAvent, isDecember, daysToStart, onHome, onAvent, onLogo, onAdventure, onBoards, games = [] }) {
+export default function Header({ theme, weather, isAvent, isDecember, daysToStart, onHome, onAvent, onLogo, onAdventure, onBoards, onHistory, games = [] }) {
     return (
         <header className="header">
             <div className="header__left">
@@ -65,6 +65,11 @@ export default function Header({ theme, weather, isAvent, isDecember, daysToStar
                     <button type="button" className="adv-btn" onClick={onAdventure} aria-label="Jouer à L’aventure de Flocon">
                         <Icon name="gift" size={18} />
                         <span>Aventure</span>
+                    </button>
+                )}
+                {onHistory && (
+                    <button type="button" className="boards-btn glass hide-sm" onClick={onHistory} aria-label="Historique des jeux de novembre" title="Historique des jeux">
+                        <Icon name="history" size={20} />
                     </button>
                 )}
                 {onBoards && (

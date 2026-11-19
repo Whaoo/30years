@@ -37,3 +37,17 @@ CREATE TABLE IF NOT EXISTS records (
     PRIMARY KEY (jeu, joueur)
 );
 CREATE INDEX IF NOT EXISTS records_jeu_score ON records (jeu, score DESC);
+
+-- Avis demandés avant un jeu (« Laura, tu as pensé quoi de Hunger Games ? ») : note de 1 à 5, commentaire facultatif.
+-- L'API la crée aussi d'elle-même à la première réponse. Pour lire les réponses : SELECT * FROM avis ORDER BY id DESC;
+CREATE TABLE IF NOT EXISTS avis (
+    id INTEGER PRIMARY KEY,
+    question TEXT NOT NULL,            -- ex. hunger-games
+    pseudo TEXT NOT NULL,              -- la personne à qui on pose la question (Laura)
+    joueur TEXT,                       -- le pseudo du classement de ce navigateur, s'il y en a un
+    jeu TEXT,                          -- le jeu avant lequel la question a été posée
+    note INTEGER NOT NULL,             -- 1 à 5 étoiles
+    commentaire TEXT NOT NULL DEFAULT '',
+    jour TEXT NOT NULL,                -- date de Paris
+    cree TEXT NOT NULL DEFAULT (datetime('now'))
+);

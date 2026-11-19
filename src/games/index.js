@@ -293,10 +293,32 @@ export const TRAIN = {
     help: 'Clique (ou touche) une pastille dorée pour basculer l’aiguillage ; 1 à 5 au clavier. La flèche montre la sortie que prendra le prochain train.',
     component: lazy(() => import('./FrameGame'))
 };
-export const DAILY_GAMES = [VOL, FUJI, GOLF, BALLON, REGATE, TOKYO, TRAIN];
+// deuxième jeu du vendredi 20 : logique, en même temps que « Vol du soir »
+export const LANTERNES = {
+    id: 'lanternes', title: 'Les Lanternes', short: 'Lanternes',
+    eyebrow: 'Jeu du jour · ven. 20 nov.',
+    from: new Date(2026, 10, 20, 9, 0),
+    icon: 'lantern', unit: 'pts', frame: '/jeux/lanternes.html',
+    pitch: 'Logique : allumer toutes les lanternes du jardin',
+    help: 'Clique (ou touche) une lanterne : elle change d’état, et ses voisines aussi (haut, bas, gauche, droite). Allume tout le jardin avec le moins de gestes possible. R pour recommencer.',
+    component: lazy(() => import('./FrameGame'))
+};
+export const DAILY_GAMES = [VOL, LANTERNES, FUJI, GOLF, BALLON, REGATE, TOKYO, TRAIN];
 // le dernier jeu du jour sorti (null avant le premier)
+// Les jeux du jour : ceux sortis le plus récemment (deux le vendredi 20), dans l'ordre du registre
+export function dailyGames(now = new Date()) {
+    const out = DAILY_GAMES.filter((g) => now >= g.from);
+    if (!out.length) return [];
+    const last = Math.max(...out.map((g) => +g.from));
+    return out.filter((g) => +g.from === last);
+}
 export function dailyGame(now = new Date()) {
-    return DAILY_GAMES.filter((g) => now >= g.from).sort((a, b) => b.from - a.from)[0] || null;
+    return dailyGames(now)[0] || null;
+}
+// « ven. 20 nov. » pour un jeu du jour, « depuis le 18 nov. » pour Le Grand Quiz et Où est-ce ?
+export function dayLabel(g) {
+    if (g.from) return g.from.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+    return 'depuis le 18 nov.';
 }
 
 export const FREE_GAMES = [CULTURE, GEO, ...DAILY_GAMES];

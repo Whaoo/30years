@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Les Lanternes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Mono:wght@500;700&display=swap">
+<style>
+/* Jeu de logique : toucher une lanterne de pierre change son état et celui de ses voisines (en croix).
+   Cinq jardins à allumer entièrement, avec le moins de gestes possible. Styles communs dans lib/pixel.js. */
+:root { --accent: #f2b24c; --accent-ink: #14141c; }
+#stage { background: #2a3160; cursor: pointer; }
+.tag.tc .p { padding: 1px 5px; background: var(--accent); color: var(--ink); }
+.ctl { position: absolute; left: 50%; bottom: max(10px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); display: flex; gap: 6px; }
+.ctl button { padding: 9px 12px 8px; border: 0; background: rgba(18, 20, 28, 0.85); color: var(--paper); font: 400 8px/1 var(--pixel); text-transform: uppercase; cursor: pointer; box-shadow: 2px 2px 0 #000; display: flex; gap: 6px; align-items: center; }
+.ctl button b { font: 700 16px/1 var(--pixel); color: var(--amber); }
+.ctl button:hover:not(:disabled) { background: rgba(242, 178, 76, 0.9); color: var(--ink); }
+.ctl button:hover:not(:disabled) b { color: var(--ink); }
+.ctl button:disabled { opacity: 0.4; cursor: default; }
+.ctl button:focus-visible { outline: 2px solid var(--paper); outline-offset: 2px; }
+.menu .ctl { display: none; }
+</style>
+</head>
+<body>
+<div id="app" class="menu">
+  <div id="stage">
+    <canvas id="gl"></canvas>
+    <canvas id="hud"></canvas>
+    <div class="tag tl" id="gTag" hidden><span class="sq"></span><span id="gLabel">Jardin 1/5</span></div>
+    <div class="tag tc" id="tTag" hidden><span id="tMoves">Gestes 0</span><span class="w" id="tGoal">Objectif 3</span><span class="p" id="tLit">Allumées 0/9</span></div>
+    <div class="tag tr" id="sTag" hidden>0 PTS</div>
+    <div id="feed" aria-live="polite"></div>
+    <div class="ctl" role="group" aria-label="Commandes">
+      <button type="button" id="bReset" title="Recommencer ce jardin (R)"><b>↺</b>Recommencer</button>
+      <button type="button" id="bSkip" title="Passer ce jardin (0 point)"><b>»</b>Passer</button>
+    </div>
+    <div class="over" id="intro">
+      <div class="card card--wide">
+        <div class="col">
+          <p class="eyebrow">Logique · jeu du jour</p>
+          <h1>Les <span>Lanternes</span></h1>
+          <p>Le soir tombe sur le jardin du temple et il faut allumer toutes les lanternes de pierre. Mais elles sont reliées : toucher une lanterne change aussi l’état de ses voisines. Cinq jardins, de plus en plus grands.</p>
+          <div class="actions"><button class="go" id="goPlay" type="button">Allumer · 5 jardins</button></div>
+          <p class="rec" id="rec"></p>
+          <p class="note">Les cinq jardins changent chaque jour, les mêmes pour tout le monde.</p>
+        </div>
+        <div class="col">
+          <p class="eyebrow">Les règles</p>
+          <ul class="goals" id="goals"></ul>
+          <p class="tip">Toucher deux fois la même lanterne revient à ne rien faire : chaque lanterne se touche au plus une fois dans le trajet parfait. L’ordre, lui, n’a aucune importance.</p>
+        </div>
+        <div class="keys" id="keys"></div>
+      </div>
+    </div>
+    <div class="over" id="results" hidden>
+      <div class="card">
+        <p class="eyebrow" id="resEyebrow">Fin de soirée</p>
+        <h2 id="resTitle">Le jardin brille</h2>
+        <dl class="score" id="resRows"></dl>
+        <div class="total"><div><p class="rec" id="resSub">Total</p><strong id="resTotal">0</strong></div><div class="mention" id="resMention">B</div></div>
+        <p class="rec" id="resRec"></p>
+        <div class="actions"><button class="go" id="again" type="button">Rejouer</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="bar">
+    <span class="logo"><svg width="10" height="12" viewBox="0 0 10 12" aria-hidden="true"><path fill="#8f8c9c" d="M2 0h6v1H2zM0 2h10v1H0zM3 9h4v2H3zM1 11h8v1H1z"/><path fill="#f2b24c" d="M2 3h6v6H2z"/></svg>Les Lanternes</span>
+    <span class="hints"><span><b>Clic</b>Toucher une lanterne</span><span><b>R</b>Recommencer le jardin</span></span>
+    <span class="grow"></span>
+    <button type="button" id="sndBtn"><svg width="9" height="8" viewBox="0 0 9 8" aria-hidden="true"><path fill="currentColor" d="M0 2h2l3-2v8L2 6H0z"/></svg><span id="sndLabel">Son coupé</span></button>
+    <button type="button" id="fsBtn"><svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true"><path fill="none" stroke="currentColor" d="M.5 3V.5H3M5 .5h2.5V3M7.5 5v2.5H5M3 7.5H.5V5"/></svg><span id="fsLabel">Plein écran</span></button>
+  </div>
+</div>
+
+<script src="lib/three.min.js"></script>
+<script src="lib/pixel.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  if (!window.THREE || !window.Pixel) { document.querySelector('.card p:not(.eyebrow)').textContent = 'La bibliothèque 3D n’a pas pu se charger. Recharge la page.'; return; }
+  const { TAU, clamp, lerp, store, report, isTouch, GEO, mtx, fmtInt } = Pixel;
+  const stage = $('stage');
+  const feed = Pixel.feeder($('feed'));
+  const snd = Pixel.sound();
+  Pixel.bar({ sound: snd, feed });
+
+  // ================================================================ la logique : toucher (i) inverse la lanterne i et ses voisines en croix
+  // un état = un entier (bit k = lanterne k allumée) ; le plus court chemin se calcule dans le corps à deux éléments
+  function pressMask(n, i) {
+    const x = i % n, y = Math.floor(i / n); let m = 1 << i;
+    if (x > 0) m |= 1 << (i - 1); if (x < n - 1) m |= 1 << (i + 1);
+    if (y > 0) m |= 1 << (i - n); if (y < n - 1) m |= 1 << (i + n);
+    return m;
+  }
+  const popcount = (v) => { let c = 0; while (v) { v &= v - 1; c++; } return c; };
+  // plus petit ensemble de lanternes à toucher pour passer de « dark » (bits éteints) à tout allumé
+  function solve(n, dark) {
+    const N = n * n, cols = Array.from({ length: N }, (_, i) => pressMask(n, i));
+    // lignes du système : pour chaque lanterne r, quelles touches la changent (bitmask) et le second membre
+    const rows = []; for (let r = 0; r < N; r++) { let m = 0; for (let c = 0; c < N; c++) if (cols[c] >> r & 1) m |= 1 << c; rows.push({ m, b: dark >> r & 1 }); }
+    const piv = []; let rank = 0;
+    for (let c = 0; c < N; c++) {
+      let p = -1; for (let r = rank; r < N; r++) if (rows[r].m >> c & 1) { p = r; break; }
+      if (p < 0) continue;
+      [rows[rank], rows[p]] = [rows[p], rows[rank]];
+      for (let r = 0; r < N; r++) if (r !== rank && rows[r].m >> c & 1) { rows[r].m ^= rows[rank].m; rows[r].b ^= rows[rank].b; }
+      piv.push(c); rank++;
+    }
+    for (let r = rank; r < N; r++) if (rows[r].b) return null;   // sans solution
+    const free = []; for (let c = 0; c < N; c++) if (!piv.includes(c)) free.push(c);
+    let best = null;
+    for (let k = 0; k < 1 << free.length; k++) {
+      let x = 0; free.forEach((c, j) => { if (k >> j & 1) x |= 1 << c; });
+      for (let r = 0; r < rank; r++) { const c = piv[r]; let v = rows[r].b; const other = rows[r].m & ~(1 << c); v ^= popcount(other & x) & 1; if (v) x |= 1 << c; }
+      if (best == null || popcount(x) < popcount(best)) best = x;
+    }
+    return best;
+  }
+  // ---------------------------------------------------------------- les cinq jardins du jour
+  const LEVELS = [{ n: 3, min: 3, max: 4 }, { n: 4, min: 4, max: 6 }, { n: 4, min: 6, max: 8 }, { n: 5, min: 6, max: 9 }, { n: 5, min: 9, max: 12 }];
+  const rr = Pixel.rng(Pixel.daySeed('lanternes'));
+  const GARDENS = LEVELS.map((L) => {
+    for (let t = 0; t < 500; t++) {
+      // on part du jardin tout allumé et on touche quelques lanternes au hasard : il reste forcément soluble
+      let state = (1 << (L.n * L.n)) - 1;
+      const k = L.min + Math.floor(rr() * (L.max - L.min + 2));
+      for (let j = 0; j < k; j++) state ^= pressMask(L.n, Math.floor(rr() * L.n * L.n));
+      const full = (1 << (L.n * L.n)) - 1, dark = full & ~state;
+      if (!dark) continue;
+      const sol = solve(L.n, dark), opt = popcount(sol);
+      if (opt >= L.min && opt <= L.max) return { n: L.n, start: state, sol, opt };
+    }
+    return null;
+  });
+
+  // ================================================================ rendu : jardin du temple au crépuscule
+  const PAL = [0x0b0d1a, 0x141833, 0x1e2448, 0x2a3160, 0x3a427a, 0x565f9e, 0x7f86b8, 0xb4b8d8, 0xe6e6f2, 0xffffff,
+    0x2e2230, 0x4a3448, 0x6a4a5c, 0x9a6fa8, 0xc77f9e, 0xe68f8a,
+    0xa8242e, 0xd0343a, 0xe8583a, 0xf08a3c, 0xf6b84a, 0xffd060, 0xfff2b0, 0xfff8e0,
+    0x1e3a2e, 0x24503a, 0x2f6a3a, 0x3f8a4a, 0x6b7a4e,
+    0x4a2e22, 0x6e3f2c, 0x94573a, 0xb8774a,
+    0x24242e, 0x34343f, 0x4a4a58, 0x6a6878, 0x8f8c9c, 0xb8b4c0, 0xd8d4dc,
+    0x1f3a66, 0x2a4a6e, 0x3d6688, 0x5a86a4];
+  const V = Pixel.view({ stage, gl: $('gl'), hud: $('hud'), palette: PAL, fov: 40, near: 1, far: 1200, target: 560 });
+  const { scene, camera, hud } = V;
+  const text = Pixel.hudText(hud), line = Pixel.hudLine(hud);
+  const HAZE = 0x3a427a;
+  const fogU = Pixel.fog({ near: 90, far: 420, haze: HAZE, sun: new THREE.Vector3(-0.4, 0.5, -0.6).normalize() });
+  scene.add(new THREE.HemisphereLight(0x9aa2d8, 0x2e2230, 1.0));
+  const skyMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, uniforms: Object.assign({}, fogU),
+    vertexShader: 'varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: `uniform vec3 haze; varying vec3 vDir; ${Pixel.GLSL.hash}
+      void main(){ vec3 d = normalize(vDir); float e = d.y;
+        vec3 c = mix(vec3(0.85, 0.5, 0.52), vec3(0.36, 0.3, 0.55), smoothstep(0.0, 0.25, e));
+        c = mix(c, vec3(0.1, 0.12, 0.28), smoothstep(0.25, 0.8, e));
+        if (hash12(floor(vec2(atan(d.x, -d.z) * 260.0, e * 260.0))) > 0.996 && e > 0.3) c = vec3(1.0);
+        float m = dot(d, normalize(vec3(-0.5, 0.35, -0.8))); if (m > 0.9993) c = vec3(1.0, 0.97, 0.88);
+        if (e < 0.0) c = haze; gl_FragColor = vec4(c, 1.0); }`
+  });
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(900, 24, 12), skyMat); sky.renderOrder = -10; sky.frustumCulled = false; scene.add(sky);
+  // gravier ratissé (lignes concentriques), mousse autour, étang, érables, clôture de bambou, portique au loin
+  const gravelMat = new THREE.ShaderMaterial({
+    uniforms: Object.assign({}, fogU),
+    vertexShader: 'varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
+    fragmentShader: `uniform float fogNear, fogFar; uniform vec3 camPos, haze; varying vec3 vW; ${Pixel.GLSL.hash} ${Pixel.GLSL.fog}
+      void main(){
+        float r = max(abs(vW.x), abs(vW.z + 1.0));
+        vec3 c = vec3(0.56, 0.55, 0.64) * (0.9 + 0.16 * hash12(floor(vW.xz * 4.0)));
+        if (fract(r / 0.9) < 0.22) c *= 0.82;
+        if (r > 17.0) c = vec3(0.16, 0.3, 0.22) * (0.85 + 0.25 * hash12(floor(vW.xz * 2.0)));
+        gl_FragColor = vec4(mix(c, haze, fogK(vW)), 1.0); }`
+  });
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 400).rotateX(-Math.PI / 2), gravelMat); scene.add(ground);
+  (function buildGarden() {
+    const parts = [], glow = [], r2 = Pixel.rng(5);
+    // bordure de pierres autour du gravier
+    for (let a = -17; a <= 17; a += 1.2) for (const [x, z] of [[a, -18], [a, 16], [-17, a - 1], [17, a - 1]]) parts.push({ geo: GEO.BOX, m: mtx(x, 0.15, z, r2() * 0.2, 1.1, 0.3, 0.7), c: 0x6a6878 });
+    // érables rouges et pins autour
+    for (let k = 0; k < 160; k++) {
+      const a = r2() * TAU, d = 21 + r2() * 45, x = Math.cos(a) * d, z = Math.sin(a) * d - 8;
+      if (z > 6) continue;   // rien devant la caméra
+      const h = 3 + r2() * 4;
+      parts.push({ geo: GEO.CYL, m: mtx(x, h * 0.25, z, 0, 0.25, h * 0.5, 0.25), c: 0x4a2e22 });
+      parts.push(r2() < 0.6
+        ? { geo: GEO.ICO, m: mtx(x, h * 0.75, z, r2() * 3, 2.4 + r2(), 1.8 + r2(), 2.4 + r2()), c: [0xd0343a, 0xa8242e, 0xe8583a, 0xf08a3c][Math.floor(r2() * 4)] }
+        : { geo: GEO.CONE7, m: mtx(x, h * 0.7, z, r2(), 2, h, 2), c: 0x24503a });
+    }
+    // clôture de bambou au fond et portique vermillon
+    for (let x = -30; x <= 30; x += 0.6) parts.push({ geo: GEO.CYL, m: mtx(x, 1.1, -24, 0, 0.18, 2.2, 0.18), c: 0xb8774a });
+    parts.push({ geo: GEO.BOX, m: mtx(0, 1.9, -24, 0, 60, 0.15, 0.3), c: 0x6e3f2c });
+    for (const s of [-4, 4]) parts.push({ geo: GEO.CYL, m: mtx(s, 4, -34, 0, 0.45, 8, 0.45), c: 0xd0343a });
+    parts.push({ geo: GEO.BOX, m: mtx(0, 7.4, -34, 0, 11, 0.6, 0.9), c: 0xd0343a });
+    parts.push({ geo: GEO.BOX, m: mtx(0, 8.2, -34, 0, 12.5, 0.5, 1.2), c: 0x24242e });
+    parts.push({ geo: GEO.BOX, m: mtx(0, 6.2, -34, 0, 9, 0.35, 0.5), c: 0xd0343a });
+    // pagode lointaine
+    for (let k = 0; k < 4; k++) { parts.push({ geo: GEO.BOX, m: mtx(30, 3 + k * 4, -60, 0.4, 6 - k, 3, 6 - k), c: 0x6e3f2c }); parts.push({ geo: GEO.CONE4, m: mtx(30, 5 + k * 4, -60, 0.4 + Math.PI / 4, 7 - k, 1.4, 7 - k), c: 0x34343f }); glow.push({ geo: GEO.BOX, m: mtx(30, 3 + k * 4, -60, 0.4, 6.1 - k, 0.8, 1), c: 0xffd060 }); }
+    scene.add(Pixel.litMesh(parts)); scene.add(Pixel.glowMesh(glow));
+    const pond = new THREE.Mesh(new THREE.CircleGeometry(9, 24).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0x2a4a6e, emissive: 0x141833 }));
+    pond.position.set(-28, 0.05, -6); scene.add(pond);
+  })();
+  // les lanternes de pierre : socle, pied, foyer (la lumière), toit, bouton ; un halo quand elle est allumée
+  const halo = (() => { const c = document.createElement('canvas'); c.width = c.height = 32; const g = c.getContext('2d'); const gr = g.createRadialGradient(16, 16, 0, 16, 16, 16); gr.addColorStop(0, 'rgba(255,220,140,0.9)'); gr.addColorStop(1, 'rgba(255,200,110,0)'); g.fillStyle = gr; g.fillRect(0, 0, 32, 32); const t = new THREE.CanvasTexture(c); t.magFilter = t.minFilter = THREE.NearestFilter; return t; })();
+  const stoneMat = new THREE.MeshLambertMaterial({ color: 0x8f8c9c, flatShading: true });
+  const roofMat = new THREE.MeshLambertMaterial({ color: 0x6a6878, flatShading: true });
+  let lanterns = [];
+  const SP = 5.2;
+  function buildLanterns(n) {
+    for (const l of lanterns) scene.remove(l.g);
+    lanterns = [];
+    for (let i = 0; i < n * n; i++) {
+      const g = new THREE.Group(), x = ((i % n) - (n - 1) / 2) * SP, z = (Math.floor(i / n) - (n - 1) / 2) * SP - 1;
+      const add = (geo, mat, y, sx, sy, sz, ry) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; m.scale.set(sx, sy, sz); if (ry) m.rotation.y = ry; g.add(m); return m; };
+      add(GEO.BOX, stoneMat, 0.25, 1.6, 0.5, 1.6);
+      add(GEO.CYL, stoneMat, 1.2, 0.35, 1.5, 0.35);
+      add(GEO.BOX, stoneMat, 2.05, 1.5, 0.25, 1.5);
+      const fire = add(GEO.BOX, new THREE.MeshBasicMaterial({ color: 0x24242e }), 2.6, 1.25, 0.9, 1.25);
+      for (const [px, pz] of [[-0.55, -0.55], [0.55, -0.55], [-0.55, 0.55], [0.55, 0.55]]) { const p = add(GEO.BOX, stoneMat, 2.6, 0.25, 0.9, 0.25); p.position.x = px; p.position.z = pz; }
+      const roof = add(GEO.CONE4, roofMat.clone(), 3.4, 1.3, 0.8, 1.3, Math.PI / 4);
+      add(GEO.SPH, stoneMat, 4.05, 0.28, 0.3, 0.28);
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: halo, transparent: true, depthWrite: false })); sp.position.y = 2.6; sp.scale.set(4.5, 4.5, 1); g.add(sp);
+      // une flaque de lumière sur le gravier : bien lisible vu d'en haut
+      const pool = new THREE.Mesh(new THREE.CircleGeometry(2.3, 20).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd060, transparent: true, opacity: 0, depthWrite: false }));
+      pool.position.y = 0.04; g.add(pool);
+      g.position.set(x, 0, z);
+      scene.add(g);
+      lanterns.push({ g, fire, sp, pool, roof, x, z, k: 0 });
+    }
+  }
+  const fx = Pixel.puffs(scene, 160);
+
+  // ================================================================ partie
+  let mode = 'menu', lv = 0, G = null, state = 0, moves = 0, scores = [], total = 0, playT = 0, time = 0, wait = 0, hover = -1;
+  const full = () => (1 << (G.n * G.n)) - 1;
+  function setLevel(i) {
+    lv = i; G = GARDENS[i]; state = G.start; moves = 0; buildLanterns(G.n); paint(true);
+    mode = 'play';
+    feed('Jardin ' + (i + 1) + ' · ' + G.n + '×' + G.n + ' · objectif ' + G.opt + ' gestes', 'gold');
+  }
+  function paint(instant) {
+    lanterns.forEach((l, i) => { l.on = !!(state >> i & 1); if (instant) l.k = l.on ? 1 : 0; });
+  }
+  function startGame() {
+    scores = []; total = 0; playT = 0;
+    $('intro').hidden = true; $('results').hidden = true; $('app').classList.remove('menu');
+    for (const id of ['gTag', 'tTag', 'sTag']) $(id).hidden = false;
+    setLevel(0);
+  }
+  function press(i) {
+    if (mode !== 'play' || i < 0) return;
+    state ^= pressMask(G.n, i); moves++;
+    paint(false);
+    snd.tone(state >> i & 1 ? 660 : 440, 0, 0.08, 0.6, 'triangle');
+    const l = lanterns[i]; for (let k = 0; k < 6; k++) fx.emit(new THREE.Vector3(l.x, 2.6, l.z), 0.25, 0.1, 0.6, 0xffd060, 0xf08a3c, new THREE.Vector3((Math.random() - 0.5) * 2, 1.5 + Math.random(), (Math.random() - 0.5) * 2), 2);
+    if (state === full()) done(false);
+  }
+  const levelPoints = (m, opt) => (m <= opt ? 400 : Math.max(100, 400 - 40 * (m - opt)));
+  function done(skipped) {
+    const pts = skipped ? 0 : levelPoints(moves, G.opt);
+    scores.push({ moves: skipped ? null : moves, opt: G.opt, pts }); total += pts;
+    if (!skipped) { lanterns.forEach((l) => fx.confetti(new THREE.Vector3(l.x, 3, l.z), [0xffd060, 0xf08a3c, 0xffffff], 4)); [523, 659, 784, 1047].forEach((f, i) => snd.tone(f, i * 0.09, 0.16)); }
+    feed(skipped ? 'Jardin passé : 0 point' : (moves <= G.opt ? 'Parfait ! +' : 'Allumé en ' + moves + ' gestes : +') + pts, skipped ? 'bad' : moves <= G.opt ? 'gold' : 'good');
+    mode = 'next'; wait = 1.7;
+  }
+  function finish() {
+    mode = 'done';
+    const bonus = Math.max(0, Math.round(300 - playT)), grand = total + bonus;
+    $('resRows').innerHTML = scores.map((s, i) => `<dt>Jardin ${i + 1} · ${GARDENS[i].n}×${GARDENS[i].n}</dt><dd class="n">${s.moves == null ? 'passé' : s.moves + ' gestes · objectif ' + s.opt}</dd><dd class="${s.pts === 400 ? 'pos' : ''}">${s.pts}</dd>`).join('')
+      + `<dt>Bonus de temps</dt><dd class="n">${Math.floor(playT / 60)} min ${String(Math.round(playT % 60)).padStart(2, '0')} s</dd><dd>${bonus}</dd>`;
+    $('resTotal').textContent = fmtInt(grand) + ' pts';
+    const perfect = scores.filter((s) => s.pts === 400).length;
+    $('resSub').textContent = perfect + ' jardin' + (perfect > 1 ? 's' : '') + ' parfait' + (perfect > 1 ? 's' : '') + ' sur 5';
+    $('resMention').textContent = grand >= 2150 ? 'S' : grand >= 1900 ? 'A' : grand >= 1500 ? 'B' : 'C';
+    $('resTitle').textContent = perfect === 5 ? 'Maître des lanternes !' : 'Le jardin brille';
+    const prev = Number(store.get(REC_KEY)) || 0;
+    if (grand > prev) store.set(REC_KEY, String(grand));
+    $('resRec').textContent = (Pixel.EMBED ? 'Score envoyé au classement · ' : '') + (grand > prev ? (prev ? 'Nouveau record ! L’ancien : ' + fmtInt(prev) + ' pts' : 'Premier record') : 'Record : ' + fmtInt(prev) + ' pts');
+    report('lanternes', grand);
+    $('results').hidden = false; $('app').classList.add('menu');
+    for (const id of ['gTag', 'tTag']) $(id).hidden = true;
+    snd.win();
+  }
+  const REC_KEY = 'lanternes:record';
+  function step(dt) {
+    time += dt; fx.step(dt);
+    if (mode === 'play') playT += dt;
+    if (mode === 'next') { wait -= dt; if (wait <= 0) { if (lv + 1 < GARDENS.length) setLevel(lv + 1); else finish(); } }
+    for (const l of lanterns) l.k += ((l.on ? 1 : 0) - l.k) * Math.min(1, dt * 10);
+    if (mode === 'menu') { if (!G) { G = GARDENS[3]; state = G.start; buildLanterns(G.n); paint(true); } if (Math.random() < dt * 1.2) { state ^= pressMask(G.n, Math.floor(Math.random() * G.n * G.n)); paint(false); } }
+  }
+
+  // ================================================================ caméra, dessin, clic
+  const tmpV = new THREE.Vector3(), ON = new THREE.Color(0xffd060), OFF = new THREE.Color(0x14141c), ROOF_ON = new THREE.Color(0xb8774a), ROOF_OFF = new THREE.Color(0x4a4a58);
+  function placeCamera() {
+    const a = V.RW / V.RH, s = G ? G.n : 5;
+    if (mode === 'menu') { const t = time * 0.07; camera.position.set(Math.sin(t) * 40, 26, Math.cos(t) * 40 + 4); camera.lookAt(0, 1, -2); return; }
+    const d = (s * SP + 6) * (a < 1 ? 1.25 / a : 1.25);
+    camera.position.set(0, d * 0.86, d * 0.74); camera.lookAt(0, 1.2, -1.2);
+  }
+  function project(x, y, z) { tmpV.set(x, y, z).project(camera); return tmpV.z > 1 ? null : [(tmpV.x * 0.5 + 0.5) * V.RW, (-tmpV.y * 0.5 + 0.5) * V.RH]; }
+  function render() {
+    for (const l of lanterns) {
+      l.fire.material.color.copy(OFF).lerp(ON, l.k); const f = 0.9 + 0.1 * Math.sin(time * 8 + l.x);
+      l.sp.material.opacity = l.k * f * 0.9; l.sp.visible = l.k > 0.05;
+      l.pool.material.opacity = l.k * 0.55 * f;
+      l.roof.material.color.copy(ROOF_OFF).lerp(ROOF_ON, l.k);
+    }
+    placeCamera(); camera.updateMatrixWorld();
+    fogU.camPos.value.copy(camera.position); sky.position.copy(camera.position);
+    V.render();
+    drawHud();
+    if (mode !== 'menu' && mode !== 'done' && G) {
+      $('gLabel').textContent = 'Jardin ' + (lv + 1) + '/5';
+      $('tMoves').textContent = 'Gestes ' + moves;
+      $('tGoal').textContent = 'Obj. ' + G.opt;
+      $('tLit').textContent = popcount(state) + '/' + G.n * G.n;
+      $('sTag').textContent = fmtInt(total) + ' PTS';
+    }
+    $('bReset').disabled = mode !== 'play' || moves === 0; $('bSkip').disabled = mode !== 'play';
+  }
+  // la croix que changerait la lanterne survolée
+  function drawHud() {
+    if (mode !== 'play' || hover < 0) return;
+    const m = pressMask(G.n, hover);
+    lanterns.forEach((l, i) => {
+      if (!(m >> i & 1)) return;
+      const c = [[-1.2, -1.2], [1.2, -1.2], [1.2, 1.2], [-1.2, 1.2]].map(([a, b]) => project(l.x + a, 0.05, l.z + b));
+      if (c.some((p) => !p)) return;
+      for (let k = 0; k < 4; k++) line(c[k][0], c[k][1], c[(k + 1) % 4][0], c[(k + 1) % 4][1], i === hover ? '#ffffff' : '#ffd060');
+    });
+  }
+  function pick(e) {
+    const [lx, ly] = V.toLow(e.clientX, e.clientY);
+    let best = -1, bd = 1e9;
+    lanterns.forEach((l, i) => { for (const y of [0.5, 2.6]) { const c = project(l.x, y, l.z); if (!c) continue; const d = Math.hypot(c[0] - lx, c[1] - ly); if (d < bd) { bd = d; best = i; } } });
+    const lim = Math.abs(project(SP, 0, 0)[0] - project(0, 0, 0)[0]) * 0.55;
+    return bd < lim ? best : -1;
+  }
+  stage.addEventListener('pointerdown', (e) => { if (mode !== 'play' || e.target.closest('button, .card')) return; press(pick(e)); });
+  stage.addEventListener('pointermove', (e) => { hover = mode === 'play' && e.pointerType === 'mouse' ? pick(e) : -1; });
+  stage.addEventListener('pointerleave', () => { hover = -1; });
+  function resetLevel() { if (mode !== 'play' || !moves) return; state = G.start; moves = 0; paint(false); feed('On recommence ce jardin (les gestes repartent de zéro)'); }
+  $('bReset').addEventListener('click', (e) => { e.stopPropagation(); resetLevel(); });
+  $('bSkip').addEventListener('click', (e) => { e.stopPropagation(); if (mode === 'play') done(true); });
+  window.addEventListener('keydown', (e) => { if (e.code === 'KeyR') resetLevel(); else if (e.code === 'KeyM') $('sndBtn').click(); });
+  $('goPlay').addEventListener('click', (e) => { e.stopPropagation(); startGame(); });
+  $('again').addEventListener('click', (e) => { e.stopPropagation(); startGame(); });
+
+  function refreshIntro() {
+    const G2 = [
+      ['Toucher', 'la croix', 'La lanterne touchée et ses voisines directes (haut, bas, gauche, droite) changent d’état : allumées elles s’éteignent, éteintes elles s’allument.'],
+      ['Le but', 'tout allumer', 'Le jardin est terminé quand toutes ses lanternes brillent.'],
+      ['Score', '400 par jardin', '400 si tu fais l’objectif (le moins de gestes possible), 40 de moins par geste en plus. Passer un jardin : 0.'],
+      ['Temps', '1 point / s', 'Bonus d’un point par seconde sous 5 minutes, pour départager.']
+    ];
+    $('goals').innerHTML = G2.map(([a, b, c]) => `<li><i></i><span>${a}</span><b>${b}</b><small>${c}</small></li>`).join('');
+    $('keys').innerHTML = isTouch
+      ? '<b>Toucher</b><span>une lanterne</span><b>↺</b><span>recommencer le jardin (les gestes repartent de zéro)</span><b>»</b><span>passer (0 point)</span><b>En haut</b><span>gestes, objectif, lanternes allumées</span>'
+      : '<b>Clic</b><span>sur une lanterne</span><b>Survol</b><span>montre les lanternes qui vont changer</span><b>R</b><span>recommencer le jardin (les gestes repartent de zéro)</span><b>En haut</b><span>gestes, objectif, lanternes allumées</span>';
+    const r = Number(store.get(REC_KEY)) || 0;
+    $('rec').textContent = r ? 'Ton record : ' + fmtInt(r) + ' pts' : 'Pas encore de score : à toi de jouer';
+  }
+  refreshIntro();
+
+  const L = Pixel.loop(step, render);
+  window.lanternes = {
+    start: startGame, setLevel, press, solve, pressMask, GARDENS,
+    pause(p) { L.paused = p; }, sim: L.sim,
+    state: () => ({ mode, lv, moves, total, state, opt: G && G.opt, sol: G && G.sol, n: G && G.n, scores, playT }),
+    // joue la solution optimale du jardin en cours
+    autoplay() { if (mode !== 'play') return; for (let i = 0; i < G.n * G.n; i++) if (G.sol >> i & 1) press(i); }
+  };
+})();
+</script>
+</body>
+</html>

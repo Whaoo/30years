@@ -8,7 +8,7 @@ import GameTiles from './components/GameTiles';
 import GamesList from './components/GamesList';
 import GamesTile from './components/GamesTile';
 import GameModal from './components/GameModal';
-import { ADVENTURE, ALL_GAMES, CANDLES, CULTURE, FREE_GAMES, GAMES, GEO, QUIZ, dailyGame, getGame, isUnlocked } from './games';
+import { ADVENTURE, ALL_GAMES, CANDLES, CULTURE, FREE_GAMES, GAMES, GEO, QUIZ, dailyGames, getGame, isUnlocked } from './games';
 import { clearBests, loadBests, saveScore } from './games/scores';
 import AdventCalendar from './components/AdventCalendar';
 import Gags from './components/Gags';
@@ -186,19 +186,20 @@ function App() {
     // Les classements de tous les jeux ouverts (bouton « Classements »), la cave en premier
     // Jeux libres déjà sortis (les jeux du jour s'ouvrent à leur date) et le dernier jeu du jour
     const freeGames = FREE_GAMES.filter((g) => isUnlocked(g, advent, now));
-    const today = dailyGame(now);
+    const todays = dailyGames(now);
+    const today = todays[0] || null;
     const boardGames = enLigne
         ? [
             ENVERS_BOARD,
-            ...(today ? [today] : []),
-            ...freeGames.filter((g) => g !== today), QUIZ, CANDLES,
+            ...todays,
+            ...freeGames.filter((g) => !todays.includes(g)), QUIZ, CANDLES,
             ...[ADVENTURE, ...GAMES].filter((g) => isUnlocked(g, advent, now))
         ]
         : [];
     const openBoards = boardGames.length ? () => { setGamesList(false); setBoard({ jeu: (today || boardGames[0]).id, fin: null }); } : null;
     // Deux annonces successives : la cave jusqu'au 18/11 à 9 h, puis les jeux libres (même fermé, le bandeau des jeux ne rend pas la place à la cave)
-    const newsGames = today ? [today] : [CULTURE, GEO];
-    const newsId = today ? today.id : 'quiz-geo';
+    const newsGames = todays.length ? todays : [CULTURE, GEO];
+    const newsId = todays.length ? todays.map((g) => g.id).join('+') : 'quiz-geo';
     const gamesNews = gamesNewsActive(now, isToday, newsId) && !gamesNewsHidden;
     const news = announceActive(now, isToday) && !newsHidden && !gamesNewsWindow(now, isToday);
 
@@ -375,7 +376,9 @@ function App() {
                     onAvent={onAvent}
                     onLogo={onLogo}
                     onAdventure={isUnlocked(ADVENTURE, advent, now) ? () => openGame(ADVENTURE.id) : null}
-                    games={[...(today ? [today] : []), QUIZ, ...freeGames.filter((g) => g !== today)].map((g) => ({ id: g.id, title: g.title, icon: g.icon, onPlay: () => openGame(g.id) }))
+                    onHistory={freeGames.length ? () => setGamesList(true) : null}
+                    games={[...todays, QUIZ, ...freeGames.filter((g) => !todays.includes(g))].map((g) => ({ id: g.id, title: g.title, icon: g.icon, onPlay: () => openGame(g.id) }))
+                        .concat(freeGames.length ? [{ id: 'historique', title: 'Historique', icon: 'history', onPlay: () => setGamesList(true) }] : [])
                         .concat(openBoards ? [{ id: 'classements', title: 'Classements', icon: 'trophy', onPlay: openBoards }] : [])}
                     onBoards={openBoards}
                 />
@@ -395,7 +398,7 @@ function App() {
                         />
                         {isAvent
                             ? <GamesTile openCount={advent.openCount} now={now} bests={bests} onPlay={openGame} />
-                            : <GameTiles today={today} games={freeGames} bests={bests} onPlay={openGame} onAll={() => setGamesList(true)} />}
+                            : <GameTiles todays={todays} games={freeGames} bests={bests} onPlay={openGame} onHistory={() => setGamesList(true)} />}
                     </aside>
                 </main>
 
@@ -406,7 +409,7 @@ function App() {
 
             {stage > 0 && !envers && <Crack stage={stage} />}
             {gamesList && !gameId && !envers && !board && (
-                <GamesList games={freeGames} today={today} bests={bests} onPlay={(id) => { setGamesList(false); openGame(id); }} onBoards={openBoards} onClose={() => setGamesList(false)} />
+                <GamesList games={freeGames} todays={todays} bests={bests} onPlay={(id) => { setGamesList(false); openGame(id); }} onBoards={openBoards} onClose={() => setGamesList(false)} />
             )}
             {gamesNews && !gameId && !envers && !board && !gamesList && (
                 <GamesNews
@@ -463,6 +466,7 @@ function App() {
                     onScore={onGameScore}
                     onClose={closeGame}
                     gameProps={gameProps(gameId)}
+                    now={now}
                 />
             )}
             {board && !envers && (

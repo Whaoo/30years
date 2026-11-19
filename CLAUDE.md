@@ -42,8 +42,8 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
     Ce sont des pages autonomes dans `public/jeux/` affichées dans un cadre (`FrameGame.jsx`, plein écran autorisé) ;
     elles renvoient leur score par `postMessage` (`{ type: '30years:score', game, score }`). Le record du site ne compte que les parties
     solo de 10 questions de culture G / de 10 lieux. Contours de la carte : IGN Admin Express via france-geojson (Licence ouverte).
-  - Jeux du jour (`DAILY_GAMES`, un par jour ouvré du 20 au 30/11/2026) : chacun a une date `from` (9 h, heure du navigateur) et s'ouvre seul,
-    sans mise en ligne ce jour-là (`isUnlocked`) ; `dailyGame(now)` = le dernier sorti. Ajouter un jeu : sa page dans `public/jeux/`,
+  - Jeux du jour (`DAILY_GAMES`, un par jour ouvré du 20 au 30/11/2026, deux le 20 : `VOL` et `LANTERNES`) : chacun a une date `from`
+    (9 h, heure du navigateur) et s'ouvre seul, sans mise en ligne ce jour-là (`isUnlocked`) ; `dailyGames(now)` = ceux sortis en dernier. Ajouter un jeu : sa page dans `public/jeux/`,
     son entrée dans `src/games/index.js` (avec `from`) et son score maximal dans `JEUX` (`classement/api.js`).
     `VOL` (« Vol du soir », 20/11) : `public/jeux/vol-du-soir.html`, jet de Noël en 3D pixel (three.js r149 servi par le site :
     `public/jeux/lib/three.min.js`), mission de 3 min, console `window.vol` (`startMission()`, `bot(n)`, `endMission()`).
@@ -67,7 +67,10 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
     `TRAIN` (« Le Train de Noël », 30/11) : `public/jeux/train-de-noel.html`, un tunnel, 5 aiguillages, 6 gares de couleur ;
     40 trains du jour (`SEQ`, la même suite pour tout le monde) de plus en plus rapprochés ; 100 par bonne gare + 10 par train
     de série (jusqu'à +100). Console `window.train` (`autoplay(n)` : aiguilleur parfait).
-  - Où on les trouve : deux tuiles sous la liste « Ensuite » (`GameTiles.jsx` : le jeu du jour + « Tous les jeux » qui ouvre `GamesList.jsx`),
+  - `LANTERNES` (« Les Lanternes », 20/11) : `public/jeux/lanternes.html`, logique façon « lumières » : toucher une lanterne inverse
+    elle et ses voisines en croix ; 5 jardins du jour (3×3 à 5×5), objectif = solution la plus courte (algèbre dans le corps à deux éléments).
+  - Où on les trouve : deux tuiles sous la liste « Ensuite » (`GameTiles.jsx` : les jeux du jour ; s'il n'y en a qu'un, « Historique »),
+    bouton « Historique » de l'en-tête (`GamesList.jsx` : tous les jeux de novembre, jouables après leur jour),
     menu « Jeux » de l'en-tête sur téléphone (la colonne de droite y est masquée), tuile des mini-jeux en décembre ;
     bandeau du 18/11 à 9 h au 30/11 (`GamesNews.jsx` + `src/utils/gamesNews.js`, qui remplace le bandeau de la cave) : Le Grand Quiz et Où est-ce ?,
     puis le jeu du jour ; fermé ou joué, il ne revient qu'avec le jeu suivant (`30years:jeux-news` = `vu:<id>`).
@@ -97,6 +100,10 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
   (panneau « Classement » de la fenêtre de jeu). En fin de partie (score > 0), le panneau s'ouvre : sans pseudo, il le demande une fois
   en montrant la place qu'aurait ce score ; ensuite chaque score part tout seul. Onglets « Toujours » et « Aujourd'hui »
   (jeux de la quête : premier essai du jour, comme le score officiel). Si l'API ne répond pas (`npm run dev`, base absente), rien ne s'affiche.
+  Avant chaque jeu (`GameModal.jsx`) : sans pseudo, `PseudoGate.jsx` le demande d'abord (« Jouer sans pseudo » : plus demandé jusqu'au
+  prochain chargement). Avant certains jeux, une question à quelqu'un (`src/utils/avis.js` + `AvisPopup.jsx`, ex. « Laura, tu as pensé quoi
+  de Hunger Games du coup ? » avant les jeux du 20/11) : 5 étoiles + commentaire, `POST /api/avis`, table `avis` créée par l'API à la
+  première réponse ; lecture : `SELECT * FROM avis ORDER BY id DESC;` dans la console D1, ou `POST /api/admin { "action": "avis" }`.
   Podium (les 3 premiers en marches) puis la suite de la liste ; classement en direct : rechargé toutes les 20 s tant que le panneau est ouvert
   et l'onglet visible, lignes qui changent en surbrillance, arrêt après 5 min sans changement (repart au retour sur l'onglet).
 - La cave a son classement (`ENVERS_BOARD` dans `src/envers/config.js`, le meilleur temps gagne, `CHRONOS` dans `classement/api.js`) :

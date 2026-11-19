@@ -11,6 +11,7 @@
 //   GET  /api/classement?jeu=…&portee=tout|jour[&score=…] (+ jeton facultatif) → { top, total, moi, potentiel }
 //   POST /api/import        { records: { jeu: score } } + jeton → records déjà faits dans ce navigateur
 //   POST /api/admin         { action, … } + clé admin
+//   POST /api/avis          { question, note, commentaire, jeu } (+ jeton facultatif) → réponse à une question posée avant un jeu
 
 // Les jeux du site (src/games/index.js) et un score maximal plausible pour chacun (garde-fou contre les envois trafiqués)
 const JEUX = {
@@ -19,7 +20,7 @@ const JEUX = {
     sled: 100000, ice: 100000, monts: 100000, reveillon: 100000, chrono: 60000, aventure: 200000,
     quiz: 1500, bougies: 20000, culture: 1500, geo: 10000,
     // jeux du jour (un par jour ouvré du 20 au 30 novembre)
-    vol: 20000, fuji: 60000, golf: 3000, montgolfiere: 3000, regate: 90000, tokyo: 6000, train: 8000
+    vol: 20000, fuji: 60000, golf: 3000, montgolfiere: 3000, regate: 90000, tokyo: 6000, train: 8000, lanternes: 3000
 };
 // Jeux où le plus petit score gagne (un temps, en secondes), avec le temps minimal plausible
 // La cave (L'Envers) : record = temps total pour éclairer la cave et retrouver le message.
@@ -258,6 +259,31 @@ async function classement(env, request, url) {
     return json({ jeu, portee, jour, top, total: r.total, moi, potentiel: essai == null ? null : r.potentiel });
 }
 
+// Avis demandés à quelqu'un avant un jeu (« Laura, tu as pensé quoi de Hunger Games ? ») : une note de 1 à 5 et un commentaire.
+// Même base que les scores ; la table se crée toute seule à la première réponse (rien à coller dans la console).
+const QUESTIONS_AVIS = { 'hunger-games': { pour: 'Laura', max: 40 } };
+const SQL_AVIS = `CREATE TABLE IF NOT EXISTS avis (
+    id INTEGER PRIMARY KEY, question TEXT NOT NULL, pseudo TEXT NOT NULL, joueur TEXT, jeu TEXT,
+    note INTEGER NOT NULL, commentaire TEXT NOT NULL DEFAULT '', jour TEXT NOT NULL, cree TEXT NOT NULL DEFAULT (datetime('now')))`;
+async function avis(env, request) {
+    const corps = await lireCorps(request);
+    if (!corps) return erreur('Requête illisible.');
+    const q = QUESTIONS_AVIS[corps.question];
+    if (!q) return erreur('Question inconnue.');
+    const note = Math.round(Number(corps.note));
+    if (!(note >= 1 && note <= 5)) return erreur('Choisis une note de 1 à 5 étoiles.');
+    const commentaire = typeof corps.commentaire === 'string' ? corps.commentaire.trim().slice(0, 600) : '';
+    const jeu = typeof corps.jeu === 'string' && Object.prototype.hasOwnProperty.call(JEUX, corps.jeu) ? corps.jeu : null;
+    await env.DB.prepare(SQL_AVIS).run();
+    const n = await env.DB.prepare('SELECT COUNT(*) AS n FROM avis WHERE question = ?').bind(corps.question).first();
+    if (n.n >= q.max) return erreur('Merci, on a déjà assez de réponses à cette question !', 429);
+    // pseudo = la personne à qui la question est posée ; joueur = le pseudo du classement de ce navigateur, s'il y en a un
+    const joueur = await joueurDuJeton(env, request);
+    await env.DB.prepare('INSERT INTO avis (question, pseudo, joueur, jeu, note, commentaire, jour) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)')
+        .bind(corps.question, q.pour, joueur ? joueur.pseudo : null, jeu, note, commentaire, parisJour()).run();
+    return json({ ok: true });
+}
+
 async function admin(env, request) {
     if (!env.ADMIN_KEY || request.headers.get('X-Admin-Key') !== env.ADMIN_KEY) return erreur('Accès refusé.', 403);
     const corps = await lireCorps(request);
@@ -283,6 +309,11 @@ async function admin(env, request) {
         ]);
         return json({ ok: true });
     }
+    if (corps.action === 'avis') {
+        await env.DB.prepare(SQL_AVIS).run();
+        const r = await env.DB.prepare('SELECT * FROM avis ORDER BY id DESC').all();
+        return json({ avis: r.results });
+    }
     return erreur('Action inconnue.');
 }
 
@@ -300,6 +331,7 @@ export async function onRequest(context) {
         if (route === 'classement' && m === 'GET') return await classement(env, request, url);
         if (route === 'import' && m === 'POST') return await importer(env, request);
         if (route === 'admin' && m === 'POST') return await admin(env, request);
+        if (route === 'avis' && m === 'POST') return await avis(env, request);
         return erreur('Adresse inconnue.', 404);
     } catch (e) {
         // quota gratuit du jour dépassé ou base indisponible : les jeux continuent, seul le classement fait une pause
