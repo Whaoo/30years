@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>La Montgolfière</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Mono:wght@500;700&display=swap">
+<style>
+/* Jeu de logique au tour par tour : on ne choisit que l'altitude, chaque couche d'air pousse le ballon dans sa direction.
+   À gauche le plateau en 3D, à droite l'échelle des vents. Styles communs dans lib/pixel.js. */
+:root { --accent: #e8583a; --accent-ink: #fff; }
+#stage { background: #f2c8b4; }
+.tag.tc .p { padding: 1px 5px; background: var(--accent); color: #fff; }
+#ladder { position: absolute; right: max(8px, env(safe-area-inset-right, 0px)); top: 50%; transform: translateY(-50%); display: grid; gap: 3px; width: 128px; pointer-events: none; }
+#ladder div { display: grid; grid-template-columns: 16px 1fr; align-items: center; gap: 6px; padding: 5px 7px 4px; background: rgba(18, 20, 28, 0.72); font: 400 8px/1 var(--pixel); color: var(--soft); text-transform: uppercase; }
+#ladder div b { font: 700 16px/1 var(--pixel); color: var(--paper); }
+#ladder div span { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+#ladder div em { font-style: normal; font: 700 16px/1 var(--pixel); color: var(--amber); }
+#ladder div.cur { background: rgba(232, 88, 58, 0.9); color: #fff; }
+#ladder div.cur em, #ladder div.cur b { color: #fff; }
+#ladder div.ground { background: rgba(18, 20, 28, 0.5); }
+#ladder p { margin: 0 0 2px; font: 400 8px/1 var(--pixel); color: var(--paper); text-transform: uppercase; text-shadow: 1px 1px 0 #000; }
+.ctl { position: absolute; left: 50%; bottom: max(10px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); display: flex; gap: 6px; }
+.ctl button { min-width: 74px; padding: 9px 10px 8px; border: 0; background: rgba(18, 20, 28, 0.85); color: var(--paper); font: 400 8px/1 var(--pixel); text-transform: uppercase; cursor: pointer; box-shadow: 2px 2px 0 #000; display: grid; gap: 4px; justify-items: center; }
+.ctl button b { font: 700 16px/1 var(--pixel); color: var(--amber); }
+.ctl button:hover:not(:disabled) { background: rgba(232, 88, 58, 0.9); }
+.ctl button:hover:not(:disabled) b { color: #fff; }
+.ctl button:disabled { opacity: 0.4; cursor: default; }
+.ctl button.soft { min-width: 0; background: rgba(18, 20, 28, 0.6); }
+.ctl button:focus-visible { outline: 2px solid var(--paper); outline-offset: 2px; }
+.menu .ctl, .menu #ladder { display: none; }
+@media (max-width: 640px) {
+  #ladder { top: calc(max(6px, env(safe-area-inset-top, 0px)) + 46px); transform: none; width: 104px; gap: 2px; }
+  #ladder div { padding: 3px 6px 2px; }
+  #ladder div b, #ladder div em { font-size: 8px; }
+  .ctl button { min-width: 56px; padding: 8px 6px 7px; }
+  .ctl button.soft span { display: none; }
+}
+</style>
+</head>
+<body>
+<div id="app" class="menu">
+  <div id="stage">
+    <canvas id="gl"></canvas>
+    <canvas id="hud"></canvas>
+    <div class="tag tl" id="lvTag" hidden><span class="sq"></span><span id="lvLabel">Ciel 1/5</span></div>
+    <div class="tag tc" id="tTag" hidden><span id="tTurn">Tour 0</span><span class="w" id="tGoal">Objectif 9</span><span class="p" id="tDel">Livré 0/1</span></div>
+    <div class="tag tr" id="sTag" hidden>0 PTS</div>
+    <div id="feed" aria-live="polite"></div>
+    <div id="ladder" aria-label="Les vents par altitude"></div>
+    <div class="ctl" role="group" aria-label="Commandes du ballon">
+      <button type="button" id="bUp" title="Brûleur : monter d'un étage (↑)"><b>▲</b>Monter</button>
+      <button type="button" id="bWait" title="Laisser le vent pousser (Espace)"><b>●</b>Attendre</button>
+      <button type="button" id="bDown" title="Soupape : descendre d'un étage (↓)"><b>▼</b>Descendre</button>
+      <button type="button" class="soft" id="bReset" title="Recommencer ce ciel (R)"><b>↺</b><span>Refaire</span></button>
+      <button type="button" class="soft" id="bSkip" title="Passer ce ciel (0 point)"><b>»</b><span>Passer</span></button>
+    </div>
+    <div class="over" id="intro">
+      <div class="card card--wide">
+        <div class="col">
+          <p class="eyebrow">Logique · jeu du jour</p>
+          <h1>La <span>Montgolfière</span></h1>
+          <p>Une montgolfière ne se dirige pas : elle monte, elle descend, et chaque couche d’air la pousse dans sa direction. Cinq ciels à traverser pour livrer le courrier aux villages, avec le moins de tours possible.</p>
+          <div class="actions"><button class="go" id="goPlay" type="button">Décoller · 5 ciels</button></div>
+          <p class="rec" id="rec"></p>
+          <p class="note">Les cinq ciels changent chaque jour, mais ce sont les mêmes pour tout le monde.</p>
+        </div>
+        <div class="col">
+          <p class="eyebrow">Les règles</p>
+          <ul class="goals" id="goals"></ul>
+          <p class="tip">À chaque tour, l’altitude change d’abord, puis le vent de ce nouvel étage déplace le ballon d’une case. Au sol, rien ne bouge.</p>
+        </div>
+        <div class="keys" id="keys"></div>
+      </div>
+    </div>
+    <div class="over" id="results" hidden>
+      <div class="card">
+        <p class="eyebrow" id="resEyebrow">Tournée du jour</p>
+        <h2 id="resTitle">Courrier livré</h2>
+        <dl class="score" id="resRows"></dl>
+        <div class="total"><div><p class="rec" id="resSub">Total</p><strong id="resTotal">0</strong></div><div class="mention" id="resMention">B</div></div>
+        <p class="rec" id="resRec"></p>
+        <div class="actions"><button class="go" id="again" type="button">Rejouer</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="bar">
+    <span class="logo"><svg width="10" height="12" viewBox="0 0 10 12" aria-hidden="true"><path fill="#e8583a" d="M5 0a5 5 0 0 0-5 5c0 2 2 4 3 5h4c1-1 3-3 3-5a5 5 0 0 0-5-5z"/><path fill="#f6b84a" d="M3 10h4v2H3z"/></svg>La Montgolfière</span>
+    <span class="hints"><span><b>&uarr;</b>Monter</span><span><b>&darr;</b>Descendre</span><span><b>Espace</b>Attendre</span><span><b>R</b>Refaire le ciel</span></span>
+    <span class="grow"></span>
+    <button type="button" id="sndBtn"><svg width="9" height="8" viewBox="0 0 9 8" aria-hidden="true"><path fill="currentColor" d="M0 2h2l3-2v8L2 6H0z"/></svg><span id="sndLabel">Son coupé</span></button>
+    <button type="button" id="fsBtn"><svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true"><path fill="none" stroke="currentColor" d="M.5 3V.5H3M5 .5h2.5V3M7.5 5v2.5H5M3 7.5H.5V5"/></svg><span id="fsLabel">Plein écran</span></button>
+  </div>
+</div>
+
+<script src="lib/three.min.js"></script>
+<script src="lib/pixel.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  if (!window.THREE || !window.Pixel) { document.querySelector('.card p:not(.eyebrow)').textContent = 'La bibliothèque 3D n’a pas pu se charger. Recharge la page.'; return; }
+  const { TAU, clamp, lerp, smooth, hash2, fbm, store, report, isTouch, GEO, mtx, fmtInt } = Pixel;
+  const stage = $('stage');
+  const feed = Pixel.feeder($('feed'));
+  const snd = Pixel.sound();
+  Pixel.bar({ sound: snd, feed });
+
+  // ================================================================ les règles (pures, testables)
+  const N = 9, ALT = 4, SPLIT = 4;                 // plateau 9×9, 4 étages d'air ; zones ouest (x ≤ 4) / est (x ≥ 5)
+  const T = { MEADOW: 0, FOREST: 1, LAKE: 2, MOUNT: 3, VILLAGE: 4 };
+  const DIRS = { N: [0, -1], E: [1, 0], S: [0, 1], W: [-1, 0], C: [0, 0] };
+  const ARROW = { N: '↑', E: '→', S: '↓', W: '←', C: '·' };
+  const NAME = { N: 'nord', E: 'est', S: 'sud', W: 'ouest', C: 'calme' };
+  const MOUNT_TOP = 2;                              // une montagne arrête le ballon jusqu'à l'étage 2 compris
+  const windAt = (P, x, alt) => { const l = P.winds[alt]; return x <= SPLIT ? l.w : l.e; };
+  const landable = (P, i) => P.tiles[i] === T.MEADOW || P.tiles[i] === T.VILLAGE;
+  // un tour : l'altitude change, puis le vent pousse. Renvoie le nouvel état, ou null si le coup est refusé.
+  function move(P, s, act) {
+    let { x, y, alt, mask } = s; const i = y * N + x;
+    if (act === 'up') { if (alt >= ALT) return null; alt++; }
+    else if (act === 'down') {
+      if (alt <= 0) return null;
+      if (alt - 1 === 0 && !landable(P, i)) return null;
+      if (P.tiles[i] === T.MOUNT && alt - 1 <= MOUNT_TOP) return null;
+      alt--;
+    } else if (act === 'wait') { if (alt === 0) return null; }
+    let blocked = false;
+    if (alt > 0) {
+      const d = DIRS[windAt(P, x, alt)], nx = x + d[0], ny = y + d[1];
+      if (d[0] || d[1]) {
+        if (nx < 0 || ny < 0 || nx >= N || ny >= N || (P.tiles[ny * N + nx] === T.MOUNT && alt <= MOUNT_TOP)) blocked = true;
+        else { x = nx; y = ny; }
+      }
+    }
+    let delivered = -1;
+    if (alt === 0) { const k = P.targets.indexOf(y * N + x); if (k >= 0 && !(mask & (1 << k))) { mask |= 1 << k; delivered = k; } }
+    return { x, y, alt, mask, blocked, delivered };
+  }
+  // le plus court chemin (en tours) qui livre tous les villages, par parcours en largeur
+  function solve(P) {
+    const full = (1 << P.targets.length) - 1, key = (s) => ((s.mask * N * N + s.y * N + s.x) * (ALT + 1)) + s.alt;
+    const start = { x: P.start % N, y: Math.floor(P.start / N), alt: 0, mask: 0 };
+    const seen = new Map([[key(start), null]]);
+    let q = [start], depth = 0;
+    while (q.length) {
+      const nq = [];
+      for (const s of q) for (const a of ['up', 'wait', 'down']) {
+        const n = move(P, s, a); if (!n) continue;
+        const k = key(n); if (seen.has(k)) continue;
+        seen.set(k, { prev: key(s), a, s });
+        if (n.mask === full) {
+          // reconstruit la suite de coups
+          const path = [a]; let pk = key(s);
+          while (seen.get(pk)) { const e = seen.get(pk); path.unshift(e.a); pk = e.prev; }
+          return { len: depth + 1, path };
+        }
+        nq.push(n);
+      }
+      q = nq; depth++;
+      if (depth > 60) break;
+    }
+    return null;
+  }
+  // ---------------------------------------------------------------- les cinq ciels du jour (même graine pour tout le monde)
+  const LEVELS = [
+    { targets: 1, calm: 2, zones: 0, min: 5, max: 9, mounts: 4 },
+    { targets: 2, calm: 1, zones: 0, min: 8, max: 13, mounts: 6 },
+    { targets: 2, calm: 1, zones: 1, min: 10, max: 15, mounts: 7 },
+    { targets: 3, calm: 1, zones: 1, min: 12, max: 18, mounts: 8 },
+    { targets: 3, calm: 0, zones: 2, min: 14, max: 21, mounts: 9 }
+  ];
+  function generate(level, seed) {
+    const L = LEVELS[level], rr = Pixel.rng(seed);
+    const pick = (arr) => arr[Math.floor(rr() * arr.length)];
+    for (let tries = 0; tries < 400; tries++) {
+      const tiles = new Uint8Array(N * N);
+      const free = () => { for (let k = 0; k < 200; k++) { const i = Math.floor(rr() * N * N); if (tiles[i] === T.MEADOW) return i; } return -1; };
+      for (let k = 0; k < L.mounts; k++) { const i = free(); if (i >= 0) tiles[i] = T.MOUNT; }
+      for (let k = 0; k < 2; k++) { let i = free(); for (let m = 0; m < 3 && i >= 0; m++) { tiles[i] = T.LAKE; const x = i % N + pick([-1, 0, 1]), y = Math.floor(i / N) + pick([-1, 0, 1]); if (x >= 0 && y >= 0 && x < N && y < N && tiles[y * N + x] === T.MEADOW) i = y * N + x; } }
+      for (let k = 0; k < 12; k++) { const i = free(); if (i >= 0) tiles[i] = T.FOREST; }
+      const villages = []; for (let k = 0; k < 5; k++) { const i = free(); if (i >= 0) { tiles[i] = T.VILLAGE; villages.push(i); } }
+      const start = free(); if (start < 0) continue;
+      // les vents : des directions toutes différentes, quelques couches calmes ; aux derniers ciels, une couche se coupe en deux
+      const dirs = ['N', 'E', 'S', 'W'].sort(() => rr() - 0.5);
+      const winds = [null];
+      for (let a = 1; a <= ALT; a++) { const d = a <= ALT - L.calm ? dirs[a - 1] : 'C'; winds.push({ w: d, e: d }); }
+      // les couches calmes se placent au hasard (pas forcément en haut)
+      for (let a = ALT; a > 1; a--) { const b = 1 + Math.floor(rr() * a); const t = winds[a]; winds[a] = winds[b]; winds[b] = t; }
+      for (let z = 0; z < L.zones; z++) { const a = 1 + Math.floor(rr() * ALT); const other = ['N', 'E', 'S', 'W'].filter((d) => d !== winds[a].w); winds[a] = { w: winds[a].w, e: pick(other) }; }
+      const targets = villages.sort(() => rr() - 0.5).slice(0, L.targets);
+      const P = { tiles, start, targets, villages, winds, level };
+      // pas de village à livrer collé au départ
+      if (targets.some((t) => Math.abs(t % N - start % N) + Math.abs(Math.floor(t / N) - Math.floor(start / N)) < 3)) continue;
+      const sol = solve(P);
+      if (!sol || sol.len < L.min || sol.len > L.max) continue;
+      P.opt = sol.len; P.sol = sol.path;
+      return P;
+    }
+    return null;
+  }
+  const SEED = Pixel.daySeed('montgolfiere');
+  const puzzles = LEVELS.map((_, i) => { for (let k = 0; k < 40; k++) { const p = generate(i, SEED + i * 7919 + k * 104729); if (p) return p; } return null; });
+
+  // ================================================================ rendu : plateau 9×9 de cases de 8 m, étages de 7 m
+  const CELL = 8, FLOOR = 7, OFF = -(N * CELL) / 2;
+  const cx = (x) => OFF + (x + 0.5) * CELL, cz = (y) => OFF + (y + 0.5) * CELL;
+  const PAL = [0x2e2a5a, 0x46407a, 0x6a5a96, 0x9a6fa8, 0xc77f9e, 0xe68f8a, 0xf2a774, 0xf7c27e, 0xfbe0a8, 0xfff4e0,
+    0x3f4277, 0x5a5c92, 0x7f7fb0, 0xb1a8cf, 0xe6dcef, 0xa8c8e8, 0xd6e8f6,
+    0xa8242e, 0xd0343a, 0xe8583a, 0xf08a3c, 0xf6b84a, 0xffd060, 0xfff2b0,
+    0x1e3a2e, 0x24503a, 0x2f6a3a, 0x3f8a4a, 0x5ba85a, 0x7cbc62, 0x9fd07a, 0xc4e2a0, 0x6b7a4e, 0x8f8a52,
+    0x4a2e22, 0x6e3f2c, 0x94573a, 0xb8774a, 0xd29a64, 0xe4c08c,
+    0x24242e, 0x34343f, 0x4a4a58, 0x6a6878, 0x8f8c9c, 0xb8b4c0, 0xe8e4e0, 0xffffff, 0x14141c,
+    0x1f3a66, 0x2a4a6e, 0x3d6688, 0x5a86a4, 0x8fb0c4, 0x2f6fd8, 0x7fb0f0];
+  const V = Pixel.view({ stage, gl: $('gl'), hud: $('hud'), palette: PAL, fov: 42, near: 1, far: 3000, target: 560 });
+  const { scene, camera, hud } = V;
+  const text = Pixel.hudText(hud), line = Pixel.hudLine(hud);
+  const SUN = new THREE.Vector3(-0.55, 0.42, 0.5).normalize();
+  const HAZE = 0xf0c8b8;
+  const fogU = Pixel.fog({ near: 140, far: 700, haze: HAZE, sun: SUN });
+  scene.add(new THREE.HemisphereLight(0xd8d0f0, 0x6a5a50, 0.9));
+  const dl = new THREE.DirectionalLight(0xffe0c0, 0.8); dl.position.copy(SUN).multiplyScalar(100); scene.add(dl);
+  const skyMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, uniforms: Object.assign({ time: { value: 0 } }, fogU),
+    vertexShader: 'varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: `uniform vec3 sunDir, haze; uniform float time; varying vec3 vDir;
+      ${Pixel.GLSL.hash} ${Pixel.GLSL.noise}
+      void main(){
+        vec3 d = normalize(vDir); float e = d.y; float az = atan(d.x, -d.z);
+        vec3 c = mix(haze, vec3(0.98, 0.8, 0.72), smoothstep(0.0, 0.1, e));
+        c = mix(c, vec3(0.66, 0.78, 0.92), smoothstep(0.1, 0.45, e));
+        c = mix(c, vec3(0.42, 0.52, 0.8), smoothstep(0.45, 0.9, e));
+        float sd = dot(d, sunDir); c += vec3(0.25, 0.16, 0.05) * pow(max(sd, 0.0), 14.0); if (sd > 0.9985) c = vec3(1.0, 0.95, 0.8);
+        if (e > 0.02 && e < 0.5) { float n = vn2(vec2((az / 6.2831853 + 0.5) * 30.0 + time * 0.02, e * 24.0)) * 0.65 + vn2(vec2((az / 6.2831853 + 0.5) * 90.0, e * 70.0)) * 0.35;
+          if (n > 0.66) c = n > 0.76 ? vec3(1.0, 0.96, 0.92) : vec3(0.9, 0.8, 0.86); }
+        if (e < 0.0) c = haze;
+        gl_FragColor = vec4(c, 1.0);
+      }`
+  });
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(2000, 32, 16), skyMat); sky.renderOrder = -10; sky.frustumCulled = false; scene.add(sky);
+
+  // sol : une texture par ciel (cases colorées, quadrillage, frontière des zones)
+  const TEX = 512, texData = new Uint8Array(TEX * TEX * 4);
+  const groundTex = new THREE.DataTexture(texData, TEX, TEX, THREE.RGBAFormat); groundTex.magFilter = THREE.NearestFilter; groundTex.minFilter = THREE.LinearFilter;
+  const GS = 300;   // le sol couvre 300 m ; le plateau en occupe 72 au centre
+  const groundMat = new THREE.ShaderMaterial({
+    uniforms: Object.assign({ map: { value: groundTex } }, fogU),
+    vertexShader: 'varying vec2 vUv; varying vec3 vW; varying vec3 vN; void main(){ vUv = uv; vN = normal; vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
+    fragmentShader: `uniform sampler2D map; uniform vec3 sunDir, camPos, haze; uniform float fogNear, fogFar; varying vec2 vUv; varying vec3 vW; varying vec3 vN;
+      ${Pixel.GLSL.hash} ${Pixel.GLSL.fog}
+      void main(){ vec3 col = texture2D(map, vUv).rgb * (0.94 + 0.1 * hash12(floor(vW.xz * 1.2)));
+        float ndl = max(dot(normalize(vN), sunDir), 0.0); col *= vec3(0.62, 0.6, 0.72) + vec3(0.6, 0.5, 0.4) * ndl;
+        gl_FragColor = vec4(mix(col, haze, fogK(vW)), 1.0); }`
+  });
+  const groundH = (x, z) => { const inB = Math.max(Math.abs(x), Math.abs(z)) < -OFF + 2; return inB ? 0 : (fbm(x / GS + 0.5, z / GS + 0.5, 6, 3, 11) - 0.35) * 18 * smooth(-OFF, -OFF + 30, Math.max(Math.abs(x), Math.abs(z))); };
+  const ground = (() => {
+    const n = 150, g = new THREE.PlaneGeometry(GS, GS, n, n).rotateX(-Math.PI / 2), p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) p.setY(i, groundH(p.getX(i), p.getZ(i)));
+    g.computeVertexNormals();
+    // uv : (x, z) → texture, z vers le bas
+    const uv = g.attributes.uv; for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / GS + 0.5, p.getZ(i) / GS + 0.5);
+    const m = new THREE.Mesh(g, groundMat); m.frustumCulled = false; return m;
+  })();
+  scene.add(ground);
+  groundTex.flipY = false;
+  const COL = { [T.MEADOW]: [0x9fd07a, 0x7cbc62], [T.FOREST]: [0x3f8a4a, 0x2f6a3a], [T.LAKE]: [0x5a86a4, 0x3d6688], [T.MOUNT]: [0x8f8c9c, 0x6a6878], [T.VILLAGE]: [0xe4c08c, 0xd29a64] };
+  function paintGround(P) {
+    const hex = Pixel.hex;
+    for (let j = 0; j < TEX; j++) for (let i = 0; i < TEX; i++) {
+      const x = (i + 0.5) / TEX * GS - GS / 2, z = (j + 0.5) / TEX * GS - GS / 2, k = (j * TEX + i) * 4;
+      const gx = (x - OFF) / CELL, gz = (z - OFF) / CELL;
+      let c;
+      if (gx >= 0 && gz >= 0 && gx < N && gz < N) {
+        const tx = Math.floor(gx), tz = Math.floor(gz), t = P.tiles[tz * N + tx];
+        const pair = COL[t], alt = (tx + tz) % 2;
+        c = hex(pair[alt]);
+        // quadrillage fin, et frontière des deux zones de vent en pointillé
+        const fx = gx - tx, fz = gz - tz;
+        if (fx < 0.04 || fz < 0.04) c = c.map((v) => v * 0.78);
+        if (P.zoned && Math.abs(gx - (SPLIT + 1)) < 0.06 && Math.floor(gz * 4) % 2 === 0) c = hex(0xfff2b0);
+      } else {
+        const n = fbm(x / GS + 0.5, z / GS + 0.5, 12, 3, 5);
+        c = hex(n < 0.42 ? 0x7cbc62 : n < 0.55 ? 0x8f8a52 : n < 0.62 ? 0xd29a64 : 0x5ba85a);
+      }
+      texData[k] = c[0]; texData[k + 1] = c[1]; texData[k + 2] = c[2]; texData[k + 3] = 255;
+    }
+    groundTex.needsUpdate = true;
+  }
+  // décor du ciel : montagnes, forêts, lacs, villages (balises sur ceux à livrer)
+  let deco = null, glowD = null, lakes = null, beacons = [];
+  const waterMat = new THREE.MeshLambertMaterial({ color: 0x5a86a4, emissive: 0x1f3a66, emissiveIntensity: 0.3 });
+  function buildDeco(P) {
+    for (const m of [deco, glowD, lakes]) if (m) { scene.remove(m); m.geometry.dispose(); }
+    for (const b of beacons) scene.remove(b.g);
+    beacons = [];
+    const parts = [], glow = [], lake = [];
+    const rr = Pixel.rng(P.level * 131 + 7);
+    for (let i = 0; i < N * N; i++) {
+      const x = cx(i % N), z = cz(Math.floor(i / N)), t = P.tiles[i];
+      if (t === T.MOUNT) {
+        parts.push({ geo: GEO.CONE7, m: mtx(x, 9, z, rr(), 4.3, 18, 4.3), c: 0x6a6878 });
+        parts.push({ geo: GEO.CONE7, m: mtx(x, 15.5, z, rr(), 1.9, 5, 1.9), c: 0xf3f6fb });
+      } else if (t === T.FOREST) {
+        for (let k = 0; k < 5; k++) { const px = x + (rr() - 0.5) * 6, pz = z + (rr() - 0.5) * 6, h = 3 + rr() * 2.5; parts.push({ geo: GEO.CYL, m: mtx(px, h * 0.15, pz, 0, 0.25, h * 0.3, 0.25), c: 0x4a2e22 }); parts.push({ geo: GEO.CONE7, m: mtx(px, h * 0.6, pz, rr(), 1.3, h * 0.8, 1.3), c: rr() < 0.5 ? 0x24503a : 0x2f6a3a }); }
+      } else if (t === T.LAKE) {
+        lake.push({ geo: GEO.BOX, m: mtx(x, 0.06, z, 0, CELL * 0.98, 0.1, CELL * 0.98), c: 0x5a86a4 });
+      } else if (t === T.VILLAGE) {
+        for (let k = 0; k < 3; k++) {
+          const px = x + (k - 1) * 2.4 + (rr() - 0.5), pz = z + (rr() - 0.5) * 3, ry = rr() * 0.6, w = [0xe8e4e0, 0xf0dcae, 0xd29a64][k];
+          parts.push({ geo: GEO.BOX, m: mtx(px, 1.1, pz, ry, 1.9, 2.2, 1.9), c: w });
+          parts.push({ geo: GEO.CONE4, m: mtx(px, 2.9, pz, ry + Math.PI / 4, 1.7, 1.4, 1.7), c: k === 1 ? 0x94573a : 0xd0343a });
+          glow.push({ geo: GEO.BOX, m: mtx(px, 1.2, pz, ry, 0.5, 0.5, 1.95), c: 0xffd060 });
+        }
+      } else if (rr() < 0.25) {
+        parts.push({ geo: GEO.ICO, m: mtx(x + (rr() - 0.5) * 5, 0.6, z + (rr() - 0.5) * 5, rr() * 3, 0.9, 0.7, 0.9), c: [0xd0343a, 0xf08a3c, 0x3f8a4a][Math.floor(rr() * 3)] });
+      }
+    }
+    // collines et bosquets hors du plateau
+    for (let k = 0; k < 260; k++) {
+      const x = (rr() - 0.5) * 260, z = (rr() - 0.5) * 260; if (Math.max(Math.abs(x), Math.abs(z)) < -OFF + 6) continue;
+      const y = groundH(x, z), h = 4 + rr() * 4;
+      parts.push({ geo: GEO.CONE7, m: mtx(x, y + h * 0.5, z, rr(), 1.8 + rr(), h, 1.8 + rr()), c: rr() < 0.5 ? 0x2f6a3a : 0x3f8a4a });
+    }
+    deco = Pixel.litMesh(parts); scene.add(deco);
+    glowD = Pixel.glowMesh(glow.length ? glow : [{ geo: GEO.BOX, m: mtx(0, -50, 0, 0, 0.01), c: 0 }]); scene.add(glowD);
+    lakes = new THREE.Mesh(Pixel.mergeParts(lake.length ? lake : [{ geo: GEO.BOX, m: mtx(0, -50, 0, 0, 0.01), c: 0 }]), waterMat); scene.add(lakes);
+    // balises : une colonne de lumière dorée et une lettre au-dessus des villages à livrer
+    P.targets.forEach((i, k) => {
+      const g = new THREE.Group();
+      const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.9, 34, 6, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd060, transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide }));
+      beam.position.y = 17; g.add(beam);
+      const env = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.6, 0.25), new THREE.MeshBasicMaterial({ color: 0xfff4e0 })); env.position.y = 6.5; g.add(env);
+      const seal = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.3), new THREE.MeshBasicMaterial({ color: 0xd0343a })); seal.position.y = 6.5; g.add(seal);
+      g.position.set(cx(i % N), 0, cz(Math.floor(i / N)));
+      scene.add(g); beacons.push({ g, env, beam, k });
+    });
+  }
+  // le ballon : enveloppe à fuseaux colorés, nacelle, brûleur
+  const balloon = (() => {
+    const g = new THREE.Group(), cols = [0xe8583a, 0xf6b84a, 0xe8583a, 0xfff4e0, 0xe8583a, 0xf6b84a, 0xe8583a, 0xfff4e0];
+    for (let k = 0; k < 8; k++) {
+      const s = new THREE.Mesh(new THREE.SphereGeometry(2.7, 3, 10, k * TAU / 8, TAU / 8, 0, Math.PI * 0.82), new THREE.MeshLambertMaterial({ color: cols[k], flatShading: true }));
+      s.scale.set(1, 1.18, 1); s.position.y = 5.2; g.add(s);
+    }
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 1.2, 1.3, 8), new THREE.MeshLambertMaterial({ color: 0xa8242e, flatShading: true })); neck.position.y = 2.1; g.add(neck);
+    const basket = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1, 1.3), new THREE.MeshLambertMaterial({ color: 0x94573a, flatShading: true })); basket.position.y = 0.5; g.add(basket);
+    const flame = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.4, 6), new THREE.MeshBasicMaterial({ color: 0xffd060 })); flame.position.y = 1.9; flame.visible = false; g.add(flame);
+    const lines = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute([-0.6, 1, -0.6, -1.0, 2.2, -1.0, 0.6, 1, -0.6, 1.0, 2.2, -1.0, -0.6, 1, 0.6, -1.0, 2.2, 1.0, 0.6, 1, 0.6, 1.0, 2.2, 1.0], 3)), new THREE.LineBasicMaterial({ color: 0x4a2e22 }));
+    g.add(lines);
+    g.userData.flame = flame;
+    scene.add(g);
+    return g;
+  })();
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(2.2, 16).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x14141c, transparent: true, opacity: 0.35, depthWrite: false }));
+  scene.add(shadow);
+  // traînées de vent : à l'étage du ballon, de petits traits qui filent dans la direction du vent
+  const streaks = []; const streakMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55, depthWrite: false });
+  for (let k = 0; k < 70; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 2.6), streakMat); m.userData = { ph: Math.random(), lane: Math.random(), side: Math.random() }; scene.add(m); streaks.push(m); }
+  const fx = Pixel.puffs(scene, 120);
+
+  // ================================================================ partie
+  let mode = 'menu', lv = 0, P = null, S = null, turns = 0, scores = [], total = 0, t0 = 0, playT = 0, anim = null, time = 0, preview = null;
+  function setLevel(i) {
+    lv = i; P = puzzles[i];
+    paintGround(P); buildDeco(P);
+    S = { x: P.start % N, y: Math.floor(P.start / N), alt: 0, mask: 0 };
+    turns = 0; anim = null;
+    mode = 'play';
+    feed('Ciel ' + (i + 1) + ' · ' + P.targets.length + (P.targets.length > 1 ? ' villages' : ' village') + ' · objectif ' + P.opt + ' tours', 'gold');
+    if (P.zoned) setTimeout(() => feed('Pointillés : le vent change de l’autre côté', 'gold'), 1200);
+    refreshLadder(); refreshButtons();
+  }
+  puzzles.forEach((p) => { if (p) p.zoned = p.winds.some((l) => l && l.w !== l.e); });
+  function startGame() {
+    scores = []; total = 0; playT = 0;
+    $('intro').hidden = true; $('results').hidden = true; $('app').classList.remove('menu');
+    for (const id of ['lvTag', 'tTag', 'sTag']) $(id).hidden = false;
+    setLevel(0);
+  }
+  function act(a) {
+    if (mode !== 'play' || anim) return;
+    const n = move(P, S, a);
+    if (!n) { feed(a === 'down' ? (S.alt === 1 ? 'Impossible de se poser ici' : 'La montagne est dessous') : a === 'up' ? 'Plafond atteint' : 'Au sol, il faut monter', 'bad'); snd.tone(180, 0, 0.12, 0.6); return; }
+    turns++;
+    anim = { from: { ...S }, to: n, t: 0, a };
+    if (a === 'up') { snd.noise(0.5, 700, 0.6); }
+    S = { x: n.x, y: n.y, alt: n.alt, mask: n.mask };
+    refreshLadder(); refreshButtons();
+  }
+  function arrived(n) {
+    if (n.blocked) feed('Bloqué : le ballon reste sur place', 'bad');
+    if (n.delivered >= 0) {
+      const b = beacons.find((x) => x.k === n.delivered);
+      if (b) { b.beam.material.color.set(0x9fd07a); b.env.visible = false; fx.confetti(b.g.position.clone().setY(3), [0xd0343a, 0xffd060, 0x5ba85a, 0xffffff], 26); }
+      feed('Courrier livré !', 'good'); [659, 784].forEach((f, i) => snd.tone(f, i * 0.1, 0.16));
+    }
+    if (S.mask === (1 << P.targets.length) - 1) levelDone(false);
+  }
+  function levelPoints(t, opt) { return t <= opt ? 400 : Math.max(100, 400 - 40 * (t - opt)); }
+  function levelDone(skipped) {
+    const pts = skipped ? 0 : levelPoints(turns, P.opt);
+    scores.push({ turns: skipped ? null : turns, opt: P.opt, pts });
+    total += pts;
+    feed(skipped ? 'Ciel passé : 0 point' : (turns <= P.opt ? 'Trajet parfait ! +' : 'Ciel réussi en ' + turns + ' tours : +') + pts, skipped ? 'bad' : turns <= P.opt ? 'gold' : 'good');
+    mode = 'next'; anim = { wait: 1.8 };
+    refreshButtons();
+  }
+  function finish() {
+    mode = 'done';
+    const timeBonus = Math.max(0, Math.round(600 - playT));
+    const grand = total + timeBonus;
+    $('resRows').innerHTML = scores.map((s, i) => `<dt>Ciel ${i + 1}</dt><dd class="n">${s.turns == null ? 'passé' : s.turns + ' tours · objectif ' + s.opt}</dd><dd class="${s.pts === 400 ? 'pos' : ''}">${s.pts}</dd>`).join('')
+      + `<dt>Bonus de temps</dt><dd class="n">${Math.floor(playT / 60)} min ${String(Math.round(playT % 60)).padStart(2, '0')} s</dd><dd>${timeBonus}</dd>`;
+    $('resTotal').textContent = fmtInt(grand) + ' pts';
+    const perfect = scores.filter((s) => s.pts === 400).length;
+    $('resSub').textContent = perfect + ' trajet' + (perfect > 1 ? 's' : '') + ' parfait' + (perfect > 1 ? 's' : '') + ' sur 5';
+    const mention = grand >= 2300 ? 'S' : grand >= 2000 ? 'A' : grand >= 1600 ? 'B' : 'C';
+    $('resMention').textContent = mention;
+    $('resTitle').textContent = perfect === 5 ? 'Pilote parfait !' : 'Courrier livré';
+    const prev = Number(store.get(REC_KEY)) || 0;
+    if (grand > prev) store.set(REC_KEY, String(grand));
+    $('resRec').textContent = (Pixel.EMBED ? 'Score envoyé au classement · ' : '') + (grand > prev ? (prev ? 'Nouveau record ! L’ancien : ' + fmtInt(prev) + ' pts' : 'Premier record') : 'Record : ' + fmtInt(prev) + ' pts');
+    report('montgolfiere', grand);
+    $('results').hidden = false; $('app').classList.add('menu');
+    for (const id of ['lvTag', 'tTag']) $(id).hidden = true;
+    snd.win();
+  }
+  const REC_KEY = 'montgolfiere:record';
+
+  function step(dt) {
+    time += dt; fx.step(dt);
+    if (mode === 'play') playT += dt;
+    if (anim && anim.wait != null) { anim.wait -= dt; if (anim.wait <= 0) { anim = null; if (lv + 1 < puzzles.length) setLevel(lv + 1); else finish(); } return; }
+    if (anim) {
+      anim.t += dt / 0.75;
+      if (anim.t >= 1) { const n = anim.to; anim = null; arrived(n); }
+    }
+  }
+  // position affichée du ballon : l'altitude d'abord (0 → 0,35), puis la dérive (0,35 → 1)
+  function balloonPos(out) {
+    let x = S.x, y = S.y, alt = S.alt;
+    if (anim && anim.to) {
+      const f = anim.from, n = anim.to, t = anim.t;
+      const ka = smooth(0, 0.35, t), kd = smooth(0.3, 1, t);
+      alt = lerp(f.alt, n.alt, ka);
+      x = lerp(f.x, n.x, kd); y = lerp(f.y, n.y, kd);
+      if (n.blocked) { const d = DIRS[windAt(P, f.x, n.alt)]; const b = Math.sin(Math.PI * kd) * 0.18; x = f.x + d[0] * b; y = f.y + d[1] * b; }
+    }
+    out.set(cx(x), alt * FLOOR + (alt > 0 ? 0.6 * Math.sin(time * 1.6) * Math.min(1, alt) : 0), cz(y));
+    return out;
+  }
+
+  // ================================================================ dessin
+  const tmpV = new THREE.Vector3(), bp = new THREE.Vector3();
+  function placeCamera() {
+    const a = V.RW / V.RH;
+    if (a < 1) {
+      // téléphone en portrait : vue plus plongeante, le plateau occupe toute la largeur
+      const d = 104 / a;
+      camera.position.set(0, d * 0.9, d * 0.36);
+      camera.lookAt(0, 4, 6);
+    } else {
+      camera.position.set(0, 118 * 0.82, 118 * 0.62);
+      camera.lookAt(0, 9, 2);
+    }
+  }
+  function render() {
+    if (!P) { P = puzzles[0]; paintGround(P); buildDeco(P); S = { x: P.start % N, y: Math.floor(P.start / N), alt: 0, mask: 0 }; }
+    balloonPos(bp);
+    balloon.position.copy(bp); balloon.rotation.y = Math.sin(time * 0.4) * 0.3;
+    balloon.userData.flame.visible = !!(anim && anim.a === 'up' && anim.t < 0.6) || (mode === 'menu' && Math.sin(time * 2) > 0.6);
+    balloon.userData.flame.scale.setScalar(0.8 + Math.random() * 0.5);
+    shadow.position.set(bp.x, 0.08, bp.z); shadow.scale.setScalar(clamp(1 - bp.y / 50, 0.5, 1));
+    for (const b of beacons) { b.env.rotation.y = time * 1.5; b.env.position.y = 6.5 + Math.sin(time * 2 + b.k) * 0.4; }
+    // traînées du vent à l'étage du ballon
+    const alt = Math.round(bp.y / FLOOR);
+    for (const m of streaks) {
+      const u = m.userData;
+      if (alt < 1 || mode === 'menu') { m.visible = false; continue; }
+      const side = u.side < 0.5 ? 'w' : 'e', dir = P.winds[alt][side], d = DIRS[dir];
+      if (!d[0] && !d[1]) { m.visible = false; continue; }
+      m.visible = true;
+      // dans un ciel à deux zones, chaque traînée reste dans la sienne
+      const x0 = P.zoned && side === 'e' ? OFF + (SPLIT + 1) * CELL : OFF, x1 = P.zoned && side === 'w' ? OFF + (SPLIT + 1) * CELL : -OFF;
+      const ph = (u.ph + time * 0.18) % 1;
+      let x, z;
+      if (d[0]) { x = lerp(x0, x1, d[0] > 0 ? ph : 1 - ph); z = lerp(OFF, -OFF, u.lane); }
+      else { z = lerp(OFF, -OFF, d[1] > 0 ? ph : 1 - ph); x = lerp(x0, x1, u.lane); }
+      m.position.set(x, alt * FLOOR + 2 + (u.side - 0.5) * 3, z);
+      m.rotation.y = d[0] ? Math.PI / 2 : 0;
+      m.scale.z = 0.6 + 0.8 * Math.sin(ph * Math.PI);
+    }
+    if (mode === 'menu') { camera.position.set(Math.sin(time * 0.08) * 105, 70, Math.cos(time * 0.08) * 105); camera.lookAt(0, 8, 0); }
+    else placeCamera();
+    camera.updateMatrixWorld();
+    fogU.camPos.value.copy(camera.position);
+    skyMat.uniforms.time.value = time; sky.position.copy(camera.position);
+    V.render();
+    drawHud();
+    if (mode !== 'menu' && mode !== 'done') {
+      $('lvLabel').textContent = 'Ciel ' + (lv + 1) + '/5';
+      $('tTurn').textContent = 'Tour ' + turns;
+      $('tGoal').textContent = 'Objectif ' + P.opt;
+      let n = 0; for (let k = 0; k < P.targets.length; k++) if (S.mask & (1 << k)) n++;
+      $('tDel').textContent = 'Livré ' + n + '/' + P.targets.length;
+      $('sTag').textContent = fmtInt(total) + ' PTS';
+    }
+  }
+  function project(x, y, z) { tmpV.set(x, y, z).project(camera); return tmpV.z > 1 ? null : [(tmpV.x * 0.5 + 0.5) * V.RW, (-tmpV.y * 0.5 + 0.5) * V.RH]; }
+  function tileOutline(x, y, col) {
+    const c = [[OFF + x * CELL, OFF + y * CELL], [OFF + (x + 1) * CELL, OFF + y * CELL], [OFF + (x + 1) * CELL, OFF + (y + 1) * CELL], [OFF + x * CELL, OFF + (y + 1) * CELL]].map(([a, b]) => project(a, 0.2, b));
+    if (c.some((p) => !p)) return;
+    for (let k = 0; k < 4; k++) line(c[k][0], c[k][1], c[(k + 1) % 4][0], c[(k + 1) % 4][1], col);
+  }
+  function drawHud() {
+    if (mode === 'menu' || !P) return;
+    // la case sous le ballon, et un fil jusqu'au sol
+    if (!anim) {
+      tileOutline(S.x, S.y, '#ffffff');
+      const top = project(bp.x, bp.y, bp.z), bot = project(bp.x, 0.2, bp.z);
+      if (top && bot && S.alt > 0) for (let t = 0; t < 1; t += 0.08) { const a = [lerp(top[0], bot[0], t), lerp(top[1], bot[1], t)], b2 = [lerp(top[0], bot[0], t + 0.04), lerp(top[1], bot[1], t + 0.04)]; line(a[0], a[1], b2[0], b2[1], '#ffffff'); }
+    }
+    // aperçu du coup survolé
+    if (preview && !anim && mode === 'play') {
+      const n = move(P, S, preview);
+      if (n) {
+        tileOutline(n.x, n.y, n.blocked ? '#ff8a7a' : '#ffd060');
+        const p = project(cx(n.x), n.alt * FLOOR + 1, cz(n.y));
+        if (p) { const s = n.blocked ? 'BLOQUE' : n.alt === 0 ? 'SOL' : 'ETAGE ' + n.alt; const w = s.length * 4 + 3; hud.fillStyle = 'rgba(20,20,28,0.85)'; hud.fillRect(Math.round(p[0] - w / 2), Math.round(p[1] - 10), w, 7); text(s, p[0], p[1] - 9, n.blocked ? '#ff8a7a' : '#ffd060', 'c'); }
+      }
+    }
+  }
+  function refreshLadder() {
+    if (!P) return;
+    let h = '<p>Vents</p>';
+    for (let a = ALT; a >= 0; a--) {
+      const cur = S && S.alt === a;
+      if (a === 0) { h += `<div class="ground${cur ? ' cur' : ''}"><b>0</b><span>${cur ? '◆ ' : ''}sol</span></div>`; continue; }
+      const l = P.winds[a];
+      const label = l.w === l.e ? `<em>${ARROW[l.w]}</em>${NAME[l.w]}` : `<em>${ARROW[l.w]}</em>ouest <em>${ARROW[l.e]}</em>est`;
+      h += `<div class="${cur ? 'cur' : ''}"><b>${a}</b><span>${label}</span></div>`;
+    }
+    $('ladder').innerHTML = h;
+  }
+  function refreshButtons() {
+    const can = (a) => mode === 'play' && !!(P && S && move(P, S, a));
+    $('bUp').disabled = !can('up'); $('bDown').disabled = !can('down'); $('bWait').disabled = !can('wait');
+    $('bReset').disabled = mode !== 'play' || turns === 0; $('bSkip').disabled = mode !== 'play';
+  }
+  function resetLevel() {
+    if (mode !== 'play') return;
+    setLevel(lv);
+    feed('On recommence ce ciel (le compte de tours repart de zéro)');
+  }
+
+  // ================================================================ commandes
+  const bind = (id, a) => {
+    const b = $(id);
+    b.addEventListener('click', (e) => { e.stopPropagation(); act(a); });
+    b.addEventListener('pointerenter', () => { preview = a; });
+    b.addEventListener('pointerleave', () => { if (preview === a) preview = null; });
+  };
+  bind('bUp', 'up'); bind('bWait', 'wait'); bind('bDown', 'down');
+  $('bReset').addEventListener('click', (e) => { e.stopPropagation(); resetLevel(); });
+  $('bSkip').addEventListener('click', (e) => { e.stopPropagation(); if (mode === 'play' && !anim) levelDone(true); });
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
+    if (e.repeat) return;
+    if (e.code === 'ArrowUp' || e.code === 'KeyW') act('up');
+    else if (e.code === 'ArrowDown' || e.code === 'KeyS') act('down');
+    else if (e.code === 'Space' || e.code === 'ArrowRight' || e.code === 'KeyD') act('wait');
+    else if (e.code === 'KeyR') resetLevel();
+    else if (e.code === 'KeyM') $('sndBtn').click();
+  });
+  $('goPlay').addEventListener('click', (e) => { e.stopPropagation(); startGame(); });
+  $('again').addEventListener('click', (e) => { e.stopPropagation(); startGame(); });
+
+  function refreshIntro() {
+    const G2 = [
+      ['Monter, descendre, attendre', '1 tour', 'Le brûleur fait monter d’un étage, la soupape descendre d’un étage ; attendre laisse le vent faire. Chaque action compte un tour.'],
+      ['Livrer', 'se poser', 'On livre en se posant (étage 0) sur un village au faisceau doré. Impossible de se poser sur un lac, une forêt ou une montagne.'],
+      ['Montagnes et bords', 'bloquent', 'Jusqu’à l’étage 2, une montagne arrête le ballon, comme le bord de la carte : il reste sur place.'],
+      ['Score', '400 par ciel', '400 si tu fais l’objectif (le plus court trajet possible), 40 de moins par tour en plus. Puis 1 point par seconde sous 10 minutes.']
+    ];
+    $('goals').innerHTML = G2.map(([a, b, c]) => `<li><i></i><span>${a}</span><b>${b}</b><small>${c}</small></li>`).join('');
+    $('keys').innerHTML = isTouch
+      ? '<b>▲ ● ▼</b><span>monter · attendre · descendre</span><b>↺</b><span>refaire le ciel</span><b>»</b><span>passer (0 point)</span><b>Échelle</b><span>à droite : le vent de chaque étage</span>'
+      : '<b>↑ · ↓</b><span>monter · descendre</span><b>Espace · →</b><span>attendre</span><b>R</b><span>refaire le ciel (les tours repartent de zéro)</span><b>Survol</b><span>un bouton montre où ira le ballon</span>';
+    const r = Number(store.get(REC_KEY)) || 0;
+    $('rec').textContent = r ? 'Ton record : ' + fmtInt(r) + ' pts' : 'Pas encore de score : à toi de jouer';
+  }
+  refreshIntro();
+
+  const L = Pixel.loop(step, render);
+  window.ballon = {
+    start: startGame, setLevel, act, move, solve, generate, puzzles, LEVELS,
+    pause(p) { L.paused = p; }, sim: L.sim,
+    state: () => ({ mode, lv, turns, total, S: S && { ...S }, opt: P && P.opt, sol: P && P.sol, scores, playT }),
+    // joue la solution optimale du ciel en cours
+    autoplay(extra) { if (mode !== 'play') return; const path = P.sol.slice(); for (const a of path) { act(a); L.sim(120); } return ballon.state(); }
+  };
+})();
+</script>
+</body>
+</html>

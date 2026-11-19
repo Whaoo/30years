@@ -257,7 +257,16 @@ export const GOLF = {
     help: 'Tire la balle vers toi comme une fronde (ou ← → pour viser, ↑ ↓ pour doser, Espace pour jouer). C : vue du dessus pour lire les pentes.',
     component: lazy(() => import('./FrameGame'))
 };
-export const DAILY_GAMES = [VOL, FUJI, GOLF];
+export const BALLON = {
+    id: 'montgolfiere', title: 'La Montgolfière', short: 'Montgolfière',
+    eyebrow: 'Jeu du jour · mer. 25 nov.',
+    from: new Date(2026, 10, 25, 9, 0),
+    icon: 'balloon', unit: 'pts', frame: '/jeux/montgolfiere.html',
+    pitch: 'Logique : jouer avec les vents pour livrer le courrier',
+    help: '↑ monter, ↓ descendre, Espace attendre : chaque étage a son vent (échelle à droite). Se poser sur les villages dorés pour livrer. R pour refaire un ciel.',
+    component: lazy(() => import('./FrameGame'))
+};
+export const DAILY_GAMES = [VOL, FUJI, GOLF, BALLON];
 // le dernier jeu du jour sorti (null avant le premier)
 export function dailyGame(now = new Date()) {
     return DAILY_GAMES.filter((g) => now >= g.from).sort((a, b) => b.from - a.from)[0] || null;

@@ -19,7 +19,7 @@ const JEUX = {
     sled: 100000, ice: 100000, monts: 100000, reveillon: 100000, chrono: 60000, aventure: 200000,
     quiz: 1500, bougies: 20000, culture: 1500, geo: 10000,
     // jeux du jour (un par jour ouvré du 20 au 30 novembre)
-    vol: 20000, fuji: 60000, golf: 3000
+    vol: 20000, fuji: 60000, golf: 3000, montgolfiere: 3000
 };
 // Jeux où le plus petit score gagne (un temps, en secondes), avec le temps minimal plausible
 // La cave (L'Envers) : record = temps total pour éclairer la cave et retrouver le message.

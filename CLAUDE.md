@@ -54,6 +54,10 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
     `Pixel.report(jeu, score)`). `GOLF` (« Golf au couchant », 24/11) : `public/jeux/golf-au-couchant.html`, 6 trous de mini-golf
     (`HOLES` : couloir, pentes, rochers, sable, eau), physique sans hasard ; points par trou (trou en un 500, birdie 400, par 300…) ;
     console `window.golf` (`simulate(x, z, angle, puissance)`, `play(angle, puissance)`).
+    `BALLON` (« La Montgolfière », 25/11) : `public/jeux/montgolfiere.html`, logique au tour par tour sur un plateau 9×9 :
+    monter, descendre ou attendre, chaque étage (1 à 4) a son vent (parfois différent à l'ouest et à l'est). 5 ciels générés
+    chaque jour (`Pixel.daySeed`), le plus court trajet calculé par parcours en largeur (`solve`) sert d'objectif ;
+    400 par ciel à l'objectif, −40 par tour en plus, + 1 point par seconde sous 10 min. Console `window.ballon` (`autoplay()`).
   - Où on les trouve : deux tuiles sous la liste « Ensuite » (`GameTiles.jsx` : le jeu du jour + « Tous les jeux » qui ouvre `GamesList.jsx`),
     menu « Jeux » de l'en-tête sur téléphone (la colonne de droite y est masquée), tuile des mini-jeux en décembre ;
     bandeau du 18/11 à 9 h au 30/11 (`GamesNews.jsx` + `src/utils/gamesNews.js`, qui remplace le bandeau de la cave) : Le Grand Quiz et Où est-ce ?,
