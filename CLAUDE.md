@@ -47,6 +47,9 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
     son entrée dans `src/games/index.js` (avec `from`) et son score maximal dans `JEUX` (`classement/api.js`).
     `VOL` (« Vol du soir », 20/11) : `public/jeux/vol-du-soir.html`, jet de Noël en 3D pixel (three.js r149 servi par le site :
     `public/jeux/lib/three.min.js`), mission de 3 min, console `window.vol` (`startMission()`, `bot(n)`, `endMission()`).
+    `FUJI` (« Col du Fuji », 23/11) : `public/jeux/col-du-fuji.html`, contre-la-montre de 3 tours (trois couleurs, mêmes performances),
+    fantôme du meilleur chrono (`col-du-fuji:fantome:1`) ou « fantôme du col » simulé au chargement ; score = temps en centièmes
+    (`lowerIsBetter`, `format`, `CHRONOS.fuji`) ; console `window.fuji` (`setup('race')`, `bot(n, { k, turbo, drift })`, `state()`).
   - Où on les trouve : deux tuiles sous la liste « Ensuite » (`GameTiles.jsx` : le jeu du jour + « Tous les jeux » qui ouvre `GamesList.jsx`),
     menu « Jeux » de l'en-tête sur téléphone (la colonne de droite y est masquée), tuile des mini-jeux en décembre ;
     bandeau du 18/11 à 9 h au 30/11 (`GamesNews.jsx` + `src/utils/gamesNews.js`, qui remplace le bandeau de la cave) : Le Grand Quiz et Où est-ce ?,

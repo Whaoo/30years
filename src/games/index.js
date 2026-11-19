@@ -234,7 +234,21 @@ export const VOL = {
     help: 'Clic maintenu ou Maj : turbo. F ou clic droit : larguer un cadeau. 3 minutes : enchaîne les couronnes, ne livre que les chalets dorés sur ta route.',
     component: lazy(() => import('./FrameGame'))
 };
-export const DAILY_GAMES = [VOL];
+// chrono en centièmes de seconde (le classement ne garde que des entiers) → « 3:12,45 »
+const chrono = (cs) => {
+    const t = Math.round(cs);
+    return `${Math.floor(t / 6000)}:${String(Math.floor(t / 100) % 60).padStart(2, '0')},${String(t % 100).padStart(2, '0')}`;
+};
+export const FUJI = {
+    id: 'fuji', title: 'Col du Fuji', short: 'Col du Fuji',
+    eyebrow: 'Jeu du jour · lun. 23 nov.',
+    from: new Date(2026, 10, 23, 9, 0),
+    icon: 'car', unit: '', lowerIsBetter: true, format: chrono, frame: '/jeux/col-du-fuji.html',
+    pitch: 'Contre-la-montre au pied du Fuji',
+    help: 'Flèches ou souris pour diriger (l’accélérateur est automatique), Espace pour déraper, Maj ou F pour le turbo, ↓ pour freiner. 3 tours : le meilleur temps gagne.',
+    component: lazy(() => import('./FrameGame'))
+};
+export const DAILY_GAMES = [VOL, FUJI];
 // le dernier jeu du jour sorti (null avant le premier)
 export function dailyGame(now = new Date()) {
     return DAILY_GAMES.filter((g) => now >= g.from).sort((a, b) => b.from - a.from)[0] || null;
@@ -258,5 +272,6 @@ export function isUnlocked(game, advent, now = new Date(), ctx = {}) {
 
 export function formatScore(game, score) {
     if (score == null) return '—';
+    if (game.format) return game.format(score);
     return `${score} ${game.unit}`;
 }
