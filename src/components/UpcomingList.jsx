@@ -1,10 +1,20 @@
 import Penguin from './Penguin';
+import Icon from './Icons';
 import { formatDay, whenLabel } from '../utils/birthdayLogic';
 
-export default function UpcomingList({ title, items, highlightFirst = false, restLabel, play, onQuiz, extraGames = [] }) {
+export default function UpcomingList({ title, items, highlightFirst = false, restLabel, play, onQuiz, onAgenda, agendaNew = 0, extraGames = [] }) {
     return (
         <section className="list-card glass" aria-label="Prochains anniversaires">
-            <h2 className="card-title">{title}</h2>
+            <div className="list-card__head">
+                <h2 className="card-title">{title}</h2>
+                {/* les anniversaires dans l'agenda du téléphone (AgendaModal.jsx) ; agendaNew : nouveaux venus pas encore ajoutés */}
+                {onAgenda && (
+                    <button type="button" className={`agenda-chip${agendaNew ? ' agenda-chip--new' : ''}`} onClick={onAgenda} title="Ajouter les anniversaires à l’agenda de ton téléphone">
+                        <Icon name="calendar" size={15} />
+                        {agendaNew ? `${agendaNew} nouvel${agendaNew > 1 ? 's' : ''} anniversaire${agendaNew > 1 ? 's' : ''}` : 'Dans mon agenda'}
+                    </button>
+                )}
+            </div>
             <ul className="list">
                 {items.map((p, i) => {
                     const s = play.stateFor(p.id);

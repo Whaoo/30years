@@ -31,6 +31,7 @@ function GamesMenu({ games }) {
         <div className="jeux-menu" ref={box}>
             <button type="button" className="jeux-menu__btn glass" aria-expanded={open} aria-label="Jeux" title="Jeux" onClick={() => setOpen((o) => !o)}>
                 <Icon name="question" size={20} />
+                {games.some((g) => g.badge) && <span className="jeux-menu__dot" aria-hidden="true" />}
             </button>
             {open && (
                 <div className="jeux-menu__list" role="menu">
@@ -38,6 +39,7 @@ function GamesMenu({ games }) {
                         <button key={g.id} type="button" role="menuitem" onClick={() => { setOpen(false); g.onPlay(); }}>
                             <Icon name={g.icon} size={18} />
                             {g.title}
+                            {g.badge && <span className="jeux-menu__dot jeux-menu__dot--item" aria-hidden="true" />}
                         </button>
                     ))}
                 </div>

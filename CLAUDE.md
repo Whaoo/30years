@@ -78,6 +78,16 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
     `/culture` et `/ou-est-ce` ouvrent les jeux libres (adresses à partager).
 - `src/games/GameCanvas.jsx` : moteur commun des jeux canvas (boucle, mise à l'échelle, clavier, souris, tactile).
 - Vue Speed Dial de Vivaldi : `?dial`, `/dial`, ou fenêtre de 480 px de côté ou moins (`src/components/Dial.jsx`).
+- Agenda des anniversaires (gratuit, sans compte ni serveur) : des fichiers iCalendar à télécharger et ajouter une fois à l'agenda du téléphone.
+  `/anniversaires.ics` (tout le monde) et `/anniversaires/<prenom>-<jjmm>.ics` (une personne) sont générés à chaque build depuis
+  `birthdayLogic.js` par `src/utils/agenda.js` + le plugin Vite `tools/agenda/vite-plugin.js` (servis à la volée par `npm run dev`) ;
+  `public/_headers` leur donne le type `text/calendar`. Un événement d'une journée par collègue, chaque année (`RRULE:FREQ=YEARLY`, sans année
+  ni âge, « Noël » exclu), rappel à 9 h le jour J, lien vers le site. Identifiant stable prénom + jour (`agendaPeople`, UID des fichiers et clé
+  de `30years:agenda`) : ne pas changer sa forme. **Compléments** : le navigateur retient ce qu'il a déjà ajouté (`src/utils/agendaStore.js`) ;
+  quand une personne est ajoutée à la liste, le bouton de la liste devient « 1 nouvel anniversaire » (pastille sur le menu du téléphone)
+  et la fenêtre ne propose qu'elle (son fichier, ou un lien direct Google Agenda). Fenêtre « Dans mon agenda » (`AgendaModal.jsx`) :
+  bouton de la liste « Ensuite », menu du téléphone, adresse `/agenda` ou `?agenda` (à partager) ; onglets iPhone, Android, Ordinateur
+  (QR code vers `/agenda`, fait maison dans `src/utils/qr.js`). Google Agenda n'importe un fichier que depuis un ordinateur.
 - `src/envers/` : « L'Envers », la cave sous la page (du 12 au 30/11/2026 inclus, tous les jours).
   - Passage : trois coups de molette vers le bas (ou trois glissés vers le haut sur téléphone) en moins de 4 s, géré dans `App.jsx`.
   - Annonce du 12 au 18/11 à 9 h : bandeau `NewsBanner.jsx` et pastille « Nouveau ! » dans la vue Vivaldi (`config.js`).

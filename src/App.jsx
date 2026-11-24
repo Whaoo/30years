@@ -14,7 +14,9 @@ import AdventCalendar from './components/AdventCalendar';
 import Gags from './components/Gags';
 import Confetti from './components/Confetti';
 import Dial from './components/Dial';
-import { MONTHS, getSortedBirthdays } from './utils/birthdayLogic';
+import { MONTHS, birthdays, getSortedBirthdays } from './utils/birthdayLogic';
+import { agendaPeople } from './utils/agenda';
+import { notYetAdded } from './utils/agendaStore';
 import { adventState } from './utils/advent';
 import { resolveTheme, themeStyle } from './utils/theme';
 import { useWeather } from './hooks/useWeather';
@@ -36,6 +38,10 @@ const TestPanel = __TEST_MODE__ ? lazy(() => import('./components/TestPanel')) :
 // La cave sous la page : chargée seulement quand on y descend
 const EnversGame = lazy(() => import('./envers/EnversGame'));
 const BoardModal = lazy(() => import('./components/BoardModal'));
+// « Dans mon agenda » : les anniversaires à ajouter à l'agenda du téléphone ; /agenda ou ?agenda l'ouvre directement (lien à partager, QR code)
+const AgendaModal = lazy(() => import('./components/AgendaModal'));
+const agendaAsked = () => window.location.pathname.replace(/\/+$/, '') === '/agenda' || new URLSearchParams(window.location.search).has('agenda');
+const AGENDA_PEOPLE = agendaPeople(birthdays);
 
 // Adresses directes, pratiques pour tester (et à partager pour les jeux libres) : /aventure, /bougies, /quiz, /culture, /ou-est-ce
 const PATH_GAMES = { '/aventure': ADVENTURE.id, '/bougies': CANDLES.id, '/quiz': QUIZ.id, '/culture': CULTURE.id, '/ou-est-ce': GEO.id };
@@ -89,6 +95,18 @@ function App() {
     const [newsHidden, setNewsHidden] = useState(false);
     const [gamesNewsHidden, setGamesNewsHidden] = useState(false);
     const [gamesList, setGamesList] = useState(false); // fenêtre « Tous les jeux »
+    const [agendaOpen, setAgendaOpen] = useState(agendaAsked);
+    // anniversaires pas encore ajoutés à l'agenda depuis ce navigateur (null : jamais rien ajouté) ; relu à la fermeture de la fenêtre
+    const agendaNew = useMemo(() => (agendaOpen ? null : notYetAdded(AGENDA_PEOPLE)), [agendaOpen]);
+    const agendaCount = agendaNew ? agendaNew.length : 0;
+    const closeAgenda = useCallback(() => {
+        setAgendaOpen(false);
+        if (agendaAsked()) {
+            const q = new URLSearchParams(window.location.search);
+            q.delete('agenda');
+            window.history.replaceState(null, '', '/' + (q.toString() ? '?' + q : ''));
+        }
+    }, []);
     // Classements en ligne : disponibles si l'API répond ; la cave a son classement dans une fenêtre à part
     const [enLigne, setEnLigne] = useState(false);
     const [board, setBoard] = useState(null); // fenêtre des classements : { jeu, fin }
@@ -379,6 +397,7 @@ function App() {
                     onHistory={freeGames.length ? () => setGamesList(true) : null}
                     games={[...todays, QUIZ, ...freeGames.filter((g) => !todays.includes(g))].map((g) => ({ id: g.id, title: g.title, icon: g.icon, onPlay: () => openGame(g.id) }))
                         .concat(freeGames.length ? [{ id: 'historique', title: 'Historique', icon: 'history', onPlay: () => setGamesList(true) }] : [])
+                        .concat([{ id: 'agenda', title: agendaCount ? `Agenda : ${agendaCount} nouveau${agendaCount > 1 ? 'x' : ''}` : 'Dans mon agenda', icon: 'calendar', badge: agendaCount > 0, onPlay: () => setAgendaOpen(true) }])
                         .concat(openBoards ? [{ id: 'classements', title: 'Classements', icon: 'trophy', onPlay: openBoards }] : [])}
                     onBoards={openBoards}
                 />
@@ -389,6 +408,8 @@ function App() {
                         : <Countdown group={group} now={now} play={play} onWish={onWish} onCandles={() => openGame(CANDLES.id)} />}
                     <aside className="side">
                         <UpcomingList
+                            onAgenda={() => setAgendaOpen(true)}
+                            agendaNew={agendaCount}
                             title={isAvent ? 'Anniversaires' : 'Ensuite'}
                             items={listItems}
                             highlightFirst={isAvent}
@@ -411,7 +432,12 @@ function App() {
             {gamesList && !gameId && !envers && !board && (
                 <GamesList games={freeGames} todays={todays} bests={bests} onPlay={(id) => { setGamesList(false); openGame(id); }} onBoards={openBoards} onClose={() => setGamesList(false)} />
             )}
-            {gamesNews && !gameId && !envers && !board && !gamesList && (
+            {agendaOpen && !gameId && !envers && (
+                <Suspense fallback={null}>
+                    <AgendaModal people={AGENDA_PEOPLE} onClose={closeAgenda} />
+                </Suspense>
+            )}
+            {gamesNews && !gameId && !envers && !board && !gamesList && !agendaOpen && (
                 <GamesNews
                     games={newsGames}
                     daily={!!today}

@@ -1,0 +1,8 @@
+# En-têtes Cloudflare Pages (https://developers.cloudflare.com/pages/configuration/headers/)
+# Agenda des anniversaires : le bon type pour que Calendrier (iPhone), Google Agenda et les autres ouvrent les fichiers.
+/anniversaires.ics
+  Content-Type: text/calendar; charset=utf-8
+  Cache-Control: public, max-age=3600
+/anniversaires/*
+  Content-Type: text/calendar; charset=utf-8
+  Cache-Control: public, max-age=3600

@@ -249,7 +249,8 @@ const PATHS = {
             <rect x="3.5" y="5" width="17" height="15.5" rx="2" />
             <path d="M3.5 10h17M8 3v4M16 3v4" />
         </>
-    )
+    ),
+    check: <path d="M5 12.5l4.5 4.5L19 7.5" />
 };
 
 export default function Icon({ name, size = 18 }) {

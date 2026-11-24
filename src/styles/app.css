@@ -283,6 +283,8 @@ html, body, #root { height: 100%; }
 .jeux-menu__list button { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 12px; border: 0; background: transparent; font: 700 15px 'DM Sans', sans-serif; text-align: left; cursor: pointer; }
 .app .jeux-menu__list button { color: #fff; }
 .jeux-menu__list button:hover { background: rgba(255, 255, 255, 0.1); }
+/* le bandeau des jeux (position fixe, au-dessus de la page) masquait le bas du menu ouvert : on le cache le temps du menu */
+.app:has(.jeux-menu__btn[aria-expanded="true"]) .news { visibility: hidden; }
 /* Jeux libres (Le Grand Quiz, Où est-ce ?) : pages autonomes affichées dans un cadre */
 .frame-game { flex: 1 1 auto; align-self: stretch; width: 100%; min-height: 0; border: 0; border-radius: 18px; background: #070b24; display: block; }
 .hero__actions { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -323,6 +325,61 @@ html, body, #root { height: 100%; }
 .glist__rec { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 13px; color: rgba(255, 255, 255, 0.8); white-space: nowrap; }
 .glist__boards { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; border: 0; background: var(--accent); color: #14172b; font: 800 13px 'DM Sans', sans-serif; cursor: pointer; }
 .glist__pied { margin: 0; font-size: 12px; color: rgba(255, 255, 255, 0.65); }
+
+/* ---------- « Dans mon agenda » : les anniversaires à ajouter à l’agenda du téléphone (fichiers .ics) ---------- */
+.list-card__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.agenda-chip { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.28); background: rgba(255, 255, 255, 0.08); font: 700 12px 'DM Sans', sans-serif; cursor: pointer; transition: background 0.2s; }
+.app .agenda-chip { color: #fff; }
+.agenda-chip:hover { background: rgba(255, 255, 255, 0.18); }
+.agenda-chip:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.agenda-chip--new { border-color: transparent; background: var(--accent); }
+.app .agenda-chip--new { color: #14172b; }
+.agenda-chip--new:hover { background: var(--accent); filter: brightness(1.08); }
+/* pastille du menu du téléphone : un nouvel anniversaire à ajouter à l'agenda */
+.jeux-menu__btn { position: relative; }
+.jeux-menu__dot { position: absolute; top: 4px; right: 4px; width: 10px; height: 10px; border-radius: 50%; background: #ff6b6b; box-shadow: 0 0 0 2px #14172b; }
+.jeux-menu__dot--item { position: static; margin-left: auto; box-shadow: none; }
+.agenda { overflow-y: auto; width: min(520px, 100%); gap: 12px; }
+.agenda__intro { margin: 0; font-size: 14px; line-height: 1.45; color: rgba(255, 255, 255, 0.85); }
+.agenda__tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); }
+.agenda__tab { flex: 1 1 0; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; min-height: 40px; padding: 4px 8px; border: 0; border-radius: 999px; background: transparent; color: #fff; font: 800 14px 'DM Sans', sans-serif; cursor: pointer; line-height: 1.1; }
+.agenda__tab[aria-selected="true"] { background: var(--accent); color: #14172b; }
+.agenda__tab:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.agenda__moi { white-space: nowrap; font-size: 10px; font-weight: 700; opacity: 0.75; }
+.agenda__panel { display: flex; flex-direction: column; gap: 10px; }
+.agenda__btn { align-self: stretch; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 18px; border-radius: 999px; background: var(--accent); color: #14172b; font: 800 16px 'DM Sans', sans-serif; text-decoration: none; transition: transform 0.2s; }
+.agenda__btn:hover { transform: translateY(-1px); }
+.agenda__btn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.agenda__btn--small { min-height: 40px; font-size: 14px; }
+.agenda__btn--ghost { background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255, 255, 255, 0.25); }
+.agenda__steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.45; color: rgba(255, 255, 255, 0.85); }
+.agenda__steps b { color: #fff; }
+.agenda__note { margin: 0; font-size: 12px; line-height: 1.4; color: rgba(255, 255, 255, 0.65); }
+.agenda__panel--ordi { flex-direction: row; align-items: center; gap: 16px; }
+.agenda__qrbox { margin: 0; flex: none; width: 168px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; line-height: 1.35; color: rgba(255, 255, 255, 0.75); }
+.agenda__qr { display: block; width: 168px; height: 168px; border-radius: 12px; }
+.agenda__ordi { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.agenda__label { font-size: 12px; font-weight: 700; color: rgba(255, 255, 255, 0.7); }
+.agenda__btn--small { white-space: normal; text-align: center; }
+.agenda__etat { display: flex; flex-direction: column; gap: 10px; }
+.agenda__ok { margin: 0; display: flex; align-items: center; gap: 8px; font: 800 17px 'Bricolage Grotesque', 'DM Sans', sans-serif; color: #7ee2a8; }
+.agenda__ok--new { color: var(--accent); }
+.agenda__nouveaux { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.agenda__nouveaux li { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px; background: rgba(255, 255, 255, 0.07); }
+.agenda__nouveaux li.is-done { background: rgba(126, 226, 168, 0.12); }
+.agenda__qui { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.agenda__qui b { font-size: 15px; font-weight: 800; }
+.agenda__qui span { font-size: 12px; color: rgba(255, 255, 255, 0.7); }
+.agenda__fait { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700; color: #7ee2a8; }
+.agenda__mini { flex: none; padding: 7px 12px; border-radius: 999px; background: var(--accent); color: #14172b; font: 800 13px 'DM Sans', sans-serif; text-decoration: none; }
+.agenda__mini--g { background: rgba(255, 255, 255, 0.12); color: #fff; border: 1px solid rgba(255, 255, 255, 0.25); }
+.agenda__mini:focus-visible, .agenda__refaire:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.agenda__note--ok { display: flex; align-items: center; gap: 6px; color: #7ee2a8; }
+.agenda__refaire { align-self: flex-start; padding: 0; border: 0; background: none; color: rgba(255, 255, 255, 0.7); font: 600 12px 'DM Sans', sans-serif; text-decoration: underline; cursor: pointer; }
+@media (max-width: 520px) {
+  .agenda__panel--ordi { flex-direction: column; align-items: stretch; }
+  .agenda__qrbox { align-self: center; }
+}
 /* Avant le jeu : question (avis en étoiles) puis pseudo, à la place du jeu dans la fenêtre */
 .gate { width: min(440px, 100%); display: flex; flex-direction: column; gap: 10px; padding: 18px; border-radius: 20px; background: rgba(14, 18, 44, 0.98); border: 1px solid rgba(255, 255, 255, 0.14); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45); color: #fff; animation: fadeIn 0.2s ease-out; }
 .gate__eyebrow { margin: 0; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }

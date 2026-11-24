@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import agenda from './tools/agenda/vite-plugin.js'
 
 // Mode test : date simulée (?date=), jeux ouverts à tout moment (?jeu=), panneau « Test » en bas à gauche.
 // Activé automatiquement :
@@ -11,7 +12,7 @@ export default defineConfig(({ command }) => {
   const branch = process.env.CF_PAGES_BRANCH || (command === 'serve' ? 'local' : '')
   const testMode = command === 'serve' || (branch !== '' && branch !== 'main')
   return {
-    plugins: [react()],
+    plugins: [react(), agenda()], // agenda() : /anniversaires.ics (abonnement des téléphones)
     define: {
       __TEST_MODE__: JSON.stringify(testMode),
       __BUILD_INFO__: JSON.stringify({ branch, commit: (process.env.CF_PAGES_COMMIT_SHA || '').slice(0, 7) }),
