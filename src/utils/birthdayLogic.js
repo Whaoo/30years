@@ -31,6 +31,7 @@ export const birthdays = [
     { name: 'Auderic', date: '11-12' },
     { name: 'Laura', date: '07-11' },
     { name: 'Emilie', date: '11-05' },
+    { name: 'Pauline', date: '24-11' },
     { name: 'Noël', date: '25-12' }
 ];
 
