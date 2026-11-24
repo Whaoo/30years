@@ -519,7 +519,8 @@
       }
       return;
     }
-    let yaw = aim.ang;
+    // pendant un glisser, la caméra ne tourne pas : sinon la visée, calculée dans son repère, tournait toute seule
+    let yaw = aim.dragging ? camS.yaw : aim.ang;
     if (mode === 'roll' && Math.hypot(ball.vx, ball.vz) > 0.8) yaw = Math.atan2(ball.vx, -ball.vz);
     if (!camS.init) camS.yaw = yaw;
     camS.yaw += angDiff(yaw, camS.yaw) * (1 - Math.exp(-dt * (mode === 'roll' ? 1.6 : 6)));
@@ -581,8 +582,8 @@
   // ================================================================ commandes : tirer la balle vers soi (fronde), clavier, tactile
   const keys = new Set();
   function aimFromDrag(dx, dy) {
-    // vecteur tiré à l'écran → direction opposée sur le sol, dans le repère de la caméra
-    const yaw = camMode === 1 ? 0 : camS.yaw;
+    // vecteur tiré à l'écran → direction opposée sur le sol, dans le repère de la caméra figé au début du glisser
+    const yaw = aim.yaw0;
     const fxw = Math.sin(yaw), fzw = -Math.cos(yaw), rxw = Math.cos(yaw), rzw = Math.sin(yaw);
     const wx = fxw * dy - rxw * dx, wz = fzw * dy - rzw * dx;
     const L = Math.hypot(dx, dy), full = Math.min(stage.clientWidth, stage.clientHeight) * 0.42;
@@ -592,6 +593,7 @@
   stage.addEventListener('pointerdown', (e) => {
     if (mode !== 'aim' || e.target.closest('button, .card') || e.button === 2) return;
     aim.dragging = true; aim.sx = e.clientX; aim.sy = e.clientY; aim.ang0 = aim.ang; aim.pow0 = aim.pow;
+    aim.yaw0 = camMode === 1 ? 0 : camS.yaw;
     stage.setPointerCapture(e.pointerId);
   });
   stage.addEventListener('pointermove', (e) => { if (aim.dragging) aimFromDrag(e.clientX - aim.sx, e.clientY - aim.sy); });
@@ -643,7 +645,7 @@
     start: startGame, startHole, setCam, shoot, simulate, HOLES,
     pause(p) { L.paused = p; }, sim: L.sim,
     aim(ang, pow) { aim.ang = ang; aim.pow = pow; },
-    state: () => ({ mode, hole: hi, strokes, total, ball: { ...ball }, aim: { ang: aim.ang, pow: aim.pow }, card, cup: H && H.cup, tee: H && H.tee }),
+    state: () => ({ mode, hole: hi, strokes, total, ball: { ...ball }, aim: { ang: aim.ang, pow: aim.pow }, card, cup: H && H.cup, tee: H && H.tee, cam: { mode: camMode, yaw: camS.yaw } }),
     // joue un coup et attend qu'il se termine
     play(ang, pow) { aim.ang = ang; aim.pow = pow; shoot(); let n = 0; while (mode === 'roll' && n++ < 120 * 40) step(1 / 120); return { mode, strokes, ball: { x: ball.x, z: ball.z } }; },
     next() { let n = 0; while (mode === 'holed' && n++ < 120 * 5) step(1 / 120); return mode; }
