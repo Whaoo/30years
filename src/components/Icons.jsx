@@ -174,6 +174,11 @@ const PATHS = {
             <path d="M8 4h8M9 4l-1 3h8l-1-3M7 7h10v2H7zM8 9l1 7h6l1-7M6 16h12M10 16v3h4v-3M8 21h8" />
         </>
     ),
+    tree: (
+        <>
+            <path d="M12 3l-4 5h2.5L7 12.5h3L6 17h12l-4-4.5h3L13.5 8H16zM11 17v4h2v-4" />
+        </>
+    ),
     flag: (
         <>
             <path d="M6 22V3" />

@@ -22,7 +22,9 @@ const JEUX = {
     sled: 100000, ice: 100000, monts: 100000, reveillon: 100000, chrono: 60000, aventure: 200000,
     quiz: 1500, bougies: 20000, culture: 1500, geo: 10000,
     // jeux du jour (un par jour ouvré du 20 au 30 novembre)
-    vol: 20000, fuji: 60000, golf: 3000, montgolfiere: 3000, regate: 90000, tokyo: 6000, train: 8000, lanternes: 3000
+    vol: 20000, fuji: 60000, golf: 3000, montgolfiere: 3000, regate: 90000, tokyo: 6000, train: 8000, lanternes: 3000,
+    // Le Grand Sapin : 10 pts par mètre + bonus (le pilote d'essai parfait dépasse 2 000 m, soit ~30 000 pts) ; l'enquête : 1 000 au plus
+    sapin: 200000, mouettes: 1000
 };
 // Jeux où le plus petit score gagne (un temps, en secondes), avec le temps minimal plausible
 // La cave (L'Envers) : record = temps total pour éclairer la cave et retrouver le message.

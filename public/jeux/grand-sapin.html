@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Le Grand Sapin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Mono:wght@500;700&display=swap">
+<style>
+/* Le sapin du village a poussé jusqu'au ciel : un lutin rebondit de branche en branche en tournant autour du tronc
+   (le tour du tronc remplace les bords de l'écran). Saut vertical sans fin, le même sapin pour tout le monde
+   le même jour. Styles communs dans lib/pixel.js. */
+:root { --accent: #3fa04a; --accent-ink: #fff; }
+#stage { background: #1e2448; }
+.tag.tc .p { padding: 1px 5px; background: var(--accent); color: #fff; }
+#legend { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+#legend li { display: flex; align-items: center; gap: 6px; padding: 5px 6px; border: 1px solid var(--line); font: 500 11px/1.25 var(--mono); color: var(--soft); }
+#legend li i { width: 12px; height: 8px; flex: none; box-shadow: 0 0 0 1px #000; }
+#legend li b { color: var(--paper); font-weight: 700; }
+.ctl { display: flex; gap: 6px; flex-wrap: wrap; }
+.ctl button { padding: 6px 9px 5px; border: 1px solid var(--line); background: transparent; color: var(--soft); font: 400 8px/1 var(--pixel); text-transform: uppercase; cursor: pointer; }
+.ctl button[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+.ctl:not(.on) { display: none; }
+#pauseCard .card { width: min(320px, 100%); text-align: center; justify-items: center; }
+.touch .tb { opacity: 0.85; }
+.tb.on { background: var(--accent); color: #fff; }
+</style>
+</head>
+<body>
+<div id="app" class="menu">
+  <div id="stage">
+    <canvas id="gl"></canvas>
+    <canvas id="hud"></canvas>
+    <div class="tag tl" id="hTag" hidden><span class="sq"></span><span id="hVal">0 M</span></div>
+    <div class="tag tc" id="sTag" hidden><span class="w" id="sOrn">BOULES 0</span><span class="p" id="sScore">0 PTS</span></div>
+    <button class="tag tr" id="pauseBtn" type="button" hidden>Pause</button>
+    <div id="feed" aria-live="polite"></div>
+    <div class="touch" id="touch" aria-hidden="true"><div><span class="tb big" id="tL" style="display:grid;place-items:center">←</span></div><div><span class="tb big" id="tR" style="display:grid;place-items:center">→</span></div></div>
+    <div class="over" id="intro">
+      <div class="card card--wide">
+        <div class="col">
+          <p class="eyebrow">Adresse · jeu du jour</p>
+          <h1>Le Grand <span>Sapin</span></h1>
+          <p>Cette nuit, le sapin du village a poussé si haut qu’on ne voit plus son étoile. Le petit lutin part la chercher&nbsp;: il rebondit tout seul de branche en branche, toi tu le diriges autour du tronc. Jusqu’où montera-t-il&nbsp;?</p>
+          <ul id="legend"></ul>
+          <div class="ctl" id="ctl"><button type="button" id="ctlTouch" aria-pressed="true">Toucher les côtés</button><button type="button" id="ctlTilt" aria-pressed="false">Incliner le téléphone</button></div>
+          <div class="actions"><button class="go" id="goPlay" type="button">Grimper</button></div>
+          <p class="rec" id="rec"></p>
+        </div>
+        <div class="col">
+          <p class="eyebrow">Comment marquer</p>
+          <ul class="goals" id="goals"></ul>
+          <p class="tip">Le tronc fait le tour&nbsp;: en allant toujours à droite, tu reviens au même endroit. Le sapin du jour est le même pour tout le monde.</p>
+        </div>
+        <div class="keys" id="keys"></div>
+      </div>
+    </div>
+    <div class="over" id="pauseCard" hidden>
+      <div class="card"><p class="eyebrow">Pause</p><h2>Le lutin souffle</h2><div class="actions"><button class="go" id="resume" type="button">Reprendre</button></div></div>
+    </div>
+    <div class="over" id="results" hidden>
+      <div class="card">
+        <p class="eyebrow" id="resEyebrow">Chute</p>
+        <h2 id="resTitle">Joli début d’ascension</h2>
+        <dl class="score" id="resRows"></dl>
+        <div class="total"><div><p class="rec" id="resSub">Total</p><strong id="resTotal">0</strong></div><div class="mention" id="resMention">B</div></div>
+        <p class="rec" id="resRec"></p>
+        <div class="actions"><button class="go" id="again" type="button">Regrimper</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="bar">
+    <span class="logo"><svg width="10" height="12" viewBox="0 0 10 12" aria-hidden="true"><path fill="#3fa04a" d="M5 0l3 4H6.5L9 7.5H7L10 10H0l3-2.5H1L3.5 4H2z"/><path fill="#94573a" d="M4 10h2v2H4z"/><path fill="#ffd060" d="M4 0h2v1H4z"/></svg>Le Grand Sapin</span>
+    <span class="hints"><span><b>← →</b>Diriger</span><span><b>Souris</b>À gauche ou à droite du lutin</span><span><b>P</b>Pause</span></span>
+    <span class="grow"></span>
+    <button type="button" id="sndBtn"><svg width="9" height="8" viewBox="0 0 9 8" aria-hidden="true"><path fill="currentColor" d="M0 2h2l3-2v8L2 6H0z"/></svg><span id="sndLabel">Son coupé</span></button>
+    <button type="button" id="fsBtn"><svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true"><path fill="none" stroke="currentColor" d="M.5 3V.5H3M5 .5h2.5V3M7.5 5v2.5H5M3 7.5H.5V5"/></svg><span id="fsLabel">Plein écran</span></button>
+  </div>
+</div>
+
+<script src="lib/three.min.js"></script>
+<script src="lib/pixel.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  if (!window.THREE || !window.Pixel) { document.querySelector('.card p:not(.eyebrow)').textContent = 'La bibliothèque 3D n’a pas pu se charger. Recharge la page.'; return; }
+  const { TAU, clamp, lerp, smooth, store, report, isTouch, GEO, mtx, fmtInt, angDiff } = Pixel;
+  const stage = $('stage');
+  const feed = Pixel.feeder($('feed'));
+  const snd = Pixel.sound();
+  Pixel.bar({ sound: snd, feed });
+  const Q = new URLSearchParams(location.search);
+
+  // ================================================================ règles (mètres, secondes ; angle th autour du tronc)
+  const R = 4.2;                 // rayon du chemin du lutin autour du tronc
+  const G = 24, V0 = 13.2;       // rebond normal : V0² / 2G ≈ 3,6 m
+  const VSPRING = 21.5;          // ressort ≈ 9,6 m
+  const VROCKET = 24, ROCKET_T = 2.3;
+  const VT = 7.4;                // vitesse autour du tronc (m/s)
+  const PW = 0.34;               // demi-largeur du lutin
+  const JUMP = V0 * V0 / (2 * G);
+  const PTS_M = 10, PTS_BOULE = 50, PTS_CORBEAU = 100;
+  const MENTIONS = [8000, 5000, 2500];
+  const REC_KEY = 'grand-sapin:record', HREC_KEY = 'grand-sapin:hauteur', CTL_KEY = 'grand-sapin:commande';
+  const SEED = Q.get('seed') ? Number(Q.get('seed')) >>> 0 : Pixel.daySeed('grand-sapin');
+
+  // ================================================================ rendu
+  const PAL = [0x060608, 0x0b0d1a, 0x141833, 0x1e2448, 0x2a3160, 0x3a427a, 0x565f9e, 0x7f86b8, 0xa8b0d8, 0xd0d8f0, 0xeef2fb, 0xffffff,
+    0xf2a07a, 0xd8707a, 0x9a5a8a, 0x6a4a7a, 0x0f2a1e, 0x1e3a2e, 0x2f6a3a, 0x3fa04a, 0x7cbc62, 0xb8e08a, 0x3ff0a8, 0x2ab88a, 0x66e0d8,
+    0x4a2e22, 0x6e3f2c, 0x94573a, 0xb87a4a, 0x8a6a4a, 0xd29a64, 0xd0343a, 0xa8242e, 0x6e1a24, 0xff6a5a, 0xf2c81e, 0xb8901a, 0xfff2a0, 0xffd060,
+    0x2f6fd8, 0x7fb0f0, 0xbfe6fa, 0x9a5ad8, 0xf08a3c, 0xf0c8a0, 0xc89070, 0x24242e, 0x4a4a58, 0x8f8c9c];
+  const V = Pixel.view({ stage, gl: $('gl'), hud: $('hud'), palette: PAL, fov: 50, near: 0.5, far: 1400, target: 520 });
+  const { scene, camera, hud } = V;
+  const text = Pixel.hudText(hud), line = Pixel.hudLine(hud);
+  scene.fog = new THREE.Fog(0x3a427a, 40, 190);
+  const hemi = new THREE.HemisphereLight(0xc8d0f8, 0x3a427a, 1.0); scene.add(hemi);
+  const moonLight = new THREE.DirectionalLight(0xffe0c0, 0.55); moonLight.position.set(-30, 50, 40); scene.add(moonLight);
+  // une lumière douce du côté de la caméra : le lutin et l'avant des branches restent lisibles
+  const camLight = new THREE.DirectionalLight(0xfff0e0, 0.5); scene.add(camLight); scene.add(camLight.target);
+
+  // ciel : crépuscule en bas, nuit étoilée plus haut, aurore boréale tout en haut
+  const skyU = { alt: { value: 0 }, t: { value: 0 } };
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(1000, 32, 16), new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, fog: false, uniforms: skyU,
+    vertexShader: 'varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: `uniform float alt; uniform float t; varying vec3 vDir; ${Pixel.GLSL.hash}
+      void main(){
+        vec3 d = normalize(vDir); float e = d.y; float az = atan(d.x, -d.z);
+        float k = clamp(alt / 450.0, 0.0, 1.0);
+        vec3 top = mix(vec3(0.17, 0.19, 0.45), vec3(0.03, 0.04, 0.11), smoothstep(0.0, 0.7, k));
+        vec3 hor = mix(vec3(0.95, 0.6, 0.47), vec3(0.12, 0.14, 0.33), smoothstep(0.0, 0.45, k));
+        hor = mix(hor, vec3(0.6, 0.38, 0.55), smoothstep(0.0, 0.18, k) * (1.0 - smoothstep(0.18, 0.45, k)));
+        vec3 c = mix(hor, top, smoothstep(-0.05, 0.55, e));
+        float sk = smoothstep(0.02, 0.5, k + 0.08);
+        if (e > 0.0 && hash12(floor(vec2(az * 250.0, e * 250.0))) > 0.997 - 0.004 * sk) c = mix(c, vec3(1.0), sk);
+        float au = smoothstep(0.45, 0.95, k) * smoothstep(0.04, 0.2, e) * (1.0 - smoothstep(0.3, 0.65, e));
+        float band = 0.5 + 0.5 * sin(az * 3.0 + t * 0.15 + sin(az * 7.0 + t * 0.25) * 0.9 + e * 6.0);
+        c = mix(c, mix(vec3(0.24, 0.94, 0.66), vec3(0.4, 0.88, 0.85), band), au * band * 0.6);
+        if (e < 0.0) c = mix(hor, vec3(0.12, 0.14, 0.3), smoothstep(0.0, -0.3, e));
+        gl_FragColor = vec4(c, 1.0);
+      }`
+  }));
+  sky.renderOrder = -10; sky.frustumCulled = false; scene.add(sky);
+  const moon = new THREE.Mesh(new THREE.CircleGeometry(34, 20), new THREE.MeshBasicMaterial({ color: 0xfff2a0, fog: false }));
+  moon.frustumCulled = false; scene.add(moon);
+  const MOON_DIR = new THREE.Vector3(-0.55, 0.42, -0.72).normalize();
+
+  // le village au pied du sapin : place enneigée, maisons, lampadaires ; collines au loin
+  const village = (() => {
+    const g = new THREE.Group();
+    const ground = new THREE.Mesh(new THREE.CircleGeometry(260, 48).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0xeef2fb }));
+    g.add(ground);
+    const parts = [], glow = [], rnd = Pixel.rng(77);
+    parts.push({ geo: GEO.CYL, m: mtx(0, 0.15, 0, 0, 7, 0.3, 7), c: 0x8f8c9c });
+    for (let i = 0; i < 16; i++) {
+      const a = i / 16 * TAU + rnd() * 0.15, r = 19 + rnd() * 9, x = Math.sin(a) * r, z = Math.cos(a) * r, w = 3.5 + rnd() * 2.5, h = 3 + rnd() * 2.5;
+      const wallC = [0xd29a64, 0xb8b4c0, 0xf0c8a0, 0x94573a][i % 4], roofC = [0xa8242e, 0x2f6a3a, 0x3a427a, 0x6e3f2c][(i * 3) % 4];
+      parts.push({ geo: GEO.BOX, m: mtx(x, h / 2, z, a, w, h, 4), c: wallC });
+      parts.push({ geo: GEO.CONE4, m: mtx(x, h + 1.1, z, a + Math.PI / 4, w * 0.8, 2.2, 3.2), c: roofC });
+      parts.push({ geo: GEO.CONE4, m: mtx(x, h + 1.35, z, a + Math.PI / 4, w * 0.74, 1.6, 2.9), c: 0xeef2fb });
+      glow.push({ geo: GEO.BOX, m: mtx(x, h * 0.45, z, a, 0.9, 0.9, 4.06), c: 0xffd060 });
+      if (i % 2) { const la = a + 0.2, lr = 12; parts.push({ geo: GEO.BOX, m: mtx(Math.sin(la) * lr, 1.5, Math.cos(la) * lr, 0, 0.18, 3, 0.18), c: 0x24242e }); glow.push({ geo: GEO.BOX, m: mtx(Math.sin(la) * lr, 3.1, Math.cos(la) * lr, 0, 0.5, 0.5, 0.5), c: 0xfff2a0 }); }
+    }
+    for (let i = 0; i < 26; i++) { const a = i / 26 * TAU, r = 150 + rnd() * 60; parts.push({ geo: GEO.ICO, m: mtx(Math.sin(a) * r, -6, Math.cos(a) * r, rnd() * 3, 30 + rnd() * 26, 18 + rnd() * 30, 30 + rnd() * 20), c: 0xd0d8f0 }); }
+    for (let i = 0; i < 40; i++) { const a = rnd() * TAU, r = 34 + rnd() * 40, s = 1.5 + rnd() * 2; parts.push({ geo: GEO.CONE7, m: mtx(Math.sin(a) * r, s * 1.4, Math.cos(a) * r, 0, s, s * 2.8, s), c: 0x1e3a2e }); }
+    g.add(Pixel.litMesh(parts)); g.add(Pixel.glowMesh(glow));
+    scene.add(g);
+    return g;
+  })();
+  // nuages entre 140 et 280 m
+  (() => {
+    const parts = [], rnd = Pixel.rng(SEED ^ 0x5bd1e995);
+    for (let i = 0; i < 70; i++) {
+      const a = rnd() * TAU, r = 16 + rnd() * 70, y = 140 + rnd() * 140;
+      for (let k = 0; k < 3; k++) parts.push({ geo: GEO.ICO, m: mtx(Math.sin(a) * r + (k - 1) * 3, y + rnd(), Math.cos(a) * r + rnd() * 2, rnd() * 3, 3 + rnd() * 4, 1.2 + rnd() * 1.2, 2.5 + rnd() * 3), c: rnd() < 0.5 ? 0xd0d8f0 : 0xa8b0d8 });
+    }
+    scene.add(Pixel.litMesh(parts));
+  })();
+
+  // le cœur du sapin : étages de feuillage sombre (réutilisés en montant), petites lumières
+  const TIER = 2.4, NTIER = 34;
+  const tierGeo = (() => { const g = new THREE.ConeGeometry(3.0, 3.1, 10, 1, true); g.translate(0, 1.4, 0); return g; })();
+  const tierMats = [new THREE.MeshLambertMaterial({ color: 0x1e3a2e, flatShading: true }), new THREE.MeshLambertMaterial({ color: 0x2f6a3a, flatShading: true })];
+  const lightsGeo = (() => {
+    const parts = [], rnd = Pixel.rng(5), cols = [0xffd060, 0xff6a5a, 0x7fb0f0, 0xfff2a0];
+    for (let i = 0; i < 9; i++) { const a = i / 9 * TAU + rnd() * 0.4, h = rnd() * 2.2, r = 3 * (1 - (h + 0.25) / 3.1) + 0.1; parts.push({ geo: GEO.BOX, m: mtx(Math.sin(a) * r, h + 0.1, Math.cos(a) * r, a, 0.22, 0.22, 0.22), c: cols[i % 4] }); }
+    return Pixel.mergeParts(parts);
+  })();
+  const lightsMat = new THREE.MeshBasicMaterial({ vertexColors: true });
+  const tiers = [];
+  for (let i = 0; i < NTIER; i++) {
+    const m = new THREE.Mesh(tierGeo, tierMats[i % 2]); const l = new THREE.Mesh(lightsGeo, lightsMat); m.add(l);
+    scene.add(m); tiers.push(m);
+  }
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.3, 1, 10), new THREE.MeshLambertMaterial({ color: 0x4a2e22 }));
+  trunk.scale.y = 12; trunk.position.y = 6; scene.add(trunk);
+  function placeTiers(cy) {
+    const i0 = Math.max(0, Math.floor((cy - 34) / TIER));
+    for (let k = 0; k < NTIER; k++) {
+      const i = i0 + k, m = tiers[k];
+      m.position.y = 1.2 + i * TIER; m.rotation.y = i * 2.39996;
+      m.material = tierMats[i % 2];
+      m.children[0].visible = i % 3 !== 1;
+    }
+  }
+  // anneaux dorés tous les 100 m
+  const ringGeo = new THREE.TorusGeometry(3.15, 0.13, 6, 40).rotateX(Math.PI / 2), ringMat = new THREE.MeshBasicMaterial({ color: 0xffd060 });
+  const rings = [0, 1, 2].map(() => { const m = new THREE.Mesh(ringGeo, ringMat); scene.add(m); return m; });
+
+  // ---------------------------------------------------------------- objets du sapin (géométries partagées)
+  // branche : dans son repère, elle part du tronc vers +z ; largeur tangentielle 2 (mise à l'échelle par la demi-largeur hw)
+  function branchGeo(kind) {
+    const p = [];
+    if (kind === 'f') {
+      p.push({ geo: GEO.BOX, m: mtx(0, -0.15, 2.6, 0, 1.9, 0.26, 1.7), c: 0x5a3626 });
+      p.push({ geo: GEO.BOX, m: mtx(0.05, -0.17, 4.6, 0.12, 1.8, 0.24, 1.9), c: 0x6e4a32 });
+      p.push({ geo: GEO.BOX, m: mtx(-0.5, -0.05, 3.5, 0.5, 0.25, 0.12, 0.7), c: 0x4a2e22 });
+      p.push({ geo: GEO.BOX, m: mtx(0.6, -0.04, 4.9, -0.4, 0.2, 0.1, 0.6), c: 0x4a2e22 });
+    } else if (kind === 'v') {
+      p.push({ geo: GEO.BOX, m: mtx(0, -0.16, 3.7, 0, 2, 0.3, 3.4), c: 0x7fb0f0 });
+      p.push({ geo: GEO.BOX, m: mtx(0, 0.0, 3.7, 0, 1.8, 0.08, 3.2), c: 0xbfe6fa });
+      for (let i = 0; i < 4; i++) p.push({ geo: GEO.CONE4, m: mtx(-0.7 + i * 0.46, -0.55, 2.8 + (i % 2) * 1.4, 0.4, 0.14, 0.6, 0.14), c: 0xbfe6fa });
+    } else {
+      p.push({ geo: GEO.BOX, m: mtx(0, -0.2, 3.6, 0, 2.15, 0.22, 3.5), c: 0x1e3a2e });
+      p.push({ geo: GEO.BOX, m: mtx(0, -0.06, 3.7, 0, 2, 0.16, 3.4), c: kind === 'm' ? 0x3fa04a : 0x2f6a3a });
+      p.push({ geo: GEO.BOX, m: mtx(0, 0.04, 3.75, 0, 1.75, 0.1, 3.0), c: 0xeef2fb });
+      p.push({ geo: GEO.BOX, m: mtx(0, -0.16, 5.4, 0, 1.4, 0.18, 0.5), c: 0x2f6a3a });
+      if (kind === 'm') {
+        p.push({ geo: GEO.BOX, m: mtx(0, 0.02, 3.0, 0, 2.08, 0.2, 0.34), c: 0xd0343a });
+        p.push({ geo: GEO.SPH, m: mtx(0, 0.0, 5.75, 0, 0.32), c: 0xffd060 });
+      }
+    }
+    return Pixel.mergeParts(p);
+  }
+  const BR = { n: branchGeo('n'), m: branchGeo('m'), f: branchGeo('f'), v: branchGeo('v') };
+  const brMat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+  const vanishMat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, transparent: true });
+  const springGeo = Pixel.mergeParts([
+    { geo: GEO.BOX, m: mtx(0, 0.18, 0, 0, 0.62, 0.36, 0.62), c: 0xd0343a }, { geo: GEO.BOX, m: mtx(0, 0.2, 0, 0, 0.66, 0.38, 0.14), c: 0xffd060 },
+    { geo: GEO.BOX, m: mtx(0, 0.45, 0, 0, 0.42, 0.07, 0.42), c: 0x8f8c9c }, { geo: GEO.BOX, m: mtx(0, 0.56, 0, 0.6, 0.36, 0.07, 0.36), c: 0xb8b4c0 },
+    { geo: GEO.BOX, m: mtx(0, 0.67, 0, 0, 0.42, 0.07, 0.42), c: 0x8f8c9c }, { geo: GEO.BOX, m: mtx(0, 0.76, 0, 0, 0.5, 0.06, 0.5), c: 0xffd060 }
+  ]);
+  const rocketGeo = Pixel.mergeParts([
+    { geo: GEO.CYL, m: mtx(0, 0.55, 0, 0, 0.17, 0.75, 0.17), c: 0xd0343a }, { geo: GEO.CYL, m: mtx(0, 0.45, 0, 0, 0.18, 0.12, 0.18), c: 0xffd060 },
+    { geo: GEO.CONE7, m: mtx(0, 1.08, 0, 0, 0.2, 0.32, 0.2), c: 0xfff2a0 }, { geo: GEO.BOX, m: mtx(0, -0.15, 0, 0, 0.05, 0.9, 0.05), c: 0xd29a64 }
+  ]);
+  const ornGeo = Pixel.mergeParts([{ geo: GEO.SPH, m: mtx(0, 0, 0, 0, 0.3), c: 0xffffff }, { geo: GEO.BOX, m: mtx(0, 0.32, 0, 0, 0.12, 0.1, 0.12), c: 0xb8901a }]);
+  const ORN_COLS = [0xffd060, 0xd0343a, 0x7fb0f0, 0x9a5ad8];
+  const ornMats = ORN_COLS.map((c) => new THREE.MeshBasicMaterial({ color: c }));
+  const litMat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+  // le corbeau : corps, ailes animées
+  function makeCrow() {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(Pixel.mergeParts([
+      { geo: GEO.ICO, m: mtx(0, 0, 0, 0, 0.42, 0.34, 0.6), c: 0x24242e }, { geo: GEO.ICO, m: mtx(0, 0.2, 0.5, 0, 0.26), c: 0x24242e },
+      { geo: GEO.BOX, m: mtx(0, 0.17, 0.8, 0, 0.11, 0.09, 0.3), c: 0xf08a3c }, { geo: GEO.BOX, m: mtx(0, -0.05, -0.62, 0, 0.36, 0.08, 0.4), c: 0x060608 },
+      { geo: GEO.BOX, m: mtx(0.14, 0.3, 0.66, 0, 0.07, 0.07, 0.04), c: 0xffd060 }, { geo: GEO.BOX, m: mtx(-0.14, 0.3, 0.66, 0, 0.07, 0.07, 0.04), c: 0xffd060 }
+    ]), litMat));
+    const wingGeo = Pixel.mergeParts([{ geo: GEO.BOX, m: mtx(0.45, 0, 0, 0, 0.9, 0.06, 0.45), c: 0x060608 }]);
+    const wl = new THREE.Mesh(wingGeo, litMat), wr = new THREE.Mesh(wingGeo, litMat); wr.scale.x = -1;
+    wl.position.set(0.25, 0.1, 0); wr.position.set(-0.25, 0.1, 0);
+    g.add(wl, wr); g.userData = { wl, wr };
+    scene.add(g);
+    return g;
+  }
+  // le lutin
+  const elf = (() => {
+    const g = new THREE.Group(), body = new THREE.Group();
+    body.add(new THREE.Mesh(Pixel.mergeParts([
+      { geo: GEO.BOX, m: mtx(0, 0.12, 0, 0, 0.5, 0.24, 0.42), c: 0x6e1a24 },
+      { geo: GEO.BOX, m: mtx(0, 0.5, 0, 0, 0.6, 0.55, 0.42), c: 0x3fa04a },
+      { geo: GEO.BOX, m: mtx(0, 0.36, 0, 0, 0.62, 0.09, 0.44), c: 0x4a2e22 }, { geo: GEO.BOX, m: mtx(0, 0.36, 0.22, 0, 0.14, 0.11, 0.03), c: 0xffd060 },
+      { geo: GEO.BOX, m: mtx(0, 0.82, 0, 0, 0.66, 0.12, 0.46), c: 0xd0343a },
+      { geo: GEO.BOX, m: mtx(0, 1.05, 0, 0, 0.46, 0.4, 0.4), c: 0xf0c8a0 },
+      { geo: GEO.BOX, m: mtx(0.26, 1.06, 0, 0, 0.1, 0.16, 0.12), c: 0xf0c8a0 }, { geo: GEO.BOX, m: mtx(-0.26, 1.06, 0, 0, 0.1, 0.16, 0.12), c: 0xf0c8a0 },
+      { geo: GEO.BOX, m: mtx(0.1, 1.08, 0.205, 0, 0.07, 0.08, 0.02), c: 0x060608 }, { geo: GEO.BOX, m: mtx(-0.1, 1.08, 0.205, 0, 0.07, 0.08, 0.02), c: 0x060608 },
+      { geo: GEO.BOX, m: mtx(0, 0.98, 0.215, 0, 0.1, 0.06, 0.04), c: 0xff6a5a },
+      { geo: GEO.BOX, m: mtx(0, 1.27, 0, 0, 0.52, 0.1, 0.46), c: 0xeef2fb },
+      { geo: GEO.CONE4, m: mtx(0, 1.55, -0.04, Math.PI / 4, 0.34, 0.6, 0.34), c: 0xd0343a },
+      { geo: GEO.SPH, m: mtx(0, 1.86, -0.08, 0, 0.11), c: 0xffffff },
+      { geo: GEO.BOX, m: mtx(0.38, 0.55, 0, 0, 0.14, 0.42, 0.16), c: 0x3fa04a }, { geo: GEO.BOX, m: mtx(-0.38, 0.55, 0, 0, 0.14, 0.42, 0.16), c: 0x3fa04a },
+      { geo: GEO.BOX, m: mtx(0.38, 0.3, 0, 0, 0.12, 0.1, 0.12), c: 0xf0c8a0 }, { geo: GEO.BOX, m: mtx(-0.38, 0.3, 0, 0, 0.12, 0.1, 0.12), c: 0xf0c8a0 }
+    ]), litMat));
+    g.add(body);
+    const pack = new THREE.Mesh(rocketGeo, litMat); pack.position.set(0, 0.25, -0.32); pack.rotation.x = 0; pack.visible = false; g.add(pack);
+    g.userData = { body, pack };
+    scene.add(g);
+    return g;
+  })();
+  const puffs = Pixel.puffs(scene, 140);
+  // neige qui tombe autour de la caméra
+  const SN = 260, snowGeo = new THREE.BufferGeometry(), snowPos = new Float32Array(SN * 3);
+  { const rnd = Pixel.rng(9); for (let i = 0; i < SN; i++) { snowPos[i * 3] = (rnd() - 0.5) * 50; snowPos[i * 3 + 1] = rnd() * 40; snowPos[i * 3 + 2] = (rnd() - 0.5) * 50; } }
+  snowGeo.setAttribute('position', new THREE.BufferAttribute(snowPos, 3));
+  const snow = new THREE.Points(snowGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 1.6, sizeAttenuation: false, fog: false }));
+  snow.frustumCulled = false; scene.add(snow);
+
+  // ================================================================ le sapin du jour : branches, objets, corbeaux (générés en montant)
+  let rr, plats, items, crows, genY, genTh, nextCrow, lastRocket, lastSpring, prevY, prevTh, prevAmp, lastType, lastAmp;
+  const diff = (h) => smooth(0, 520, h);
+  // temps pour retomber sur une hauteur gap après un rebond normal (0 si hors d'atteinte)
+  function tLand(gap) { const d = V0 * V0 - 2 * G * gap; return d < 0 ? 0 : (V0 + Math.sqrt(d)) / G; }
+  function clearWorld() {
+    if (plats) for (const p of plats) scene.remove(p.mesh);
+    if (items) for (const it of items) scene.remove(it.mesh);
+    if (crows) for (const c of crows) scene.remove(c.mesh);
+    rr = Pixel.rng(SEED); plats = []; items = []; crows = [];
+    genY = 0; genTh = 0; nextCrow = 75; lastRocket = -999; lastSpring = -999; prevY = 0; prevTh = 0; prevAmp = 0; lastType = 'n'; lastAmp = 0;
+  }
+  function addPlat(p) {
+    p.th0 = p.th; p.alive = true; p.fade = 0; p.fall = 0;
+    p.mesh = new THREE.Mesh(BR[p.type], p.type === 'v' ? vanishMat.clone() : brMat);
+    p.mesh.scale.x = p.hw; p.mesh.position.y = p.y; p.mesh.rotation.y = p.th;
+    scene.add(p.mesh); plats.push(p);
+    return p;
+  }
+  function addItem(kind, y, th, extra) {
+    const it = Object.assign({ kind, y, th, alive: true }, extra || {});
+    it.mesh = kind === 'spring' ? new THREE.Mesh(springGeo, litMat) : kind === 'rocket' ? new THREE.Mesh(rocketGeo, litMat) : new THREE.Mesh(ornGeo, ornMats[it.col || 0]);
+    it.mesh.position.set(Math.sin(th) * R, y, Math.cos(th) * R);
+    scene.add(it.mesh); items.push(it);
+    return it;
+  }
+  function generateUpTo(yMax) {
+    while (genY < yMax) {
+      const s = diff(genY);
+      let gap = lerp(lerp(0.75, 2.0, s), lerp(1.7, 3.05, s), rr());
+      // après un glaçon (qui fond au premier rebond), la branche suivante reste atteignable depuis celle d'avant le glaçon
+      if (lastType === 'v') gap = clamp(JUMP - 0.45 - (genY - prevY), 0.5, gap);
+      const y = genY + gap;
+      const hw = lerp(1.25, 0.82, s) * lerp(0.9, 1.1, rr()) * lerp(1, 0.85, smooth(520, 1500, genY));
+      // l'arc qu'on peut parcourir pendant le saut, avec de la marge : la branche suivante est toujours atteignable
+      const reach = Math.max(1.0, Math.min(6.2, 0.68 * VT * tLand(gap) - 0.5));
+      let th = genTh + (rr() * 2 - 1) * reach / R;
+      if (lastType === 'v') { const r2 = Math.max(0.5, 0.68 * VT * tLand(y - prevY) - 0.5 - prevAmp * R) / R; th = prevTh + clamp(angDiff(th, prevTh), -r2, r2); }
+      const u = rr(), pm = lerp(0.04, 0.3, s), pv = y > 140 && gap <= 1.9 && lastType !== 'v' ? lerp(0, 0.22, smooth(140, 600, y)) : 0;
+      const type = u < pm ? 'm' : u < pm + pv ? 'v' : 'n';
+      addPlat({ y, th, hw, type, amp: type === 'm' ? lerp(0.22, 0.55, rr()) : 0, w: lerp(0.7, 1.4, rr()), ph: rr() * TAU, chain: true });
+      if (type === 'n' && y > 25 && y - lastSpring > 28 && rr() < 0.09) { lastSpring = y; addItem('spring', y, th + (rr() - 0.5) * 0.6 * hw / R); }
+      else if (type === 'n' && y > 110 && y - lastRocket > 120 && rr() < 0.05) { lastRocket = y; addItem('rocket', y + 0.55, th); }
+      if (rr() < 0.2) addItem('orn', y + 1.5 + rr() * 0.8, th + (rr() - 0.5) * 0.5, { col: Math.floor(rr() * 4) });
+      // branches en plus, entre deux branches du chemin : de moins en moins, de plus en plus de branches mortes.
+      // Celles où l'on peut se poser mènent toujours à la branche suivante du chemin (pas de cul-de-sac) ;
+      // les branches mortes, elles, peuvent être n'importe où.
+      // au pied du sapin, des branches tout autour du tronc : sous 7 m, on n'en monte pas plus haut que 10,6 m
+      // et le sol rattrape encore le lutin (grounded), donc pas de cul-de-sac
+      const low = genY < 5;
+      const nx = low ? 3 : rr() < lerp(0.95, 0.4, s) ? (rr() < lerp(0.55, 0.12, s) ? 2 : 1) : 0;
+      for (let k = 0; k < nx; k++) {
+        const ey = genY + gap * lerp(0.2, 0.9, rr()), ehw = lerp(1.15, 0.8, s);
+        const v = rr(), et = v < lerp(0.22, 0.6, s) ? 'f' : v < lerp(0.22, 0.6, s) + 0.18 ? 'm' : 'n';
+        const amp = et === 'm' ? lerp(0.25, 0.6, rr()) : 0, u2 = rr() * 2 - 1;
+        const eth = et === 'f' || (low && ey < 7) ? th + u2 * Math.PI : th + u2 * Math.max(0.6, 0.68 * VT * tLand(y - ey) - 0.5 - amp * R) / R;
+        const clash = plats.slice(-6).some((p) => Math.abs(p.y - ey) < 0.7 && Math.abs(angDiff(p.th0, eth)) * R < p.hw + ehw + 0.5);
+        if (!clash) addPlat({ y: ey, th: eth, hw: ehw, type: et, amp, w: lerp(0.6, 1.2, rr()), ph: rr() * TAU, chain: false });
+      }
+      if (y > nextCrow) {
+        const cy = genY + gap * 0.5 + 0.3, side = rr() < 0.5 ? -1 : 1;
+        const c = { y: cy, th0: th + side * lerp(0.7, 1.5, rr()), amp: lerp(0.3, 0.6, rr()), w: lerp(0.6, 1.1, rr()), ph: rr() * TAU, alive: true, fall: 0, vy: 0, th: 0 };
+        c.mesh = makeCrow(); crows.push(c);
+        nextCrow = y + lerp(60, 24, diff(y)) * lerp(1, 0.7, smooth(520, 1500, y)) * lerp(0.8, 1.3, rr());
+      }
+      prevY = genY; prevTh = genTh; prevAmp = lastAmp; lastType = type; lastAmp = plats.find((q) => q.chain && q.y === y).amp;
+      genY = y; genTh = th;
+    }
+  }
+
+  // ================================================================ partie
+  let mode = 'menu', time = 0, runT = 0;
+  const pl = { th: 0, y: 0, vy: 0, vt: 0, face: 0, squash: 0 };
+  let viewBottom = -10, bounces = 0, camY = 0, camTh = 0, maxY = 0, boules = 0, corbeaux = 0, rocketT = 0, fallT = 0, cause = '', nextMilestone = 100, grounded = true, hRec = 0, stun = 0, bouscule = 0;
+  const input = { l: false, r: false, mouse: null, touch: 0, tilt: 0 };
+  let ctl = store.get(CTL_KEY) === 'tilt' ? 'tilt' : 'touch';
+  let bot = null;
+  function startGame() {
+    clearWorld();
+    pl.th = 0; pl.y = 0; pl.vy = V0; pl.vt = 0; pl.squash = 0;
+    camY = 0; camTh = 0; maxY = 0; boules = 0; corbeaux = 0; rocketT = 0; fallT = 0; cause = ''; nextMilestone = 100; grounded = true; runT = 0; stun = 0; bouscule = 0;
+    hRec = Number(store.get(HREC_KEY)) || 0;
+    generateUpTo(60);
+    mode = 'play';
+    $('intro').hidden = true; $('results').hidden = true; $('pauseCard').hidden = true; $('app').classList.remove('menu');
+    for (const id of ['hTag', 'sTag', 'pauseBtn']) $(id).hidden = false;
+    elf.userData.pack.visible = false;
+    if (ctl === 'tilt' && isTouch) askTilt();
+    feed('Le sapin du jour', 'gold');
+    L.paused = false;
+  }
+  function score() { return Math.round(maxY * PTS_M) + boules * PTS_BOULE + corbeaux * PTS_CORBEAU; }
+  function dirInput() {
+    if (bot) return bot();
+    let d = 0;
+    if (input.l) d -= 1; if (input.r) d += 1;
+    if (d) return d;
+    if (input.touch) return input.touch;
+    if (ctl === 'tilt' && isTouch && input.tilt) return input.tilt;
+    if (input.mouse != null) { const off = input.mouse; return Math.abs(off) < 0.025 ? 0 : clamp(off / 0.16, -1, 1); }
+    return 0;
+  }
+  function bounce(v, p) {
+    pl.vy = v; pl.squash = 1; bounces++;
+    if (v > V0 + 1) { snd.tone(520, 0, 0.1); snd.tone(880, 0.08, 0.2); }
+    else snd.tone(330 + Math.min(300, pl.y * 0.6), 0, 0.07, 0.7, 'triangle');
+    const x = Math.sin(pl.th) * R, z = Math.cos(pl.th) * R;
+    for (let i = 0; i < 3; i++) puffs.emit(new THREE.Vector3(x, pl.y + 0.05, z), 0.25, 0.5, 0.45, 0xffffff, 0xd0d8f0, new THREE.Vector3((Math.random() - 0.5) * 2, 0.6 + Math.random(), (Math.random() - 0.5) * 2), 2);
+    if (p && p.type === 'v') { p.alive = false; p.fade = 0.001; snd.tone(1320, 0.02, 0.12, 0.6, 'sine'); }
+  }
+  function step(dt) {
+    time += dt;
+    skyU.t.value = time;
+    if (mode === 'menu') { pl.vy -= G * dt; pl.y += pl.vy * dt; if (pl.y <= 0) { pl.y = 0; pl.vy = V0 * 0.55; pl.squash = 1; } pl.th = Math.sin(time * 0.4) * 0.3; camTh = time * 0.12; camY = 0; return; }
+    if (mode !== 'play' && mode !== 'fall') return;
+    runT += dt;
+    // branches qui tournent, branches qui tombent ou fondent, corbeaux
+    for (const p of plats) {
+      if (p.type === 'm') { p.th = p.th0 + p.amp * Math.sin(time * p.w + p.ph); p.mesh.rotation.y = p.th; }
+      if (p.fall) { p.fall += dt; p.mesh.position.y = p.y - 4 * p.fall * p.fall; p.mesh.rotation.z = p.fall * 1.5; }
+      if (p.fade) { p.fade += dt; const k = Math.max(0, 1 - p.fade / 0.3); p.mesh.material.opacity = k; p.mesh.scale.set(p.hw * (1 + (1 - k) * 0.4), Math.max(0.01, k), 1); p.mesh.visible = k > 0; }
+    }
+    for (const c of crows) {
+      if (c.fall) { c.fall += dt; c.vy -= G * 0.6 * dt; c.y += c.vy * dt; }
+      else if (c.flee) { c.flee += dt; c.y += dt * 5; c.th += dt * 0.8; }
+      else c.th = c.th0 + c.amp * Math.sin(time * c.w + c.ph);
+    }
+    // le lutin
+    if (stun > 0) stun -= dt;
+    const want = mode === 'play' && stun <= 0 ? dirInput() : 0;
+    pl.vt = lerp(pl.vt, want * VT, Math.min(1, dt * 12));
+    pl.th += pl.vt / R * dt;
+    if (rocketT > 0) {
+      rocketT -= dt; pl.vy = VROCKET;
+      if (Math.random() < 0.6) { const x = Math.sin(pl.th) * (R - 0.3), z = Math.cos(pl.th) * (R - 0.3); puffs.emit(new THREE.Vector3(x, pl.y + 0.1, z), 0.3, 0.9, 0.6, 0xffd060, 0x8f8c9c, new THREE.Vector3(0, -6, 0), 0); }
+      if (rocketT <= 0) { pl.vy = V0; elf.userData.pack.visible = false; }
+    } else pl.vy -= G * dt;
+    const y0 = pl.y;
+    pl.y += pl.vy * dt;
+    if (mode === 'play' && pl.vy < 0 && rocketT <= 0) {
+      let best = null;
+      for (const p of plats) {
+        if (!p.alive || p.fall) continue;
+        if (y0 >= p.y - 0.001 && pl.y <= p.y && Math.abs(angDiff(pl.th, p.th)) * R <= p.hw + PW && (!best || p.y > best.y)) best = p;
+      }
+      if (best) {
+        if (best.type === 'f') { best.fall = 0.001; best.alive = false; snd.noise(0.25, 900, 0.8); feed('Branche morte !', 'bad'); }
+        else {
+          pl.y = best.y;
+          const sp = items.find((it) => it.kind === 'spring' && it.alive && Math.abs(it.y - best.y) < 0.01 && Math.abs(angDiff(pl.th, it.th)) * R < 0.55);
+          if (sp) { sp.squash = 1; bounce(VSPRING, best); feed('Ressort !', 'gold'); } else bounce(V0, best);
+        }
+      } else if (grounded && pl.y <= 0) { pl.y = 0; bounce(V0); }
+    }
+    if (camY > 12) grounded = false;
+    // objets
+    const pc = pl.y + 0.8;
+    for (const it of items) {
+      if (!it.alive || it.kind === 'spring') continue;
+      const da = Math.abs(angDiff(pl.th, it.th)) * R, dy = Math.abs(pc - it.y);
+      if (it.kind === 'orn' && da < 0.65 && dy < 0.85) { it.alive = false; it.mesh.visible = false; boules++; snd.tone(1568, 0, 0.12, 0.8, 'sine'); snd.tone(2093, 0.06, 0.15, 0.6, 'sine'); feed('+' + PTS_BOULE + ' boule', 'gold'); puffs.confetti(it.mesh.position, [ORN_COLS[it.col || 0], 0xffffff], 6); }
+      if (it.kind === 'rocket' && mode === 'play' && da < 0.6 && dy < 1.0) { it.alive = false; it.mesh.visible = false; rocketT = ROCKET_T; elf.userData.pack.visible = true; snd.noise(1.2, 1600, 0.6); feed('Fusée !', 'gold'); }
+    }
+    if (mode === 'play') for (const c of crows) {
+      if (!c.alive) continue;
+      const da = Math.abs(angDiff(pl.th, c.th)) * R, dy = pc - c.y;
+      if (da < 0.72 && Math.abs(dy) < 0.9) {
+        if (rocketT > 0 || (pl.vy < 0 && dy > 0.25)) { c.alive = false; c.fall = 0.001; c.vy = 3; corbeaux++; if (rocketT <= 0) bounce(V0); snd.tone(220, 0, 0.12); snd.tone(160, 0.08, 0.2); feed('+' + PTS_CORBEAU + ' corbeau sauté', 'good'); }
+        else {
+          // bousculé : le lutin perd son élan et ses commandes un instant, le corbeau s'envole ; on peut encore se rattraper plus bas
+          c.alive = false; c.flee = 0.001; stun = 0.55; bouscule++; pl.vy = Math.min(pl.vy, -4); pl.vt = 0;
+          snd.tone(300, 0, 0.15, 1, 'sawtooth'); snd.tone(200, 0.12, 0.3, 1, 'sawtooth'); feed('Bousculé par un corbeau !', 'bad');
+        }
+      }
+    }
+    if (pl.y > maxY) maxY = pl.y;
+    if (mode === 'play' && maxY >= nextMilestone) { feed(nextMilestone + ' m !', 'gold'); snd.win(); nextMilestone += 100; }
+    // caméra : ne redescend pas pendant la partie ; la chute fait perdre
+    if (mode === 'play') {
+      camY = Math.max(camY, pl.y); camParams();
+      if (!grounded && pl.y < viewBottom - 0.5) { mode = 'fall'; cause = stun > -1.5 && bouscule ? 'corbeau' : 'chute'; fallT = 0; snd.tone(440, 0, 0.5, 1, 'triangle'); snd.tone(220, 0.25, 0.6, 1, 'triangle'); }
+    } else { fallT += dt; camY = lerp(camY, pl.y + 3, Math.min(1, dt * 2)); if (fallT > 1.3) finish(); }
+    camTh += angDiff(pl.th, camTh) * Math.min(1, dt * 7);
+    generateUpTo(camY + 45);
+    // ménage en bas
+    const lim = camY - 30;
+    if (plats.length && plats[0].y < lim) { plats = plats.filter((p) => { if (p.y >= lim) return true; scene.remove(p.mesh); return false; }); }
+    if (items.length && items[0].y < lim) { items = items.filter((it) => { if (it.y >= lim) return true; scene.remove(it.mesh); return false; }); }
+    if (crows.length && crows[0].y < lim) { crows = crows.filter((c) => { if (c.y >= lim) return true; scene.remove(c.mesh); return false; }); }
+  }
+  function finish() {
+    mode = 'done';
+    const sc = score(), h = Math.floor(maxY);
+    $('resRows').innerHTML = `<dt>Hauteur atteinte</dt><dd class="n">${fmtInt(h)} m</dd><dd>${fmtInt(Math.round(maxY * PTS_M))}</dd>`
+      + `<dt>Boules attrapées</dt><dd class="n">${boules}</dd><dd class="pos">+${boules * PTS_BOULE}</dd>`
+      + `<dt>Corbeaux sautés</dt><dd class="n">${corbeaux}</dd><dd class="pos">+${corbeaux * PTS_CORBEAU}</dd>`;
+    $('resTotal').textContent = fmtInt(sc) + ' pts';
+    $('resSub').textContent = fmtInt(h) + ' m de sapin';
+    $('resMention').textContent = sc >= MENTIONS[0] ? 'S' : sc >= MENTIONS[1] ? 'A' : sc >= MENTIONS[2] ? 'B' : 'C';
+    $('resEyebrow').textContent = cause === 'corbeau' ? 'Un corbeau t’a fait tomber à ' + h + ' m' : 'Chute à ' + h + ' m';
+    $('resTitle').textContent = h < 60 ? 'Un petit tour et puis s’en va' : h < 150 ? 'Joli début d’ascension' : h < 300 ? 'Au-dessus des nuages !' : h < 500 ? 'Parmi les étoiles' : 'Jusqu’à l’aurore boréale !';
+    const prev = Number(store.get(REC_KEY)) || 0;
+    if (sc > prev) store.set(REC_KEY, String(sc));
+    if (maxY > (Number(store.get(HREC_KEY)) || 0)) store.set(HREC_KEY, maxY.toFixed(1));
+    $('resRec').textContent = (Pixel.EMBED ? 'Score envoyé au classement · ' : '') + (sc > prev ? (prev ? 'Nouveau record ! L’ancien : ' + fmtInt(prev) + ' pts' : 'Premier record') : 'Record : ' + fmtInt(prev) + ' pts');
+    report('sapin', sc);
+    $('results').hidden = false; $('app').classList.add('menu');
+    for (const id of ['hTag', 'sTag', 'pauseBtn']) $(id).hidden = true;
+    if (sc > prev) snd.win();
+  }
+
+  // ================================================================ dessin
+  const tmpV = new THREE.Vector3();
+  function project(x, y, z) { tmpV.set(x, y, z).project(camera); return tmpV.z > 1 ? null : [(tmpV.x * 0.5 + 0.5) * V.RW, (-tmpV.y * 0.5 + 0.5) * V.RH]; }
+  // cadrage : plus haut et plus large en portrait ; viewBottom = bas de l'écran à la distance du lutin
+  function camParams() {
+    const portrait = V.RW / V.RH < 0.9;
+    const fov = portrait ? 64 : 50, D = mode === 'menu' ? 17 : portrait ? 15.5 : 17, lookY = camY + (mode === 'menu' ? 3 : 1.0);
+    viewBottom = lookY + 2.2 - (D - R) * Math.tan(fov * Math.PI / 360 + Math.atan2(2.2, D));
+    return { fov, D, lookY };
+  }
+  function render(dt) {
+    const { fov, D, lookY } = camParams();
+    if (camera.fov !== fov) { camera.fov = fov; camera.updateProjectionMatrix(); }
+    camera.position.set(Math.sin(camTh) * D, lookY + 2.2, Math.cos(camTh) * D);
+    camera.lookAt(0, lookY, 0);
+    camera.updateMatrixWorld();
+    camLight.position.set(Math.sin(camTh) * 30, lookY + 12, Math.cos(camTh) * 30); camLight.target.position.set(0, lookY, 0);
+    sky.position.copy(camera.position);
+    moon.position.copy(camera.position).addScaledVector(MOON_DIR, 900); moon.lookAt(camera.position);
+    skyU.alt.value = camY;
+    const k = clamp(camY / 450, 0, 1);
+    scene.fog.color.setRGB(lerp(0.42, 0.06, k), lerp(0.36, 0.08, k), lerp(0.6, 0.2, k));
+    hemi.intensity = lerp(1.0, 0.8, k);
+    village.visible = camY < 120;
+    placeTiers(camY);
+    trunk.visible = camY < 40;
+    for (let i = 0; i < 3; i++) { const m = (Math.floor(camY / 100) + i) * 100; rings[i].position.y = m; rings[i].visible = m > 0; rings[i].rotation.y = time * 0.3; }
+    // le lutin
+    const x = Math.sin(pl.th) * R, z = Math.cos(pl.th) * R;
+    elf.position.set(x, pl.y, z);
+    pl.face = lerp(pl.face, clamp(pl.vt / VT, -1, 1) * 1.0, Math.min(1, dt * 10));
+    elf.rotation.y = pl.th + pl.face;
+    pl.squash = Math.max(0, pl.squash - dt * 5);
+    const sq = Math.sin(pl.squash * Math.PI) * 0.22;
+    elf.userData.body.scale.set(1 + sq * 0.6, 1 - sq, 1 + sq * 0.6);
+    if (mode === 'fall' || stun > 0) elf.rotation.z = Math.sin(time * 9) * 0.5; else elf.rotation.z = 0;
+    for (const it of items) {
+      if (it.kind === 'orn') { it.mesh.rotation.y = time * 1.5; it.mesh.position.y = it.y + Math.sin(time * 2 + it.th * 5) * 0.12; }
+      if (it.kind === 'rocket') it.mesh.rotation.y = time * 2;
+      if (it.kind === 'spring') { it.squash = Math.max(0, (it.squash || 0) - dt * 4); it.mesh.scale.set(1, 1 + Math.sin((it.squash || 0) * Math.PI) * 0.7, 1); }
+    }
+    for (const c of crows) {
+      const cx = Math.sin(c.th) * R, cz = Math.cos(c.th) * R, bob = c.fall ? 0 : Math.sin(time * 3 + c.ph) * 0.18;
+      c.mesh.position.set(cx, c.y + bob, cz);
+      const dir = Math.cos(time * c.w + c.ph) >= 0 ? 1 : -1;
+      c.mesh.rotation.y = c.th + dir * Math.PI / 2;
+      c.mesh.rotation.z = c.fall ? c.fall * 4 : 0;
+      if (c.flee) c.mesh.rotation.y = c.th + Math.PI / 2;
+      const f = Math.sin(time * (c.fall || c.flee ? 30 : 12) + c.ph) * 0.7;
+      c.mesh.userData.wl.rotation.z = f; c.mesh.userData.wr.rotation.z = -f;
+    }
+    // neige
+    const p = snowGeo.attributes.position;
+    for (let i = 0; i < SN; i++) {
+      let yy = p.getY(i) - dt * 2.2; if (yy < camY - 14) yy += 40; if (yy > camY + 26) yy -= 40;
+      p.setY(i, yy); p.setX(i, p.getX(i) + Math.sin(time + i) * dt * 0.4);
+    }
+    p.needsUpdate = true;
+    puffs.step(dt);
+    V.render();
+    drawHud();
+  }
+  function drawHud() {
+    if (mode === 'play' || mode === 'fall') {
+      $('hVal').textContent = Math.floor(maxY) + ' M';
+      $('sOrn').textContent = 'BOULES ' + boules;
+      $('sScore').textContent = fmtInt(score()) + ' PTS';
+    }
+    if (mode === 'menu' || mode === 'done') return;
+    // repères : les centaines de mètres, ton record
+    const side = camTh + 0.62;
+    for (let i = 0; i < 3; i++) {
+      const m = (Math.floor(camY / 100) + i) * 100; if (m <= 0) continue;
+      const c = project(Math.sin(side) * 3.6, m, Math.cos(side) * 3.6); if (c && c[1] > 8 && c[1] < V.RH - 8) text(m + ' M', c[0] + 4, c[1] - 2, '#ffd060');
+    }
+    if (hRec > 4) {
+      const c = project(Math.sin(camTh - 0.7) * 5.4, hRec, Math.cos(camTh - 0.7) * 5.4);
+      if (c && c[1] > 8 && c[1] < V.RH - 8) { const w = text('TON RECORD', c[0] - 4, c[1] - 7, '#ffffff', 'r'); line(c[0] - 4 - w, c[1], c[0] + 6, c[1], '#ffffff'); }
+    }
+    // corbeau à portée : un petit signal au-dessus de lui
+    for (const cr of crows) {
+      if (!cr.alive || cr.y < pl.y - 1 || cr.y > camY + 12) continue;
+      const c = project(Math.sin(cr.th) * R, cr.y + 0.9, Math.cos(cr.th) * R);
+      if (c && c[1] > 6) text('!', c[0], c[1] - 6, '#ff8a7a', 'c');
+    }
+  }
+
+  // ================================================================ commandes
+  const keyDown = (e) => {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA' || e.code === 'KeyQ') { input.l = true; input.mouse = null; e.preventDefault(); }
+    else if (e.code === 'ArrowRight' || e.code === 'KeyD') { input.r = true; input.mouse = null; e.preventDefault(); }
+    else if (e.code === 'KeyP' || e.code === 'Escape') { if (mode === 'play') togglePause(); }
+    else if (e.code === 'KeyM') $('sndBtn').click();
+    else if ((e.code === 'Space' || e.code === 'Enter') && mode !== 'play' && mode !== 'fall' && !e.target.closest('button')) { e.preventDefault(); startGame(); }
+  };
+  window.addEventListener('keydown', keyDown);
+  window.addEventListener('keyup', (e) => {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA' || e.code === 'KeyQ') input.l = false;
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') input.r = false;
+  });
+  window.addEventListener('blur', () => { input.l = input.r = false; input.touch = 0; });
+  // souris : la distance au lutin (au centre) donne la direction ; doigt : côté gauche ou droit de l'écran
+  const touches = new Map();
+  function touchDir() { let d = 0; for (const v of touches.values()) d += v; input.touch = clamp(d, -1, 1); $('tL').classList.toggle('on', input.touch < 0); $('tR').classList.toggle('on', input.touch > 0); }
+  stage.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'mouse') { const r = stage.getBoundingClientRect(); input.mouse = (e.clientX - r.left - r.width / 2) / r.width; }
+    else if (touches.has(e.pointerId)) { const r = stage.getBoundingClientRect(); touches.set(e.pointerId, e.clientX < r.left + r.width / 2 ? -1 : 1); touchDir(); }
+  });
+  stage.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') input.mouse = null; });
+  stage.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button, .card')) return;
+    if (e.pointerType !== 'mouse') { const r = stage.getBoundingClientRect(); touches.set(e.pointerId, e.clientX < r.left + r.width / 2 ? -1 : 1); touchDir(); }
+  });
+  const endTouch = (e) => { if (touches.delete(e.pointerId)) touchDir(); };
+  stage.addEventListener('pointerup', endTouch); stage.addEventListener('pointercancel', endTouch);
+  // inclinaison du téléphone (sur iPhone, il faut l'autoriser une fois)
+  function onTilt(e) {
+    const ang = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+    const v = ang === 90 ? e.beta : ang === -90 || ang === 270 ? -e.beta : e.gamma;
+    input.tilt = v == null ? 0 : Math.abs(v) < 3 ? 0 : clamp(v / 22, -1, 1);
+  }
+  let tiltOn = false;
+  function askTilt() {
+    if (tiltOn) return;
+    const DO = window.DeviceOrientationEvent;
+    if (!DO) { feed('Inclinaison indisponible : touche les côtés', 'bad'); return; }
+    const go = () => { window.addEventListener('deviceorientation', onTilt); tiltOn = true; };
+    if (typeof DO.requestPermission === 'function') DO.requestPermission().then((r) => { if (r === 'granted') go(); else feed('Inclinaison refusée : touche les côtés', 'bad'); }).catch(() => feed('Inclinaison indisponible : touche les côtés', 'bad'));
+    else go();
+  }
+  function setCtl(c) { ctl = c; store.set(CTL_KEY, c); $('ctlTouch').setAttribute('aria-pressed', String(c === 'touch')); $('ctlTilt').setAttribute('aria-pressed', String(c === 'tilt')); }
+  $('ctlTouch').addEventListener('click', () => setCtl('touch'));
+  $('ctlTilt').addEventListener('click', () => { setCtl('tilt'); askTilt(); });
+  function togglePause() {
+    L.paused = !L.paused; $('pauseCard').hidden = !L.paused; input.l = input.r = false; touches.clear(); touchDir();
+  }
+  $('pauseBtn').addEventListener('click', (e) => { e.stopPropagation(); togglePause(); });
+  $('resume').addEventListener('click', (e) => { e.stopPropagation(); togglePause(); });
+  $('goPlay').addEventListener('click', (e) => { e.stopPropagation(); startGame(); });
+  $('again').addEventListener('click', (e) => { e.stopPropagation(); startGame(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && mode === 'play' && !L.paused) togglePause(); });
+
+  function refreshIntro() {
+    const LEG = [
+      ['#2f6a3a', 'Branche', 'rebondit'], ['#3fa04a;box-shadow:inset 0 -3px 0 #d0343a', 'Ruban rouge', 'elle tourne'],
+      ['#94573a', 'Branche morte', 'elle casse'], ['#bfe6fa', 'Glaçon', 'un seul rebond'],
+      ['#d0343a;box-shadow:inset 0 -3px 0 #ffd060', 'Cadeau-ressort', 'saut géant'], ['#ffd060;box-shadow:inset 0 -3px 0 #d0343a', 'Fusée', 'on s’envole']
+    ];
+    $('legend').innerHTML = LEG.map(([c, a, b]) => `<li><i style="background:${c}"></i><span><b>${a}</b> · ${b}</span></li>`).join('');
+    const G2 = [
+      ['Hauteur', PTS_M + ' / m', 'Le plus haut point atteint par le lutin.'],
+      ['Boule de Noël', '+' + PTS_BOULE, 'À attraper en passant.'],
+      ['Corbeau', '+' + PTS_CORBEAU, 'En lui retombant dessus. Par en dessous ou de côté, il te bouscule et tu tombes.'],
+      ['Chute', 'fin', 'Le lutin qui tombe sous l’écran ne remonte plus.']
+    ];
+    $('goals').innerHTML = G2.map(([a, b, c]) => `<li><i></i><span>${a}</span><b>${b}</b><small>${c}</small></li>`).join('');
+    $('keys').innerHTML = isTouch
+      ? '<b>Toucher</b><span>le côté gauche ou droit de l’écran pour tourner autour du tronc</span><b>Incliner</b><span>au choix, comme sur l’intro</span><b>Rebond</b><span>tout seul</span><b>Pause</b><span>bouton en haut à droite</span>'
+      : '<b>← →</b><span>(ou Q, D) tourner autour du tronc</span><b>Souris</b><span>place-la à gauche ou à droite du lutin</span><b>Rebond</b><span>tout seul</span><b>P</b><span>pause · M : son</span>';
+    $('ctl').classList.toggle('on', isTouch);
+    setCtl(ctl);
+    const r = Number(store.get(REC_KEY)) || 0, h = Number(store.get(HREC_KEY)) || 0;
+    $('rec').textContent = r ? 'Ton record : ' + fmtInt(r) + ' pts · ' + Math.floor(h) + ' m' : 'Pas encore de score : à toi de grimper';
+  }
+  refreshIntro();
+  clearWorld(); generateUpTo(40);
+
+  const L = Pixel.loop(step, render);
+  // console de test : window.sapin.bot(n) joue n pas (1/120 s) en visant la plus haute branche atteignable
+  let botInfo = null;
+  function botPilot(skill) {
+    let target = null, seen = -1;
+    const valid = (p) => p && p.alive && !p.fall && p.type !== 'f';
+    const springOn = (p) => items.some((it) => it.kind === 'spring' && it.alive && Math.abs(it.y - p.y) < 0.01);
+    // les branches qu'on peut atteindre depuis (y, th) avec une vitesse vy
+    function reach(y, th, vy, self) {
+      const apex = y + Math.max(0, vy) * Math.max(0, vy) / (2 * G), out = [];
+      for (const p of plats) {
+        if (p === self || !valid(p) || p.y > apex - 0.3 || p.y < viewBottom + 0.3) continue;
+        if (vy <= 0 && p.y > y) continue;
+        if (vy > 0 && p.y < y - 0.01) continue;   // en montant : pas de branche plus basse (celle d'où l'on part la cache)
+        const tFall = (vy + Math.sqrt(Math.max(0, vy * vy - 2 * G * (p.y - y)))) / G;
+        const arc = Math.abs(angDiff(p.th0 != null && p.type !== 'm' ? p.th : p.th, th)) * R - p.hw * 0.6;
+        if (arc <= VT * tFall * 0.85) out.push(p);
+      }
+      return out;
+    }
+    // vol simulé jusqu'à la branche p (corbeaux et branches qui tournent compris) : 'ok', 'hit' ou 'miss'
+    function flight(p) {
+      let y = pl.y, th = pl.th, vy = pl.vy, vt = pl.vt, t = 0;
+      const dt = 1 / 60;
+      for (let i = 0; i < 240; i++) {
+        t += dt;
+        const pth = p.type === 'm' ? p.th0 + p.amp * Math.sin((time + t) * p.w + p.ph) : p.th;
+        vt = lerp(vt, clamp(angDiff(pth, th) * R / 0.45, -1, 1) * VT, Math.min(1, dt * 12)); th += vt / R * dt;
+        const y0 = y; vy -= G * dt; y += vy * dt;
+        for (const c of crows) {
+          if (!c.alive) continue;
+          const cth = c.th0 + c.amp * Math.sin((time + t) * c.w + c.ph), dy = y + 0.8 - c.y;
+          if (Math.abs(angDiff(th, cth)) * R < 0.85 && Math.abs(dy) < 1.0 && !(vy < 0 && dy > 0.25)) return 'hit';
+        }
+        if (vy < 0 && y0 >= p.y && y <= p.y) return Math.abs(angDiff(th, pth)) * R <= p.hw + PW ? 'ok' : 'miss';
+      }
+      return 'miss';
+    }
+    return () => {
+      if (rocketT > 0) {
+        // en fusée : se placer sous la branche du chemin qu'on croisera à la fin du vol
+        const yEnd = pl.y + VROCKET * rocketT + 2;
+        let q = null; for (const p of plats) if (p.chain && valid(p) && (!q || Math.abs(p.y - yEnd) < Math.abs(q.y - yEnd))) q = p;
+        target = null; return q ? clamp(angDiff(q.th, pl.th) * R / 0.45, -1, 1) : 0;
+      }
+      if (bounces !== seen || !valid(target) || (pl.vy < 0 && pl.y < target.y - 0.05)) {
+        seen = bounces;
+        let best = null;
+        for (const p of reach(pl.y, pl.th, pl.vy, null)) {
+          const f = flight(p), danger = f !== 'ok';
+          // un coup d'avance : la meilleure branche atteignable ensuite (évite les culs-de-sac)
+          const v = springOn(p) ? VSPRING : V0;
+          const next = reach(p.y, p.th, v, p).reduce((m, q) => Math.max(m, q.y), p.y);
+          const sc2 = next + p.y * 0.1 - (danger ? (f === 'hit' ? 40 : 8) : 0) - (p.type === 'm' ? 0.4 : 0) - (p.type === 'v' ? 0.2 : 0);
+          if (!best || sc2 > best.s) best = { p, s: sc2, f };
+        }
+        target = best ? best.p : null;
+        botInfo = { y: +pl.y.toFixed(2), vy: +pl.vy.toFixed(2), vb: +viewBottom.toFixed(2), target: target && [+target.y.toFixed(2), +target.th.toFixed(3)], best: best && +best.s.toFixed(2), f: best && best.f, n: reach(pl.y, pl.th, pl.vy, null).length };
+      }
+      if (!target) return 0;
+      const sp = items.find((it) => it.kind === 'spring' && it.alive && Math.abs(it.y - target.y) < 0.01);
+      const aim = sp ? sp.th : target.th;
+      const d = angDiff(aim, pl.th) * R + (skill ? (Math.random() - 0.5) * skill : 0);
+      return clamp(d / 0.45, -1, 1);
+    };
+  }
+  window.sapin = {
+    start: startGame, SEED, R, JUMP,
+    pause(p) { L.paused = p; },
+    sim: L.sim,
+    state: () => ({ mode, y: +pl.y.toFixed(2), maxY: +maxY.toFixed(2), th: +pl.th.toFixed(3), vy: +pl.vy.toFixed(2), score: score(), boules, corbeaux, cause, camY: +camY.toFixed(2), plats: plats.length, crows: crows.length, rocket: rocketT > 0 }),
+    bot(n, o) { bot = botPilot(o && o.skill); for (let i = 0; i < n && (mode === 'play' || mode === 'fall'); i++) L.sim(1); bot = null; return window.sapin.state(); },
+    botOn(o) { bot = botPilot(o && o.skill); }, botOff() { bot = null; },
+    plats: () => plats.map((p) => ({ y: +p.y.toFixed(2), th: +p.th.toFixed(3), type: p.type, chain: p.chain, alive: p.alive })),
+    input, botInfo: () => botInfo
+  };
+})();
+</script>
+</body>
+</html>

@@ -42,7 +42,7 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
     Ce sont des pages autonomes dans `public/jeux/` affichées dans un cadre (`FrameGame.jsx`, plein écran autorisé) ;
     elles renvoient leur score par `postMessage` (`{ type: '30years:score', game, score }`). Le record du site ne compte que les parties
     solo de 10 questions de culture G / de 10 lieux. Contours de la carte : IGN Admin Express via france-geojson (Licence ouverte).
-  - Jeux du jour (`DAILY_GAMES`, un par jour ouvré du 20 au 30/11/2026, deux le 20 : `VOL` et `LANTERNES`) : chacun a une date `from`
+  - Jeux du jour (`DAILY_GAMES`, un par jour ouvré du 20 au 30/11/2026, deux le 20 : `VOL` et `LANTERNES`, le 26 : `REGATE` et `SAPIN`, le 27 : `TOKYO` et `MOUETTES`) : chacun a une date `from`
     (9 h, heure du navigateur) et s'ouvre seul, sans mise en ligne ce jour-là (`isUnlocked`) ; `dailyGames(now)` = ceux sortis en dernier. Ajouter un jeu : sa page dans `public/jeux/`,
     son entrée dans `src/games/index.js` (avec `from`) et son score maximal dans `JEUX` (`classement/api.js`).
     `VOL` (« Vol du soir », 20/11) : `public/jeux/vol-du-soir.html`, jet de Noël en 3D pixel (three.js r149 servi par le site :
@@ -75,6 +75,19 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
     de série (jusqu'à +100). Console `window.train` (`autoplay(n)` : aiguilleur parfait).
   - `LANTERNES` (« Les Lanternes », 20/11) : `public/jeux/lanternes.html`, logique façon « lumières » : toucher une lanterne inverse
     elle et ses voisines en croix ; 5 jardins du jour (3×3 à 5×5), objectif = solution la plus courte (algèbre dans le corps à deux éléments).
+  - `SAPIN` (« Le Grand Sapin », 26/11) : `public/jeux/grand-sapin.html`, saut vertical façon Doodle Jump autour d'un sapin géant
+    (le tour du tronc remplace les bords de l'écran ; on ne meurt qu'en tombant sous l'écran, un corbeau ne fait que bousculer).
+    Sapin du jour généré en montant (`Pixel.daySeed('grand-sapin')`, `?seed=n` pour tester) : une « chaîne » de branches toujours
+    atteignable (arc ≤ ce qu'on parcourt pendant le saut) + branches en plus qui mènent toujours à la suivante (pas de cul-de-sac),
+    branches mortes, qui tournent, glaçons, ressorts, fusées, boules, corbeaux ; difficulté jusqu'à 520 m puis plus lente.
+    10 pts par mètre + 50 par boule + 100 par corbeau sauté. Console `window.sapin` (`start()`, `bot(n)` : pilote parfait
+    qui simule ses sauts, corbeaux compris ; `state()`).
+  - `MOUETTES` (« Le théorème des mouettes blanches américaines », 27/11) : `public/jeux/mouettes.html`, enquête à la manière
+    des romans de détective (histoire inventée, Brighton 1891) : 5 lieux en 3D pixel (`SC`), repères cliquables (`SPOTS`, indices
+    `CLUES`, témoins `PEOPLE` dont les questions s'ouvrent avec les indices), 9 déductions (`QS`, 60 pts du premier coup, divisés
+    par deux à chaque erreur) puis l'accusation (`FINAL` : coupable 200, mobile 80, manuscrit 80) + jusqu'à 100 pts de temps.
+    Partie sauvegardée (`mouettes:enquete`) ; seule la première enquête finie dans le site part au classement (`mouettes:premiere`).
+    Console `window.enquete` (`solve(err)`, `state()`).
   - Où on les trouve : deux tuiles sous la liste « Ensuite » (`GameTiles.jsx` : les jeux du jour ; s'il n'y en a qu'un, « Historique »),
     bouton « Historique » de l'en-tête (`GamesList.jsx` : tous les jeux de novembre, jouables après leur jour),
     menu « Jeux » de l'en-tête sur téléphone (la colonne de droite y est masquée), tuile des mini-jeux en décembre ;

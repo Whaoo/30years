@@ -317,7 +317,26 @@ export const LANTERNES = {
     help: 'Clique (ou touche) une lanterne : elle change d’état, et ses voisines aussi (haut, bas, gauche, droite). Allume tout le jardin avec le moins de gestes possible. R pour recommencer.',
     component: lazy(() => import('./FrameGame'))
 };
-export const DAILY_GAMES = [VOL, LANTERNES, FUJI, GOLF, BALLON, REGATE, TOKYO, TRAIN];
+// deuxième jeu du jeudi 26 (adresse, avec la Régate) et du vendredi 27 (enquête, avec Tokyo)
+export const SAPIN = {
+    id: 'sapin', title: 'Le Grand Sapin', short: 'Grand Sapin',
+    eyebrow: 'Jeu du jour · jeu. 26 nov.',
+    from: new Date(2026, 10, 26, 9, 0),
+    icon: 'tree', unit: 'pts', frame: '/jeux/grand-sapin.html',
+    pitch: 'De branche en branche jusqu’aux étoiles',
+    help: '← → (ou la souris, ou les côtés de l’écran) pour tourner autour du tronc : le lutin rebondit tout seul. Branches mortes, glaçons, ressorts, fusées, et gare aux corbeaux. P pour la pause.',
+    component: lazy(() => import('./FrameGame'))
+};
+export const MOUETTES = {
+    id: 'mouettes', title: 'Le théorème des mouettes', short: 'Mouettes',
+    eyebrow: 'Jeu du jour · ven. 27 nov.',
+    from: new Date(2026, 10, 27, 9, 0),
+    icon: 'search', unit: 'pts', frame: '/jeux/mouettes.html',
+    pitch: 'Enquête à Brighton, 1891 : qui a volé la démonstration ?',
+    help: 'Examine les lieux (loupes), interroge les témoins (bulles), puis « Réfléchir » : chaque déduction juste du premier coup rapporte le plus. Seule ta première enquête compte au classement.',
+    component: lazy(() => import('./FrameGame'))
+};
+export const DAILY_GAMES = [VOL, LANTERNES, FUJI, GOLF, BALLON, REGATE, SAPIN, TOKYO, MOUETTES, TRAIN];
 // le dernier jeu du jour sorti (null avant le premier)
 // Les jeux du jour : ceux sortis le plus récemment (deux le vendredi 20), dans l'ordre du registre
 export function dailyGames(now = new Date()) {

@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Le théorème des mouettes blanches américaines</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Mono:wght@500;700&family=IM+Fell+English:ital@0;1&display=swap">
+<style>
+/* Enquête à la manière des romans de détective de la fin du XIXe siècle : Brighton, 27 novembre 1891, la démonstration
+   d'un théorème sur les mouettes a disparu. Cinq lieux en 3D « pixel », des indices à examiner, des témoins à interroger,
+   des déductions à faire, puis l'accusation. Histoire inventée. Styles communs dans lib/pixel.js. */
+:root { --accent: #c9a24a; --accent-ink: #1a1408; --serif: 'IM Fell English', Georgia, 'Times New Roman', serif; }
+#stage { background: #141826; }
+.card h1 { font-size: 26px; line-height: 1.05; }
+.card .gazette { margin: 0; padding: 11px 13px 12px; background: #efe6d0; color: #2a2418; box-shadow: 3px 3px 0 #000; display: grid; gap: 5px; }
+.card .gazette b { font: 400 8px/1 var(--pixel); letter-spacing: 0; text-transform: uppercase; color: #6e1a24; }
+.card .gazette strong { font: 700 17px/1.15 var(--serif); }
+.card .gazette span { font: 400 14px/1.4 var(--serif); }
+.card .story { font: 400 15px/1.45 var(--serif); color: var(--paper); }
+#spots { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.spot { position: absolute; left: 0; top: 0; display: grid; justify-items: center; gap: 3px; padding: 0; border: 0; background: none; color: var(--paper); cursor: pointer; pointer-events: auto; }
+.spot i { position: relative; width: 28px; height: 28px; display: grid; place-items: center; background: rgba(18, 20, 28, 0.85); border: 2px solid var(--accent); color: var(--accent); box-shadow: 2px 2px 0 #000; }
+.spot.person i { border-radius: 50%; }
+.spot span { padding: 3px 4px 2px; background: rgba(18, 20, 28, 0.85); font: 400 8px/1 var(--pixel); text-transform: uppercase; white-space: nowrap; }
+.spot.seen i { border-color: #6a6878; color: #8f8c9c; }
+.spot.new i::after { content: ''; position: absolute; top: -4px; right: -4px; width: 8px; height: 8px; background: #d0343a; box-shadow: 0 0 0 1px #000; }
+.spot:hover i, .spot:focus-visible i { background: var(--accent); color: var(--accent-ink); }
+.spot:focus-visible { outline: none; }
+.spot.pulse i { animation: pulse 1.4s steps(4) infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 4px rgba(201, 162, 74, 0.45), 2px 2px 0 #000; } }
+#drawer { position: absolute; top: 8px; right: 8px; bottom: 8px; width: min(410px, calc(100% - 16px)); display: flex; flex-direction: column; background: rgba(16, 18, 26, 0.96); border: 1px solid var(--line); box-shadow: 0 0 0 1px #000, 6px 6px 0 rgba(0, 0, 0, 0.35); z-index: 3; }
+#drawer header { display: flex; align-items: flex-start; gap: 10px; padding: 12px 12px 10px 14px; border-bottom: 1px solid var(--line); }
+#drawer header > div { flex: 1; display: grid; gap: 5px; min-width: 0; }
+#drawer h2 { margin: 0; font: 700 18px/1.1 var(--pixel); color: var(--paper); }
+#drawer .x { flex: none; width: 28px; height: 28px; border: 1px solid var(--line); background: transparent; color: var(--paper); font: 700 14px/1 var(--mono); cursor: pointer; }
+#drawer .x:hover { color: var(--amber); }
+#drawer .body { flex: 1; overflow: auto; padding: 12px 14px 16px; display: grid; gap: 11px; align-content: start; }
+.say { margin: 0; padding: 2px 0 2px 11px; border-left: 3px solid var(--accent); font: 400 15px/1.45 var(--serif); color: var(--paper); }
+.txt { margin: 0; font: 400 15px/1.45 var(--serif); color: var(--paper); }
+.lab { margin: 0; font: 400 8px/1.3 var(--pixel); letter-spacing: 0; text-transform: uppercase; color: var(--muted); }
+.topics { display: grid; gap: 5px; }
+.topics button, .opts button, .clue-row { text-align: left; padding: 8px 10px 7px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.03); color: var(--paper); font: 500 12px/1.35 var(--mono); cursor: pointer; }
+.topics button:hover, .opts button:hover:not(:disabled), .clue-row:hover { border-color: var(--accent); }
+.topics button.read { color: var(--muted); }
+.topics button.cur { border-color: var(--accent); background: rgba(201, 162, 74, 0.12); }
+.topics button.fresh::before { content: '● '; color: #d0343a; }
+.ev { margin: 0; display: grid; justify-items: start; gap: 6px; }
+.ev img { display: block; width: 100%; max-width: 372px; height: auto; image-rendering: pixelated; image-rendering: crisp-edges; box-shadow: 0 0 0 1px #000, 3px 3px 0 rgba(0, 0, 0, 0.4); }
+.need { margin: 0; font: 400 8px/1.4 var(--pixel); letter-spacing: 0; text-transform: uppercase; color: var(--muted); }
+.ev figcaption { font: 400 13px/1.4 var(--serif); font-style: italic; color: var(--soft); }
+.got { margin: 0; padding: 6px 8px 5px; background: rgba(159, 224, 168, 0.1); border: 1px dashed #3f7a4a; font: 400 8px/1.3 var(--pixel); text-transform: uppercase; color: #9fe0a8; }
+.clue-row { display: grid; gap: 4px; }
+.clue-row b { font: 700 12px/1.3 var(--mono); }
+.clue-row small { font: 400 8px/1 var(--pixel); text-transform: uppercase; color: var(--muted); }
+.clue-row .txt { display: none; font-size: 14px; }
+.clue-row.open .txt { display: block; }
+.dq { border: 1px solid var(--line); padding: 10px; display: grid; gap: 8px; }
+.dq h3 { margin: 0; font: 700 13px/1.4 var(--mono); color: var(--paper); }
+.dq .opts { display: grid; gap: 5px; }
+.opts button:disabled { cursor: default; }
+.opts button.no { text-decoration: line-through; color: var(--muted); border-style: dashed; }
+.opts button.yes { border-color: #3f7a4a; background: rgba(159, 224, 168, 0.12); color: #9fe0a8; }
+.dq.ok { border-color: #3f7a4a; }
+.dq .why { margin: 0; font: 400 14px/1.45 var(--serif); color: #cfe8c8; }
+.dq .nope { margin: 0; font: 400 14px/1.45 var(--serif); color: #ff8a7a; }
+.dq.locked { opacity: 0.62; }
+.dq.locked h3 { color: var(--soft); }
+.dq .pts { justify-self: start; font: 400 8px/1 var(--pixel); text-transform: uppercase; color: var(--amber); }
+.final { border-color: var(--accent); background: rgba(201, 162, 74, 0.06); }
+#nav { flex: none; display: flex; gap: 4px; padding: 6px max(8px, env(safe-area-inset-right, 0px)) 6px max(8px, env(safe-area-inset-left, 0px)); background: #0e1018; border-top: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+#nav button { flex: none; display: flex; align-items: center; gap: 6px; padding: 8px 9px 7px; border: 1px solid var(--line); background: transparent; color: var(--soft); font: 400 8px/1 var(--pixel); text-transform: uppercase; cursor: pointer; white-space: nowrap; }
+#nav button:hover:not(:disabled) { color: var(--paper); border-color: var(--accent); }
+#nav button[aria-current="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+#nav button:disabled { opacity: 0.35; cursor: default; }
+#nav .grow { flex: 1 0 8px; }
+#nav .badge { padding: 2px 4px 1px; background: #d0343a; color: #fff; }
+#nav .badge:empty { display: none; }
+#nav .main { border-color: var(--accent); color: var(--paper); }
+#place .w { color: var(--accent); }
+.menu #nav { pointer-events: none; opacity: 0.4; }
+#results .card { width: min(560px, 100%); }
+#results .story { font-size: 14px; }
+@media (max-width: 640px) {
+  #drawer { left: 0; right: 0; bottom: 0; top: auto; width: auto; max-height: 72%; border-left: 0; border-right: 0; }
+  #nav .lbl { display: none; }
+  .spot span { display: none; }
+  .spot:focus span, .spot:hover span { display: block; }
+}
+</style>
+</head>
+<body>
+<div id="app" class="menu">
+  <div id="stage">
+    <canvas id="gl"></canvas>
+    <canvas id="hud"></canvas>
+    <div id="spots"></div>
+    <div class="tag tl" id="place" hidden><span class="sq"></span><span id="placeName">Chambre 12</span></div>
+    <div class="tag tr" id="clock" hidden><span id="clockT">17:30</span></div>
+    <div id="feed" aria-live="polite"></div>
+    <aside id="drawer" hidden aria-live="polite">
+      <header><div><p class="eyebrow" id="dEye"></p><h2 id="dTitle"></h2></div><button class="x" id="dClose" type="button" aria-label="Fermer">×</button></header>
+      <div class="body" id="dBody"></div>
+    </aside>
+    <div class="over" id="intro">
+      <div class="card card--wide">
+        <div class="col">
+          <p class="eyebrow">Enquête · jeu du jour</p>
+          <h1>Le théorème des mouettes blanches <span>américaines</span></h1>
+          <p class="gazette"><b>Brighton Gazette · vendredi 27 novembre 1891, édition du soir</b><strong>Vol au Grand Hôtel</strong><span>Ce soir à 20&nbsp;h, devant la Société royale d’ornithologie, le professeur Ezekiel Whitcombe, de Boston, devait enfin démontrer son fameux théorème des mouettes blanches américaines. Mais à 16&nbsp;h&nbsp;45, la démonstration, quarante pages de sa main, avait disparu de sa chambre.</span></p>
+          <p class="story">Le directeur de l’hôtel vous a fait chercher. Il est 17&nbsp;h&nbsp;30, le brouillard monte de la mer, et le dernier train pour Londres part à 19&nbsp;h.</p>
+          <div class="actions" id="introActions"><button class="go" id="goPlay" type="button">Mener l’enquête</button></div>
+          <p class="rec" id="rec"></p>
+        </div>
+        <div class="col">
+          <p class="eyebrow">Comment enquêter</p>
+          <ul class="goals" id="goals"></ul>
+          <p class="tip" id="tip">Seule ta première enquête compte pour le classement. Elle est sauvegardée&nbsp;: tu peux fermer la fenêtre et reprendre plus tard.</p>
+        </div>
+      </div>
+    </div>
+    <div class="over" id="results" hidden>
+      <div class="card">
+        <p class="eyebrow" id="resEyebrow">Affaire résolue</p>
+        <h2 id="resTitle">L’ombre de la chambre 14</h2>
+        <p class="story" id="resStory"></p>
+        <dl class="score" id="resRows"></dl>
+        <div class="total"><div><p class="rec" id="resSub">Total</p><strong id="resTotal">0</strong></div><div class="mention" id="resMention">B</div></div>
+        <p class="rec" id="resRec"></p>
+        <div class="actions"><button class="go ghost" id="again" type="button">Rejouer l’enquête</button></div>
+      </div>
+    </div>
+  </div>
+  <nav id="nav" aria-label="Lieux et carnet"></nav>
+  <div class="bar">
+    <span class="logo"><svg width="12" height="9" viewBox="0 0 12 9" aria-hidden="true"><path fill="#f4f4f8" d="M2 3h6v3H2zM8 2h2v2H8z"/><path fill="#8f8c9c" d="M3 2h4v2H3z"/><path fill="#f2c81e" d="M10 3h2v1h-2z"/><path fill="#24242e" d="M0 4h2v1H0z"/></svg>Les mouettes</span>
+    <span class="hints"><span><b>Clic</b>Examiner, interroger</span><span><b>1 à 5</b>Lieux</span><span><b>C</b>Carnet</span><span><b>D</b>Déductions</span></span>
+    <span class="grow"></span>
+    <button type="button" id="sndBtn"><svg width="9" height="8" viewBox="0 0 9 8" aria-hidden="true"><path fill="currentColor" d="M0 2h2l3-2v8L2 6H0z"/></svg><span id="sndLabel">Son coupé</span></button>
+    <button type="button" id="fsBtn"><svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true"><path fill="none" stroke="currentColor" d="M.5 3V.5H3M5 .5h2.5V3M7.5 5v2.5H5M3 7.5H.5V5"/></svg><span id="fsLabel">Plein écran</span></button>
+  </div>
+</div>
+
+<script src="lib/three.min.js"></script>
+<script src="lib/pixel.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  if (!window.THREE || !window.Pixel) { document.querySelector('.card .story').textContent = 'La bibliothèque 3D n’a pas pu se charger. Recharge la page.'; return; }
+  const { clamp, lerp, store, report, isTouch, GEO, mtx, fmtInt } = Pixel;
+  const stage = $('stage');
+  const feed = Pixel.feeder($('feed'));
+  const snd = Pixel.sound();
+  Pixel.bar({ sound: snd, feed });
+  // typographie française : espaces insécables avant ? ! : ; » et après «
+  const fr = (s) => String(s).replace(/ ([?!:;»])/g, '\u00a0$1').replace(/« /g, '«\u00a0').replace(/(\d) h (\d\d)/g, '$1\u00a0h\u00a0$2').replace(/(\d) h\b/g, '$1\u00a0h');
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const H = (s) => esc(fr(s)).replace(/\*([^*]+)\*/g, '<i>$1</i>');
+
+  // ================================================================ l'histoire
+  // Brighton, vendredi 27 novembre 1891. La mer est au sud. Avant 16 h, vent du large (sud-ouest) ; à 16 h, il tourne à l'est.
+  // Le théorème : une mouette posée a le bec face au vent ; celle qui ne fait pas face au vent regarde la main qui la nourrit.
+  const LOCS = [
+    { id: 'chambre', name: 'Chambre 12', sub: 'Grand Hôtel, premier étage' },
+    { id: 'hall', name: 'Le hall', sub: 'Grand Hôtel, réception' },
+    { id: 'jetee', name: 'La jetée Ouest', sub: 'Capitainerie et photographe' },
+    { id: 'plage', name: 'Le front de mer', sub: 'Face au Grand Hôtel' },
+    { id: 'telegraphe', name: 'Le télégraphe', sub: 'Bureau de poste de King’s Road' }
+  ];
+  const LOC = Object.fromEntries(LOCS.map((l) => [l.id, l]));
+  // k : indice (objet, lieu), temoin (ce qu'on vous a dit), piece (pièce à conviction)
+  const CLUES = {
+    theoreme: { k: 'piece', t: 'Le théorème de Whitcombe', x: '« Toute mouette blanche américaine posée tient le bec face au vent. » Et le corollaire, dont le professeur est le plus fier : « Celle qui ne fait pas face au vent regarde la main qui la nourrit. »' },
+    prof: { k: 'temoin', t: 'Le professeur Whitcombe', x: 'Il a fermé sa chambre à clé à 15 h, puis il est resté au salon de thé jusqu’à 16 h 45 (les serveurs le confirment). Sa clé ne l’a pas quitté. Miss Penrose est sortie du salon vers 16 h 10.' },
+    dossier: { k: 'indice', t: 'Le dossier de cuir', x: 'Sur le bureau, le dossier du professeur, ouvert et vide. Les lettres, la montre et le portefeuille n’ont pas bougé : le voleur ne voulait que la démonstration.' },
+    loquet: { k: 'indice', t: 'La porte-fenêtre', x: 'Le loquet a été soulevé de l’extérieur avec une lame fine : éraflures fraîches dans le bois, côté balcon.' },
+    serrure: { k: 'indice', t: 'La porte de la chambre', x: 'Serrure intacte, pas une éraflure. Celui qui serait entré par là avait une clé.' },
+    balcon: { k: 'indice', t: 'Le balcon', x: 'Le balcon de la 12 se prolonge jusqu’à celui de la chambre voisine, la 14 : une rambarde basse les sépare, qu’on enjambe sans peine. Sur cette rambarde, côté 14, des miettes brunes qui sentent le gingembre.' },
+    mary: { k: 'temoin', t: 'Mary Hobbs, femme de chambre', x: 'À 16 h 05, elle a porté des serviettes à la 12 : le dossier de cuir était plein, sur le bureau, et la porte-fenêtre fermée au loquet. Vers 16 h 25, les mouettes ont crié sur les balcons, puis se sont tues d’un coup.' },
+    registre: { k: 'indice', t: 'Le registre de l’hôtel', x: 'Chambre 12 : Prof. E. Whitcombe, Boston. Chambre 14 : Sir Reginald Ashby, inscrit d’abord à la 31, puis changé pour la 14 « à sa demande », mercredi 25.' },
+    passe: { k: 'temoin', t: 'Le passe-partout', x: 'D’après Tobias, le passe-partout n’a pas quitté son crochet de l’après-midi, et personne n’a demandé la clé de la 12.' },
+    tobias: { k: 'temoin', t: 'Tobias Finch, groom', x: 'Sir Reginald lui a donné une livre d’or pour passer de la 31 à la 14, « pour la vue ». Il grignote des biscuits au gingembre toute la journée, et en lance même aux mouettes par la fenêtre.' },
+    carton: { k: 'temoin', t: 'Le carton à chapeau', x: 'Sir Reginald a fait descendre ses malles pour le train de 19 h, mais personne n’a le droit de toucher à son carton à chapeau : il le garde contre lui depuis 17 h.' },
+    sir: { k: 'temoin', t: 'Sir Reginald Ashby', x: 'Il dit s’être promené sur la jetée de 16 h à 17 h, et le prouve : une photographie, l’heure écrite au dos de sa main, « 16 h 15 ».' },
+    photo: { k: 'piece', t: 'La photographie', img: 'photo', x: 'Sir Reginald pose devant la rambarde de la jetée. Derrière lui, sept mouettes posées, toutes le bec tourné vers le large. Au dos, à l’encre : « 16 h 15 ».' },
+    livre: { k: 'piece', t: 'Le livre de Sir Reginald', x: '*Du libre arbitre des goélands*, à paraître lundi chez Hartley & Fils. Sa thèse : les mouettes se posent n’importe comment. Si le théorème est démontré ce soir, le livre est ridicule avant d’être imprimé.' },
+    penrose: { k: 'temoin', t: 'Miss Harriet Penrose', x: 'Assistante du professeur. Sortie du salon à 16 h 10 pour télégraphier à Boston, elle dit avoir attendu la réponse au bureau jusqu’à 16 h 40. Elle nourrit les mouettes chaque jour, « au pain de mie, jamais de biscuits : le gingembre les rend malades ».' },
+    credit: { k: 'temoin', t: 'Le dépit de Miss Penrose', x: 'C’est elle qui a observé le corollaire, sur le port de Boston. Ce soir, le professeur signera seul, « comme toujours ». Elle ne s’en cache pas.' },
+    journal: { k: 'indice', t: 'Le journal de la capitainerie', x: '14 h : vent du large, sud-ouest, force 4. 15 h : du large, force 3. 16 h précises : le vent tourne, il souffle désormais de l’est, le long de la côte. 17 h et 18 h : vent d’est, force 2.' },
+    crane: { k: 'temoin', t: 'Le capitaine Crane', x: 'À 16 h tapantes, les pavillons ont claqué de l’autre côté, et toutes les mouettes de la jetée ont pivoté d’un bloc, « comme des girouettes ».' },
+    quill: { k: 'temoin', t: 'Josiah Quill, photographe', x: 'Il ne porte pas de montre : c’est le client qui écrit l’heure au dos du tirage. Sir Reginald lui a payé double pour un tirage immédiat. « Il faisait encore doux », se souvient-il.' },
+    maintenant: { k: 'indice', t: 'Les mouettes de la jetée, à 18 h', x: 'Sur la rambarde, toutes les mouettes ont le bec tourné vers l’est. Le vent d’est souffle toujours : le théorème se vérifie sous vos yeux.' },
+    tableau: { k: 'piece', t: 'Le tableau de M. Brisseau', img: 'tableau', x: 'La façade du Grand Hôtel, peinte de la plage, signée « A.B., 16 h 30 ». Sur la corniche, six mouettes, le bec vers l’est. Sur la rambarde du balcon de la 14, une seule mouette, tournée vers la fenêtre, et une ombre derrière le rideau.' },
+    brisseau: { k: 'temoin', t: 'Anatole Brisseau, peintre', x: 'Il a peint la façade de 16 h 15 à 16 h 45, assis sur les galets. Il a signé en entendant sonner la demie au clocher de St Nicholas.' },
+    facade: { k: 'indice', t: 'La façade du Grand Hôtel', x: 'Vus de la plage, les balcons du premier étage : la 12 et la 14 côte à côte, à droite de l’enseigne, reliés par la même rambarde.' },
+    lattimer: { k: 'temoin', t: 'Miss Lattimer, télégraphiste', x: 'Miss Penrose a envoyé son télégramme à 16 h 20, puis a attendu la réponse de Boston sur le banc, sous l’horloge, jusqu’à 16 h 40. Texte : « DÉMONSTRATION EN LIEU SÛR STOP PRÉSENTATION CE SOIR STOP ».' },
+    telegramme: { k: 'piece', t: 'Le télégramme de Sir Reginald', x: 'Envoyé à 15 h 30 à son éditeur, à Londres : « IMPRIMEZ LUNDI COMME PRÉVU STOP CE SOIR WHITCOMBE N’AURA RIEN À MONTRER STOP ».' },
+    horloge: { k: 'indice', t: 'L’horloge du télégraphe', x: 'Réglée chaque matin sur l’heure de Greenwich, par le fil même du télégraphe. On peut se fier aux heures de Miss Lattimer.' }
+  };
+  const PEOPLE = {
+    whitcombe: { name: 'Pr Ezekiel Whitcombe', role: 'Ornithologue, Boston', loc: 'chambre', topics: [
+      { id: 'quoi', q: 'Que s’est-il passé ?', gives: ['prof'], a: 'J’ai laissé la démonstration dans son dossier, sur ce bureau, et j’ai fermé ma porte à clé à 15 h. Puis salon de thé jusqu’à 16 h 45 : les serveurs vous le diront. En remontant… le dossier était vide ! Ma clé ? Dans ma poche, tout l’après-midi. Miss Penrose est sortie vers 16 h 10 télégraphier à Boston.' },
+      { id: 'theoreme', q: 'Votre théorème ?', gives: ['theoreme'], opens: ['jetee'], a: 'Vingt ans d’observations, détective ! Toute mouette blanche américaine posée tient le bec face au vent. Et le corollaire, ma plus belle trouvaille : celle qui ne fait pas face au vent regarde la main qui la nourrit. Allez donc sur la jetée, vous verrez.' },
+      { id: 'harriet', q: 'Miss Penrose dit que vous signerez seul.', needs: ['credit'], a: 'Harriet ? Elle a observé, j’ai démontré. Ainsi va la science… Mais elle n’aurait jamais… non. Jamais.' },
+      { id: 'ashby', q: 'Et Sir Reginald Ashby ?', needs: ['livre'], a: 'Ashby ! Un livre entier pour soutenir que les mouettes se posent au hasard. Ce soir, je devais lui prouver le contraire devant toute la Société.' }
+    ] },
+    mary: { name: 'Mary Hobbs', role: 'Femme de chambre', loc: 'chambre', topics: [
+      { id: 'passage', q: 'Vous êtes entrée cet après-midi ?', gives: ['mary'], opens: ['plage'], a: 'Oui, à 16 h 05, pour les serviettes. Le dossier de cuir était là, sur le bureau, bien plein. La porte-fenêtre était fermée, le loquet mis : je l’ai vérifié à cause du vent. Vers 16 h 25, dans le couloir, j’ai entendu les mouettes crier sur les balcons, puis plus rien, d’un coup, comme quand on leur jette à manger. Le peintre français, sur la plage, a peut-être vu quelque chose : il peint la façade tous les après-midi.' }
+    ] },
+    tobias: { name: 'Tobias Finch', role: 'Groom du Grand Hôtel', loc: 'hall', topics: [
+      { id: 'passe', q: 'Le passe-partout ?', gives: ['passe'], a: 'Il n’a pas bougé de son crochet, monsieur, je n’ai pas quitté le comptoir de l’après-midi. Et personne ne m’a demandé la clé de la 12.' },
+      { id: 'sir', q: 'Parlez-moi de Sir Reginald.', gives: ['tobias'], a: 'Un monsieur généreux ! Mercredi, il m’a donné une livre d’or pour lui trouver la 14 au lieu de la 31. Pour la vue sur la mer, qu’il a dit. Il grignote des biscuits au gingembre du matin au soir ; il en lance même aux mouettes, par la fenêtre.' },
+      { id: 'depart', q: 'Sir Reginald part ce soir ?', needs: ['sir'], gives: ['carton'], a: 'Par le train de 19 h, monsieur. J’ai descendu ses malles, mais son carton à chapeau, pas question : il le garde contre lui, là, près du fauteuil. Il ne l’a pas lâché depuis 17 h.' }
+    ] },
+    sir: { name: 'Sir Reginald Ashby', role: 'Société royale d’ornithologie', loc: 'hall', topics: [
+      { id: 'alibi', q: 'Où étiez-vous cet après-midi ?', gives: ['sir', 'photo'], opens: ['jetee'], a: 'Sur la jetée, de 16 h à 17 h, à respirer l’air du large, comme tout gentleman. Et j’ai mieux que ma parole : voyez ce portrait. 16 h 15, je l’ai noté au dos moi-même.' },
+      { id: 'theoreme', q: 'Le théorème du professeur ?', gives: ['livre'], a: 'Une fable pour touristes ! Les goélands se posent où il leur plaît, comme il leur plaît. Je l’ai démontré, moi, dans *Du libre arbitre des goélands*, qui paraît lundi chez Hartley & Fils.' },
+      { id: 'biscuits', q: 'Vous aimez le gingembre ?', needs: ['balcon'], a: 'Pour la digestion, monsieur. La moitié de l’Angleterre en mange. Où voulez-vous en venir ?' },
+      { id: 'telegramme', q: 'Votre télégramme de 15 h 30 ?', needs: ['telegramme'], a: '… Une manière de parler. Mon éditeur est un homme nerveux. Je ne vois pas en quoi cela vous regarde.' }
+    ] },
+    penrose: { name: 'Miss Harriet Penrose', role: 'Assistante du professeur', loc: 'hall', topics: [
+      { id: 'ou', q: 'Où étiez-vous après 16 h ?', gives: ['penrose'], opens: ['telegraphe'], a: 'Au télégraphe de King’s Road. Je suis sortie du salon à 16 h 10 pour câbler à Boston que tout était prêt, et j’ai attendu la réponse jusqu’à 16 h 40. En chemin, j’ai donné du pain aux mouettes, comme chaque jour : du pain de mie, jamais de biscuits, le gingembre les rend malades.' },
+      { id: 'prof', q: 'Vous vous entendez bien avec le professeur ?', gives: ['credit'], a: 'Le corollaire, c’est moi qui l’ai vu, sur le port de Boston, un matin de mars. Ce soir, il signera seul. Comme toujours. Je ne vous le cache pas, détective : cela me fait de la peine. Mais voler son travail, ce serait voler le mien.' }
+    ] },
+    crane: { name: 'Capitaine Elias Crane', role: 'Capitaine de la jetée', loc: 'jetee', topics: [
+      { id: 'vent', q: 'Le vent, cet après-midi ?', gives: ['crane'], a: 'Vent du large toute la journée, et puis à 16 h tapantes, crac : les pavillons claquent de l’autre côté, ça souffle de l’est. Et toutes les mouettes de la jetée qui pivotent d’un bloc, comme des girouettes ! Votre Américain a raison, ça m’a fait rire. C’est noté dans mon journal, là, sur le pupitre.' }
+    ] },
+    quill: { name: 'Josiah Quill', role: 'Photographe de la jetée', loc: 'jetee', topics: [
+      { id: 'portrait', q: 'Sir Reginald s’est fait photographier ?', gives: ['quill'], a: 'Oui, monsieur, un portrait devant la rambarde, avec les mouettes derrière : il y tenait. L’heure ? Je n’ai pas de montre, moi : c’est le client qui écrit l’heure au dos. Il m’a payé double pour que je développe tout de suite. Ce dont je me souviens, c’est qu’il faisait encore doux.' }
+    ] },
+    brisseau: { name: 'Anatole Brisseau', role: 'Peintre, de Honfleur', loc: 'plage', topics: [
+      { id: 'tableau', q: 'Qu’avez-vous peint cet après-midi ?', gives: ['brisseau', 'tableau'], a: 'La façade, monsieur, toujours la façade ! Je me suis assis sur les galets à 16 h 15 et j’ai peint jusqu’à 16 h 45. J’ai signé quand la demie a sonné à St Nicholas : 16 h 30. Regardez ces mouettes sur la corniche… et cette ombre, au premier, derrière le rideau. J’aime les ombres.' }
+    ] },
+    lattimer: { name: 'Miss Dora Lattimer', role: 'Télégraphiste', loc: 'telegraphe', topics: [
+      { id: 'penrose', q: 'Miss Penrose est-elle venue ?', gives: ['lattimer'], a: 'À 16 h 20, monsieur. Un télégramme pour Boston : DÉMONSTRATION EN LIEU SÛR STOP PRÉSENTATION CE SOIR STOP. Puis elle a attendu la réponse là, sur ce banc, sous l’horloge, jusqu’à 16 h 40. Elle ne tenait pas en place.' },
+      { id: 'autres', q: 'D’autres clients du Grand Hôtel ?', needs: ['sir'], gives: ['telegramme'], a: 'Sir Reginald Ashby, à 15 h 30, pour son éditeur à Londres. Je ne devrais pas… mais puisque c’est pour la police. Le voici : IMPRIMEZ LUNDI COMME PRÉVU STOP CE SOIR WHITCOMBE N’AURA RIEN À MONTRER STOP.' }
+    ] }
+  };
+  const QS = [
+    { id: 'vent', needs: [['journal', 'crane']], q: 'À quelle heure le vent a-t-il tourné ?', opts: ['15 h', '15 h 30', '16 h', '16 h 30'], ok: 2,
+      why: 'Le capitaine Crane l’a vu et noté dans son journal : jusqu’à 16 h, vent du large ; à 16 h précises, vent d’est.' },
+    { id: 'avant', needs: ['theoreme', ['journal', 'crane']], q: 'Avant 16 h, vers où les mouettes posées tournaient-elles le bec ?', opts: ['Vers le large, la mer', 'Vers l’est, le long de la côte', 'Chacune à sa guise'], ok: 0,
+      why: 'Bec face au vent : tant que le vent venait du large, les mouettes regardaient la mer. Après 16 h, toutes ont regardé vers l’est. Une mouette est une horloge, pour qui sait la lire.' },
+    { id: 'photo', needs: ['photo', 'theoreme', ['journal', 'crane']], q: 'Quand la photographie de Sir Reginald a-t-elle été prise ?', opts: ['À 16 h 15, comme il l’a écrit au dos', 'Avant 16 h', 'Après 17 h'], ok: 1,
+      why: 'Derrière Sir Reginald, les mouettes regardent le large : le vent venait encore de la mer. La photographie date d’avant 16 h, et « 16 h 15 », écrit de sa main, est un mensonge. De 16 h à 17 h, Sir Reginald n’a pas d’alibi.' },
+    { id: 'heure', needs: ['prof', 'mary'], q: 'Quand la démonstration a-t-elle disparu ?', opts: ['Entre 15 h et 16 h', 'Entre 16 h 05 et 16 h 45', 'Après 16 h 45'], ok: 1,
+      why: 'Mary a vu le dossier plein à 16 h 05 ; le professeur l’a trouvé vide à 16 h 45.' },
+    { id: 'entree', needs: ['loquet', 'serrure', 'passe'], q: 'Par où le voleur est-il entré dans la chambre 12 ?', opts: ['Par la porte, avec le passe-partout', 'Par la porte-fenêtre, depuis le balcon', 'Par la cheminée'], ok: 1,
+      why: 'Serrure intacte, clé dans la poche du professeur, passe-partout à son crochet. Le loquet, lui, a été soulevé de l’extérieur : le voleur venait du balcon.' },
+    { id: 'voisin', needs: ['balcon', 'registre'], q: 'D’où pouvait-on gagner le balcon de la 12 ?', opts: ['Seulement de la chambre 12', 'De la chambre 14, en enjambant la rambarde', 'Du toit, avec une corde'], ok: 1,
+      why: 'Une rambarde basse sépare les balcons de la 12 et de la 14. Et la 14, c’est la chambre de Sir Reginald, qu’il a réclamée mercredi, une livre d’or à la main.' },
+    { id: 'tableau', needs: ['tableau', 'theoreme'], q: 'Que révèle le tableau de M. Brisseau, signé 16 h 30 ?', opts: ['Brisseau ment sur l’heure : ses mouettes regardent le large', 'À 16 h 30, quelqu’un nourrissait une mouette depuis la chambre 14', 'Le balcon de la 14 était désert'], ok: 1,
+      why: 'Sur la corniche, les mouettes regardent l’est : on est bien après 16 h, l’heure de Brisseau est juste. Mais sur la rambarde de la 14, une mouette ne fait pas face au vent : elle regarde la fenêtre : d’après le corollaire, une main la nourrissait depuis la chambre. À 16 h 30, la 14 n’était pas vide.' },
+    { id: 'miettes', needs: ['balcon', 'tobias', 'penrose'], q: 'Qui a laissé les miettes sur la rambarde de la 14 ?', opts: ['Miss Penrose', 'Sir Reginald', 'Mary, la femme de chambre'], ok: 1,
+      why: 'Des miettes brunes qui sentent le gingembre. Miss Penrose ne donne que du pain de mie, jamais de gingembre. Sir Reginald, lui, grignote des biscuits au gingembre et en lance aux mouettes.' },
+    { id: 'harriet', needs: ['lattimer'], q: 'Où était Miss Penrose à 16 h 30 ?', opts: ['Au bureau du télégraphe', 'Sur le balcon de la 12', 'Au salon de thé'], ok: 0,
+      why: 'Miss Lattimer l’a vue attendre sa réponse de 16 h 20 à 16 h 40, sous une horloge réglée sur Greenwich. Son dépit était sincère, mais elle ne pouvait pas être au balcon.' }
+  ];
+  const FINAL = [
+    { id: 'coupable', q: 'Qui a volé la démonstration du professeur ?', opts: ['Miss Harriet Penrose', 'Sir Reginald Ashby', 'Anatole Brisseau', 'Tobias Finch'], ok: 1, pts: 200,
+      nope: ['Miss Penrose attendait sa réponse au télégraphe à 16 h 30, sous les yeux de Miss Lattimer.', '', 'M. Brisseau peignait sur la plage, et c’est son tableau qui vous a mis sur la piste.', 'Le passe-partout n’a pas quitté son crochet, et personne n’est entré par la porte.'],
+      why: 'Un faux alibi, une chambre voisine achetée d’une livre d’or, une mouette nourrie depuis la 14 à 16 h 30, des miettes au gingembre sur la rambarde. Sir Reginald a enjambé la rambarde et soulevé le loquet avec la lame de son canif.' },
+    { id: 'mobile', needs: ['livre', 'telegramme'], q: 'Pourquoi Sir Reginald a-t-il volé la démonstration ?', opts: ['Pour la revendre à un collectionneur', 'Pour sauver son livre et sa réputation', 'Pour se venger de Miss Penrose'], ok: 1, pts: 80,
+      why: '« Ce soir, Whitcombe n’aura rien à montrer. » Sans démonstration, pas de théorème, et *Du libre arbitre des goélands* paraissait lundi sans faire rire personne.' },
+    { id: 'manuscrit', needs: ['carton'], q: 'Où est la démonstration, à cette heure ?', opts: ['Jetée à la mer', 'Dans le carton à chapeau de Sir Reginald', 'Brûlée dans la cheminée de la 14', 'Chez le photographe'], ok: 1, pts: 80,
+      why: 'Un homme qui ne lâche pas son carton à chapeau ne protège pas un chapeau. Sous le haut-de-forme : quarante pages de la main du professeur, et un paquet de biscuits au gingembre.' }
+  ];
+  const Q_PTS = 60, TIME_PTS = 100;
+  const SAVE_KEY = 'mouettes:enquete', FIRST_KEY = 'mouettes:premiere', REC_KEY = 'mouettes:record';
+
+  // ================================================================ état de l'enquête (sauvegardé)
+  const fresh = () => ({ v: 1, loc: 'chambre', found: [], read: [], open: ['chambre', 'hall'], seen: [], ans: {}, t: 0, carnet: 0, done: false });
+  let S = fresh();
+  try { const s = JSON.parse(store.get(SAVE_KEY) || 'null'); if (s && s.v === 1) S = Object.assign(fresh(), s); } catch { /* sauvegarde illisible */ }
+  const save = () => store.set(SAVE_KEY, JSON.stringify(S));
+  const has = (c) => S.found.includes(c);
+  const ans = (id) => S.ans[id] || (S.ans[id] = { no: [], ok: false });
+  // un besoin peut être une liste : l'un de ces indices suffit
+  const hasNeed = (n) => (Array.isArray(n) ? n.some(has) : has(n));
+  const qOpen = (q) => (q.needs || []).every(hasNeed);
+  const allDeduced = () => QS.every((q) => ans(q.id).ok);
+  function finalOpen(f) {
+    if (f.id === 'coupable') return allDeduced();
+    return ans('coupable').ok && (f.needs || []).every(hasNeed);
+  }
+  const ptsOf = (q, base) => (ans(q.id).ok ? Math.round(base * Math.pow(0.5, ans(q.id).no.length)) : 0);
+  const timeBonus = () => Math.round(TIME_PTS * clamp(1 - (S.t - 600) / 1200, 0, 1));
+  function topicOpen(t) { return (t.needs || []).every(has); }
+  function personFresh(pid) { return PEOPLE[pid].topics.some((t) => topicOpen(t) && !S.read.includes(pid + ':' + t.id)); }
+  function addClue(id, quiet) {
+    if (has(id)) return false;
+    S.found.push(id);
+    if (!quiet) { feed('Au carnet : ' + CLUES[id].t, 'gold'); snd.tone(880, 0, 0.08, 0.6, 'triangle'); snd.tone(1320, 0.07, 0.12, 0.6, 'triangle'); }
+    return true;
+  }
+  function openLoc(id) {
+    if (S.open.includes(id)) return;
+    S.open.push(id); feed('Nouveau lieu : ' + LOC[id].name, 'good');
+  }
+
+  // ================================================================ rendu 3D : cinq décors, un seul visible
+  const PAL = [0x060608, 0x0b0d1a, 0x141826, 0x1e2448, 0x2a3160, 0x3a427a, 0x565f9e, 0x7f86b8,
+    0x1e3a4a, 0x2a5260, 0x3f6e78, 0x6a9aa0,
+    0x24242e, 0x4a4a58, 0x6a6878, 0x8f8c9c, 0xb8b4c0, 0xd8d4dc, 0xf4f4f8, 0xffffff,
+    0x2a1a12, 0x4a2e22, 0x6e3f2c, 0x94573a, 0xb87a4a, 0xd29a64, 0xe8dcc0, 0xd8c8a0, 0xbfa878,
+    0xc9a24a, 0xf2c81e, 0xffd060, 0xfff2a0, 0x6e1a24, 0x8a2a2e, 0xb83a3a, 0xd0343a,
+    0x1e3a2e, 0x2f4a3a, 0x3f6a4a, 0x6a8a5a, 0x2f4a8a, 0x4a6ab8, 0xf0c8a0, 0xd8a880, 0xe0905a, 0xc87a8a, 0x8a5a7a];
+  const V = Pixel.view({ stage, gl: $('gl'), hud: $('hud'), palette: PAL, fov: 42, near: 0.1, far: 400, target: 560, dither: 0.06 });
+  const { scene, camera } = V;
+  scene.fog = new THREE.Fog(0x141826, 12, 60);
+  const hemi = new THREE.HemisphereLight(0xd8d4f0, 0x2a1a12, 0.7); scene.add(hemi);
+  const sun = new THREE.DirectionalLight(0xfff0d8, 0.35); sun.position.set(3, 8, 6); scene.add(sun);
+  const lit = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+  const basic = new THREE.MeshBasicMaterial({ vertexColors: true });
+  const box = (P, x, y, z, w, h, d, c, ry) => P.push({ geo: GEO.BOX, m: mtx(x, y + h / 2, z, ry || 0, w, h, d), c });
+  const cyl = (P, x, y, z, r, h, c) => P.push({ geo: GEO.CYL, m: mtx(x, y + h / 2, z, 0, r, h, r), c });
+  const sph = (P, x, y, z, r, c, sy) => P.push({ geo: GEO.SPH, m: mtx(x, y, z, 0, r, sy == null ? r : sy, r), c });
+  function mesh(P, glow) { return new THREE.Mesh(Pixel.mergeParts(P), glow ? basic : lit); }
+  // un personnage, tourné vers +z
+  function person(o) {
+    const P = [], skin = o.skin || 0xf0c8a0, coat = o.coat, hair = o.hair || 0x4a2e22;
+    if (o.dress) { P.push({ geo: GEO.CONE7, m: mtx(0, 0.5, 0, 0, 0.42, 1.0, 0.4), c: o.dress }); box(P, 0, 0, 0.05, 0.3, 0.06, 0.22, 0x24242e); }
+    else { box(P, -0.1, 0, 0.02, 0.16, 0.86, 0.18, o.legs || 0x24242e); box(P, 0.1, 0, 0.02, 0.16, 0.86, 0.18, o.legs || 0x24242e); box(P, -0.1, 0, 0.06, 0.17, 0.08, 0.26, 0x060608); box(P, 0.1, 0, 0.06, 0.17, 0.08, 0.26, 0x060608); }
+    box(P, 0, o.dress ? 0.95 : 0.84, 0, 0.5, 0.62, 0.3, coat);
+    if (o.tails) box(P, 0, 0.42, -0.02, 0.5, 0.48, 0.3, coat);
+    if (o.apron) box(P, 0, 0.3, 0.2, 0.42, 0.95, 0.03, 0xf4f4f8);
+    box(P, -0.32, 0.86, 0, 0.13, 0.58, 0.15, o.sleeve || coat); box(P, 0.32, 0.86, 0, 0.13, 0.58, 0.15, o.sleeve || coat);
+    box(P, -0.32, 0.78, 0, 0.11, 0.09, 0.12, skin); box(P, 0.32, 0.78, 0, 0.11, 0.09, 0.12, skin);
+    box(P, 0, 1.42, 0.01, 0.22, 0.08, 0.2, o.collar || 0xf4f4f8);
+    box(P, 0, 1.47, 0, 0.32, 0.34, 0.3, skin);
+    box(P, -0.07, 1.62, 0.151, 0.05, 0.05, 0.01, 0x060608); box(P, 0.07, 1.62, 0.151, 0.05, 0.05, 0.01, 0x060608);
+    if (o.specs) { box(P, -0.07, 1.6, 0.16, 0.09, 0.08, 0.01, 0xc9a24a); box(P, 0.07, 1.6, 0.16, 0.09, 0.08, 0.01, 0xc9a24a); }
+    if (o.beard) { box(P, 0, 1.36, 0.1, 0.3, 0.17, 0.12, o.beard); box(P, 0, 1.47, 0.152, 0.26, 0.06, 0.02, o.beard); }
+    if (o.stache) box(P, 0, 1.55, 0.155, 0.2, 0.04, 0.02, o.stache);
+    box(P, 0, 1.75, -0.02, 0.34, 0.08, 0.32, hair); box(P, 0, 1.5, -0.14, 0.34, 0.28, 0.06, hair);
+    if (o.bun) sph(P, 0, 1.72, -0.18, 0.1, hair);
+    const hc = o.hatC || 0x24242e;
+    if (o.hat === 'top') { cyl(P, 0, 1.8, 0, 0.16, 0.36, hc); box(P, 0, 1.8, 0, 0.44, 0.03, 0.42, hc); box(P, 0, 1.86, 0, 0.34, 0.05, 0.34, 0x6e1a24); }
+    if (o.hat === 'bowler') { sph(P, 0, 1.82, 0, 0.18, hc, 0.14); box(P, 0, 1.8, 0, 0.42, 0.03, 0.4, hc); }
+    if (o.hat === 'cap') { cyl(P, 0, 1.79, 0, 0.18, 0.12, hc); box(P, 0, 1.79, 0.16, 0.26, 0.03, 0.14, 0x060608); }
+    if (o.hat === 'pill') { cyl(P, 0.04, 1.8, 0, 0.12, 0.1, hc); }
+    if (o.hat === 'bonnet') { box(P, 0, 1.6, -0.04, 0.4, 0.36, 0.34, hc); box(P, 0, 1.66, 0.12, 0.42, 0.3, 0.06, hc); box(P, 0, 1.44, 0.14, 0.06, 0.12, 0.02, 0xd0343a); }
+    if (o.hat === 'beret') { sph(P, 0.03, 1.81, 0, 0.21, hc, 0.07); }
+    if (o.hat === 'visor') box(P, 0, 1.72, 0.17, 0.32, 0.02, 0.16, 0x3f6a4a);
+    if (o.extra) o.extra(P);
+    const g = new THREE.Group(); g.add(mesh(P)); return g;
+  }
+  // une mouette posée, bec vers +z
+  const gullGeo = Pixel.mergeParts([
+    { geo: GEO.ICO, m: mtx(0, 0.15, -0.02, 0, 0.13, 0.11, 0.22), c: 0xf4f4f8 },
+    { geo: GEO.BOX, m: mtx(0, 0.21, -0.04, 0, 0.25, 0.05, 0.26), c: 0x8f8c9c },
+    { geo: GEO.BOX, m: mtx(0, 0.2, -0.24, 0, 0.12, 0.04, 0.12), c: 0x24242e },
+    { geo: GEO.SPH, m: mtx(0, 0.27, 0.16, 0, 0.085), c: 0xffffff },
+    { geo: GEO.BOX, m: mtx(0, 0.26, 0.27, 0, 0.035, 0.035, 0.1), c: 0xf2c81e },
+    { geo: GEO.BOX, m: mtx(0.06, 0.29, 0.2, 0, 0.02, 0.025, 0.02), c: 0x060608 }, { geo: GEO.BOX, m: mtx(-0.06, 0.29, 0.2, 0, 0.02, 0.025, 0.02), c: 0x060608 },
+    { geo: GEO.BOX, m: mtx(0, 0.03, 0, 0, 0.09, 0.06, 0.03), c: 0xe0905a }
+  ]);
+  const gulls = [];
+  function gull(group, x, y, z, ry, s) { const m = new THREE.Mesh(gullGeo, lit); m.position.set(x, y, z); m.rotation.y = ry; m.scale.setScalar(s || 1.4); m.userData.ph = Math.random() * 6; m.userData.y0 = y; group.add(m); gulls.push(m); return m; }
+  function lamp(P, G, x, y, z, h, light) {
+    box(P, x, y, z, 0.1, h, 0.1, 0x24242e); box(P, x, y + h, z, 0.26, 0.05, 0.26, 0x24242e);
+    G.push({ geo: GEO.BOX, m: mtx(x, y + h + 0.17, z, 0, 0.2, 0.28, 0.2), c: 0xfff2a0 });
+    box(P, x, y + h + 0.32, z, 0.28, 0.06, 0.28, 0x24242e);
+    if (light) { const l = new THREE.PointLight(0xffd8a0, light, 9, 1.6); l.position.set(x, y + h + 0.2, z); return l; }
+    return null;
+  }
+  const SC = {};
+  const SPOT_AT = {};
+  const spotAt = (loc, id, x, y, z) => { (SPOT_AT[loc] || (SPOT_AT[loc] = {}))[id] = new THREE.Vector3(x, y, z); };
+  function makeScene(id, o) { const g = new THREE.Group(); g.visible = false; scene.add(g); SC[id] = Object.assign({ g }, o); return g; }
+  const EAST_IN = -Math.PI / 2;   // dans la chambre et sur la jetée on regarde le sud : l'est est à gauche (-x)
+
+  // ---------------------------------------------------------------- chambre 12 (on regarde vers la porte-fenêtre, au sud)
+  (() => {
+    const g = makeScene('chambre', { cam: [0.9, 2.5, 5.6], look: [-0.3, 1.25, -2], bg: 0x141826, fog: [14, 40] });
+    const P = [], G = [];
+    box(P, 0, -0.1, 0, 8.4, 0.1, 7.4, 0x6e3f2c);
+    for (let i = -4; i < 4; i++) box(P, i + 0.5, -0.02, 0, 0.04, 0.03, 7.4, 0x4a2e22);
+    box(P, -0.6, -0.01, -0.4, 4, 0.02, 3, 0x8a2a2e); box(P, -0.6, -0.005, -0.4, 3.6, 0.02, 2.6, 0x6e1a24);
+    // murs : fond (avec l'ouverture de la porte-fenêtre), gauche
+    box(P, -2.3, 0, -3.6, 3.4, 3.6, 0.2, 0x2f4a3a); box(P, 3.25, 0, -3.6, 1.5, 3.6, 0.2, 0x2f4a3a); box(P, 1.2, 2.9, -3.6, 2.6, 0.7, 0.2, 0x2f4a3a);
+    box(P, -4.1, 0, 0, 0.2, 3.6, 7.4, 0x6e1a24);
+    box(P, -2.3, 0, -3.48, 3.4, 0.9, 0.06, 0x4a2e22); box(P, -4.0, 0, 0, 0.06, 0.9, 7.4, 0x4a2e22);
+    for (let i = 0; i < 7; i++) box(P, -3.7 + i * 0.5, 1.2, -3.49, 0.04, 2.3, 0.02, 0x3f6a4a);
+    // porte-fenêtre : cadre, battants (l'un entrouvert), loquet doré
+    box(P, 0.02, 0, -3.55, 0.12, 2.9, 0.22, 0xe8dcc0); box(P, 2.38, 0, -3.55, 0.12, 2.9, 0.22, 0xe8dcc0); box(P, 1.2, 2.82, -3.55, 2.48, 0.12, 0.22, 0xe8dcc0);
+    box(P, 0.62, 0, -3.5, 1.1, 2.8, 0.05, 0xe8dcc0); box(P, 0.62, 0.2, -3.47, 0.9, 2.4, 0.03, 0x1e2448);
+    box(P, 0.62, 1.4, -3.46, 0.9, 0.05, 0.03, 0xe8dcc0); box(P, 0.62, 0.2, -3.46, 0.05, 2.4, 0.03, 0xe8dcc0);
+    box(P, 1.95, 0, -3.15, 0.05, 2.8, 1.0, 0xe8dcc0, 0); box(P, 1.92, 0.2, -3.15, 0.03, 2.4, 0.8, 0x1e2448);
+    box(P, 1.12, 1.3, -3.44, 0.1, 0.2, 0.05, 0xc9a24a);
+    spotAt('chambre', 'loquet', 1.12, 1.4, -3.4);
+    // le balcon, la rambarde, la séparation basse vers la 14 (à gauche : l'est)
+    box(P, 1.2, -0.1, -4.6, 6, 0.12, 1.8, 0xb8b4c0);
+    for (let i = 0; i <= 12; i++) box(P, -1.8 + i * 0.5, 0, -5.45, 0.05, 1.0, 0.05, 0x24242e);
+    box(P, 1.2, 1.0, -5.45, 6, 0.07, 0.08, 0x24242e);
+    box(P, -0.45, 0, -4.55, 0.05, 0.55, 1.75, 0x24242e); box(P, -0.45, 0.55, -4.55, 0.07, 0.05, 1.8, 0x24242e);
+    G.push({ geo: GEO.BOX, m: mtx(-0.47, 0.6, -4.3, 0, 0.04, 0.02, 0.3), c: 0xb87a4a });
+    spotAt('chambre', 'balcon', -0.45, 0.9, -4.7);
+    // dehors : la mer dans le brouillard, quelques lumières
+    box(P, 0, -6, -40, 120, 0.1, 60, 0x1e3a4a);
+    for (let i = 0; i < 9; i++) G.push({ geo: GEO.BOX, m: mtx(-20 + i * 6, -5.5, -30 - (i % 3) * 6, 0, 0.3, 0.3, 0.3), c: 0xffd060 });
+    // bureau, dossier vide, encrier, lampe
+    box(P, -2.0, 0, -2.7, 2.1, 0.78, 0.9, 0x4a2e22); box(P, -2.0, 0.78, -2.7, 2.2, 0.07, 1.0, 0x6e3f2c);
+    box(P, -1.85, 0.85, -2.55, 0.62, 0.02, 0.44, 0x6e3f2c); box(P, -1.25, 0.85, -2.55, 0.62, 0.02, 0.44, 0x94573a);
+    box(P, -2.7, 0.85, -2.7, 0.16, 0.12, 0.16, 0x060608); box(P, -2.45, 0.85, -2.9, 0.5, 0.01, 0.34, 0xe8dcc0);
+    box(P, -2.85, 0.85, -3.0, 0.14, 0.4, 0.14, 0xc9a24a); G.push({ geo: GEO.CONE7, m: mtx(-2.85, 1.35, -3.0, 0, 0.26, 0.24, 0.26), c: 0x6a8a5a });
+    box(P, -1.6, 0, -1.9, 0.5, 0.5, 0.5, 0x6e3f2c); box(P, -1.6, 0.5, -2.12, 0.5, 0.6, 0.06, 0x6e3f2c);
+    spotAt('chambre', 'dossier', -1.55, 1.05, -2.55);
+    // lit, armoire, porte de la chambre (mur de gauche, devant), applique
+    box(P, -3.15, 0, 0.4, 1.7, 0.5, 2.2, 0x4a2e22); box(P, -3.15, 0.5, 0.45, 1.6, 0.18, 2.1, 0xf4f4f8); box(P, -3.15, 0.68, -0.4, 1.4, 0.16, 0.45, 0xffffff);
+    box(P, -3.15, 0.5, 0.95, 1.62, 0.2, 1.1, 0x8a2a2e); box(P, -3.15, 0, -0.75, 1.7, 1.3, 0.12, 0x4a2e22);
+    box(P, 3.5, 0, -2.4, 1.1, 2.6, 0.7, 0x4a2e22); box(P, 3.5, 0.1, -2.04, 0.02, 2.4, 0.02, 0x2a1a12);
+    box(P, -3.98, 0, 2.3, 0.1, 2.4, 1.1, 0x4a2e22); box(P, -3.92, 1.05, 1.9, 0.08, 0.1, 0.1, 0xc9a24a); box(P, -3.92, 1.2, 1.9, 0.06, 0.12, 0.06, 0xc9a24a);
+    spotAt('chambre', 'serrure', -3.9, 1.2, 1.9);
+    G.push({ geo: GEO.BOX, m: mtx(-3.95, 2.35, -1.6, 0, 0.12, 0.3, 0.2), c: 0xfff2a0 });
+    g.add(mesh(P), mesh(G, true));
+    const l1 = new THREE.PointLight(0xffc890, 1.3, 10, 1.4); l1.position.set(-2.6, 1.6, -2.4); g.add(l1);
+    const l2 = new THREE.PointLight(0xffc890, 0.9, 9, 1.4); l2.position.set(-3.4, 2.4, -1.5); g.add(l2);
+    gull(g, 0.9, 1.06, -5.45, EAST_IN); gull(g, 2.7, 1.06, -5.45, EAST_IN); gull(g, -1.4, 1.06, -5.45, EAST_IN, 1.3);
+    const W = person({ coat: 0x6a6878, legs: 0x4a4a58, hair: 0xd8d4dc, beard: 0xd8d4dc, specs: true, sleeve: 0x6a6878 });
+    W.position.set(-0.3, 0, -1.6); W.rotation.y = 0.25; g.add(W); spotAt('chambre', 'whitcombe', -0.3, 2.15, -1.6);
+    const M = person({ coat: 0x24242e, dress: 0x24242e, apron: true, hair: 0x6e3f2c, bun: true, hat: 'pill', hatC: 0xf4f4f8 });
+    M.position.set(-2.1, 0, 0.9); M.rotation.y = 0.55; g.add(M); spotAt('chambre', 'mary', -2.1, 2.1, 0.9);
+  })();
+
+  // ---------------------------------------------------------------- le hall du Grand Hôtel
+  (() => {
+    const g = makeScene('hall', { cam: [0.6, 2.9, 6.6], look: [0, 1.2, -2], bg: 0x141826, fog: [14, 40] });
+    const P = [], G = [];
+    for (let i = -5; i < 5; i++) for (let j = -4; j < 4; j++) box(P, i + 0.5, -0.1, j + 0.5, 1, 0.1, 1, (i + j) & 1 ? 0x24242e : 0xe8dcc0);
+    box(P, 0, 0, -4.1, 10, 4.2, 0.2, 0xd8c8a0); box(P, 0, 0, -3.98, 10, 1.0, 0.05, 0x4a2e22); box(P, 0, 3.6, -3.98, 10, 0.2, 0.06, 0xc9a24a);
+    box(P, -5.1, 0, 0, 0.2, 4.2, 8, 0xd8c8a0); box(P, -5.0, 0, 0, 0.05, 1.0, 8, 0x4a2e22);
+    // comptoir, sonnette, registre ouvert
+    box(P, 1.4, 0, -2.4, 4.2, 1.05, 0.7, 0x6e1a24); box(P, 1.4, 1.05, -2.4, 4.4, 0.08, 0.85, 0x4a2e22); box(P, 1.4, 0.15, -2.03, 4.2, 0.06, 0.02, 0xc9a24a);
+    box(P, 0.2, 1.13, -2.35, 0.7, 0.03, 0.5, 0xf4f4f8); box(P, 0.2, 1.13, -2.35, 0.03, 0.05, 0.5, 0x6e1a24);
+    spotAt('hall', 'registre', 0.2, 1.3, -2.3);
+    sph(P, 2.6, 1.17, -2.3, 0.09, 0xc9a24a, 0.06);
+    // tableau des clés derrière le comptoir, le passe-partout au pompon rouge
+    box(P, 1.9, 1.3, -3.95, 2.2, 1.6, 0.08, 0x4a2e22);
+    for (let i = 0; i < 6; i++) for (let j = 0; j < 4; j++) { box(P, 1.05 + i * 0.34, 1.45 + j * 0.36, -3.9, 0.04, 0.04, 0.06, 0xc9a24a); box(P, 1.05 + i * 0.34, 1.32 + j * 0.36, -3.88, 0.05, 0.14, 0.02, 0xf2c81e); }
+    box(P, 2.9, 1.32, -3.86, 0.1, 0.28, 0.03, 0xf2c81e); box(P, 2.9, 1.18, -3.86, 0.08, 0.12, 0.04, 0xd0343a);
+    spotAt('hall', 'passe', 2.9, 1.6, -3.8);
+    // escalier, palmier, fauteuils, lustre
+    for (let i = 0; i < 9; i++) box(P, 4.3, i * 0.3, -1.2 - i * 0.35, 1.4, 0.3, 0.4, 0x6e1a24);
+    box(P, 3.55, 0, -2.6, 0.08, 3.6, 0.08, 0x4a2e22);
+    cyl(P, -4.2, 0, -3.2, 0.32, 0.6, 0x94573a);
+    for (let i = 0; i < 6; i++) { const a = i * 1.05; P.push({ geo: GEO.BOX, m: mtx(-4.2 + Math.sin(a) * 0.45, 1.5, -3.2 + Math.cos(a) * 0.45, a, 0.18, 0.04, 1.1), c: 0x3f6a4a }); }
+    box(P, -4.2, 0.6, -3.2, 0.08, 0.9, 0.08, 0x4a2e22);
+    for (const [x, z, r] of [[-3.3, -0.2, 0.5], [-1.9, 0.4, -0.3]]) { box(P, x, 0, z, 0.9, 0.45, 0.85, 0x8a2a2e, r); box(P, x - Math.sin(r) * 0.38, 0.45, z - Math.cos(r) * 0.38, 0.9, 0.7, 0.15, 0x8a2a2e, r); }
+    cyl(P, -2.6, 0, -1.1, 0.35, 0.55, 0x4a2e22);
+    G.push({ geo: GEO.SPH, m: mtx(0, 3.3, -0.5, 0, 0.45, 0.25, 0.45), c: 0xfff2a0 }); box(P, 0, 3.55, -0.5, 0.04, 0.6, 0.04, 0xc9a24a);
+    for (let i = 0; i < 6; i++) { const a = i * 1.047; G.push({ geo: GEO.BOX, m: mtx(Math.sin(a) * 0.6, 3.2, -0.5 + Math.cos(a) * 0.6, 0, 0.08, 0.14, 0.08), c: 0xffd060 }); }
+    g.add(mesh(P), mesh(G, true));
+    const l1 = new THREE.PointLight(0xffd8a0, 1.6, 14, 1.3); l1.position.set(0, 3, -0.5); g.add(l1);
+    const T = person({ coat: 0xb83a3a, legs: 0x24242e, collar: 0xc9a24a, hat: 'pill', hatC: 0xb83a3a, hair: 0xb87a4a });
+    T.position.set(2.0, 0, -3.25); g.add(T); spotAt('hall', 'tobias', 2.0, 2.15, -3.25);
+    const R = person({ coat: 0x24242e, legs: 0x4a4a58, tails: true, hat: 'top', stache: 0x8f8c9c, hair: 0x8f8c9c, extra: (P2) => { box(P2, 0.45, 0, 0.15, 0.04, 0.95, 0.04, 0x2a1a12); sph(P2, 0.45, 0.97, 0.15, 0.05, 0xc9a24a); } });
+    R.position.set(-3.4, 0, 0.75); R.rotation.y = 0.35; g.add(R); spotAt('hall', 'sir', -3.4, 2.35, 0.75);
+    const hb = []; cyl(hb, -2.85, 0, 1.25, 0.3, 0.42, 0xd29a64); box(hb, -2.85, 0.2, 1.25, 0.62, 0.05, 0.62, 0x6e1a24); g.add(mesh(hb));
+    const Pn = person({ coat: 0x2f4a8a, dress: 0x2f4a8a, hair: 0xb87a4a, bun: true, hat: 'bonnet', hatC: 0x4a6ab8 });
+    Pn.position.set(-1.0, 0, -1.4); Pn.rotation.y = 0.15; g.add(Pn); spotAt('hall', 'penrose', -1.0, 2.15, -1.4);
+  })();
+
+  // ---------------------------------------------------------------- la jetée Ouest (on regarde vers le large, au sud : l'est est à gauche)
+  (() => {
+    const g = makeScene('jetee', { cam: [3.6, 4.4, 8.5], look: [-0.2, 2.2, -4], bg: 0x1e2448, fog: [10, 46] });
+    const P = [], G = [], D = 1.6;
+    const sea = new THREE.PlaneGeometry(160, 160, 40, 40).rotateX(-Math.PI / 2); const sp = sea.attributes.position, sc = new Float32Array(sp.count * 3), c = new THREE.Color();
+    for (let i = 0; i < sp.count; i++) { c.set(Pixel.hash2(i, 7, 3) > 0.7 ? 0x2a5260 : 0x1e3a4a); sc[i * 3] = c.r; sc[i * 3 + 1] = c.g; sc[i * 3 + 2] = c.b; sp.setY(i, (Pixel.hash2(i, 3, 1) - 0.5) * 0.15); }
+    sea.setAttribute('color', new THREE.BufferAttribute(sc, 3)); g.add(new THREE.Mesh(sea, lit));
+    box(P, 0, D - 0.2, -14, 6.4, 0.2, 48, 0x94573a);
+    for (let z = 9; z > -38; z -= 0.6) box(P, 0, D, z, 6.3, 0.02, 0.04, 0x6e3f2c);
+    for (let z = 8; z > -38; z -= 4) for (const x of [-2.9, 2.9]) box(P, x, -0.3, z, 0.25, D, 0.25, 0x4a2e22);
+    for (const x of [-3.1, 3.1]) { for (let z = 9; z > -38; z -= 1.5) box(P, x, D, z, 0.08, 1.1, 0.08, 0xe8dcc0); box(P, x, D + 1.1, -14, 0.12, 0.08, 47, 0xf4f4f8); }
+    // la capitainerie, son pupitre, le mât et la flamme (soufflée vers l'ouest, à droite)
+    box(P, -1.4, D, -7.5, 2.4, 2.2, 2.1, 0x2f4a3a); P.push({ geo: GEO.CONE4, m: mtx(-1.4, D + 2.6, -7.5, Math.PI / 4, 2.0, 0.9, 1.8), c: 0x8a2a2e });
+    box(P, -1.4, D, -6.43, 0.7, 1.6, 0.05, 0x4a2e22); G.push({ geo: GEO.BOX, m: mtx(-0.6, D + 1.4, -6.43, 0, 0.5, 0.45, 0.04), c: 0xffd060 });
+    box(P, -2.2, D, -6.0, 0.5, 1.0, 0.4, 0x4a2e22, 0.2); box(P, -2.2, D + 1.0, -6.0, 0.62, 0.05, 0.5, 0x6e3f2c, 0.2); box(P, -2.2, D + 1.06, -6.0, 0.4, 0.04, 0.3, 0xf4f4f8, 0.2);
+    spotAt('jetee', 'journal', -2.2, D + 1.25, -6.0);
+    box(P, -2.5, D, -8.8, 0.08, 5, 0.08, 0xe8dcc0); P.push({ geo: GEO.BOX, m: mtx(-1.9, D + 4.6, -8.8, 0, 1.1, 0.3, 0.04), c: 0xd0343a });
+    // le photographe : tente rayée, appareil sur trépied
+    for (let i = 0; i < 6; i++) box(P, 2.4, D, -1.6 + i * 0.24 - 0.6, 1.1, 2.1, 0.24, i & 1 ? 0xf4f4f8 : 0xb83a3a);
+    P.push({ geo: GEO.CONE4, m: mtx(2.4, D + 2.4, -1.6, Math.PI / 4, 1.0, 0.6, 1.0), c: 0xb83a3a });
+    box(P, 1.2, D + 1.15, -0.4, 0.38, 0.34, 0.5, 0x2a1a12); box(P, 1.2, D + 1.22, -0.68, 0.18, 0.18, 0.12, 0x24242e);
+    for (const [a, b] of [[-0.15, 0.1], [0.15, 0.1], [0, -0.2]]) box(P, 1.2 + a, D, -0.4 + b, 0.04, 1.15, 0.04, 0x6e3f2c);
+    // réverbères, pavillon au bout de la jetée
+    const lights = [];
+    for (let z = 4; z > -36; z -= 8) { const l = lamp(P, G, 2.9, D, z, 2.6, z > -14 ? 1.1 : 0); if (l) lights.push(l); lamp(P, G, -2.9, D, z - 4, 2.6, 0); }
+    box(P, 0, D, -34, 6, 3, 4, 0xd8c8a0); P.push({ geo: GEO.CONE7, m: mtx(0, D + 4.2, -34, 0, 3.4, 2.4, 3.4), c: 0x3f6a4a });
+    for (let i = 0; i < 5; i++) G.push({ geo: GEO.BOX, m: mtx(-2 + i, D + 1.6, -31.98, 0, 0.4, 0.6, 0.04), c: 0xffd060 });
+    g.add(mesh(P), mesh(G, true)); lights.forEach((l) => g.add(l));
+    // les mouettes sur les rambardes : à 18 h, toutes le bec à l'est
+    for (const [x, z] of [[-3.1, 3], [-3.1, 1.5], [-3.1, -0.5], [-3.1, -3], [3.1, 2], [3.1, 0.2], [3.1, -3.5], [3.1, -5], [-3.1, -10], [3.1, -9]]) gull(g, x, D + 1.14, z, EAST_IN);
+    spotAt('jetee', 'maintenant', -3.1, D + 1.7, -0.5);
+    const C = person({ coat: 0x1e2448, legs: 0x1e2448, beard: 0xb8b4c0, hair: 0xb8b4c0, hat: 'cap', hatC: 0x1e2448, collar: 0x1e2448, extra: (P2) => { box(P2, 0, 1.2, 0.16, 0.06, 0.06, 0.02, 0xc9a24a); box(P2, 0, 1.0, 0.16, 0.06, 0.06, 0.02, 0xc9a24a); } });
+    C.position.set(-0.7, D, -4.6); C.rotation.y = 0.3; g.add(C); spotAt('jetee', 'crane', -0.7, D + 2.15, -4.6);
+    const Qp = person({ coat: 0x6e3f2c, legs: 0x4a4a58, hat: 'bowler', hatC: 0x2a1a12, stache: 0x4a2e22 });
+    Qp.position.set(1.6, D, 0.6); Qp.rotation.y = -0.3; g.add(Qp); spotAt('jetee', 'quill', 1.6, D + 2.15, 0.6);
+  })();
+
+  // ---------------------------------------------------------------- le front de mer, face au Grand Hôtel (on regarde le nord : l'est est à droite)
+  const paintTex = { t: null };
+  (() => {
+    const g = makeScene('plage', { cam: [-2.2, 3.0, 13.5], look: [1.6, 6.6, -10], bg: 0x1e2448, fog: [18, 80] });
+    const P = [], G = [];
+    box(P, 0, -0.2, 2, 60, 0.2, 18, 0x8f8c9c);
+    for (let i = 0; i < 160; i++) { const x = (Pixel.hash2(i, 1, 5) - 0.5) * 40, z = -5 + Pixel.hash2(i, 2, 5) * 16; box(P, x, -0.06, z, 0.2, 0.08, 0.16, Pixel.hash2(i, 3, 5) > 0.5 ? 0x6a6878 : 0xb8b4c0); }
+    box(P, 0, -0.4, 14, 80, 0.1, 10, 0x1e3a4a);
+    box(P, 0, 0, -5, 60, 1.4, 0.6, 0xd8c8a0); box(P, 0, 1.4, -5.4, 60, 0.1, 1.6, 0xb8b4c0);
+    for (let x = -26; x <= 26; x += 1.2) box(P, x, 1.5, -4.75, 0.06, 0.8, 0.06, 0xe8dcc0);
+    box(P, 0, 2.3, -4.75, 60, 0.06, 0.06, 0xe8dcc0);
+    box(P, 0, 1.4, -8, 60, 0.05, 5, 0x4a4a58);
+    // la façade : cinq étages, enseigne, balcons du premier, corniche
+    const F = -11.5, fx0 = -10, fx1 = 12;
+    box(P, (fx0 + fx1) / 2, 1.4, F, fx1 - fx0, 12, 1, 0xe8dcc0);
+    box(P, (fx0 + fx1) / 2, 13.4, F + 0.2, fx1 - fx0 + 0.6, 0.5, 1.4, 0xd8c8a0);
+    box(P, 0, 4.3, F + 0.52, 4.4, 0.8, 0.06, 0x1e3a2e); for (let i = 0; i < 11; i++) box(P, -1.8 + i * 0.36, 4.55, F + 0.56, 0.22, 0.3, 0.02, 0xc9a24a);
+    for (let fl = 0; fl < 4; fl++) for (const x of [-8.5, -6.3, -4.1, -1.9, 1.9, 4.1, 6.3, 8.5, 10.6]) {
+      if (fl === 0 && Math.abs(x) < 3) continue;
+      const y = 2.4 + fl * 2.7, lit2 = Pixel.hash2(fl, Math.round(x * 10), 11) > 0.45;
+      (lit2 ? G : P).push({ geo: GEO.BOX, m: mtx(x, y + 0.8, F + 0.5, 0, 1.0, 1.6, 0.06), c: lit2 ? 0xffd060 : 0x1e2448 });
+      box(P, x, y + 1.65, F + 0.55, 1.2, 0.12, 0.12, 0xd8c8a0);
+    }
+    // premier étage : balcons ; la 12 et la 14 (à droite de l'enseigne) partagent la même rambarde, avec une séparation basse
+    const by = 2.4 + 2.7 - 0.05;
+    for (const [x0, x1] of [[-9.3, -7.7], [-7.1, -5.5], [-4.9, -3.3], [3.2, 7.2], [7.7, 9.3]]) {
+      box(P, (x0 + x1) / 2, by, F + 0.9, x1 - x0, 0.12, 0.9, 0xb8b4c0);
+      for (let x = x0; x <= x1 + 0.01; x += 0.25) box(P, x, by, F + 1.32, 0.04, 0.75, 0.04, 0x24242e);
+      box(P, (x0 + x1) / 2, by + 0.75, F + 1.32, x1 - x0, 0.06, 0.06, 0x24242e);
+    }
+    box(P, 5.2, by, F + 0.9, 0.04, 0.45, 0.85, 0x24242e);
+    box(P, 4.1, by + 2.0, F + 0.6, 0.5, 0.22, 0.02, 0xc9a24a); box(P, 6.3, by + 2.0, F + 0.6, 0.5, 0.22, 0.02, 0xc9a24a);
+    spotAt('plage', 'facade', 5.2, by + 1.2, F + 1.3);
+    // réverbères de la promenade
+    const ls = [];
+    for (let x = -12; x <= 12; x += 6) { const l = lamp(P, G, x, 1.4, -5.6, 3, x === 0 || x === 6 ? 1.2 : 0); if (l) ls.push(l); }
+    // le peintre : chevalet, toile (le tableau lui-même), tabouret
+    box(P, 2.6, 0, 1.2, 0.05, 1.7, 0.05, 0x94573a); box(P, 3.4, 0, 1.2, 0.05, 1.7, 0.05, 0x94573a); box(P, 3.0, 0, 1.6, 0.05, 1.6, 0.05, 0x94573a);
+    box(P, 3.0, 0.9, 1.22, 1.0, 0.04, 0.12, 0x94573a);
+    const canvasMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.74), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    canvasMesh.position.set(3.0, 1.32, 1.27); g.add(canvasMesh); paintTex.m = canvasMesh;
+    box(P, 3.0, 0.94, 1.24, 1.14, 0.78, 0.02, 0xe8dcc0);
+    box(P, 4.3, 0, 2.5, 0.4, 0.45, 0.4, 0x6e3f2c);
+    g.add(mesh(P), mesh(G, true)); ls.forEach((l) => g.add(l));
+    // les mouettes de la corniche : bec à l'est (à droite)
+    for (let i = 0; i < 9; i++) gull(g, -8 + i * 2.3, 13.9, F + 0.5, Math.PI / 2, 1.7);
+    for (const x of [-6, 1, 9]) gull(g, x, 2.36, -4.75, Math.PI / 2, 1.3);
+    const Bz = person({ coat: 0x7f86b8, legs: 0x4a4a58, sleeve: 0x7f86b8, hat: 'beret', hatC: 0x24242e, beard: 0x6e3f2c, hair: 0x6e3f2c });
+    Bz.position.set(4.3, 0, 2.3); Bz.rotation.y = 3.6; g.add(Bz); spotAt('plage', 'brisseau', 4.3, 2.15, 2.3);
+    const cl = new THREE.PointLight(0xffe0b0, 0.8, 6, 1.5); cl.position.set(2.2, 2.2, 3.4); g.add(cl);
+  })();
+
+  // ---------------------------------------------------------------- le bureau du télégraphe
+  (() => {
+    const g = makeScene('telegraphe', { cam: [0.5, 2.5, 5.6], look: [0, 1.4, -2], bg: 0x141826, fog: [14, 40] });
+    const P = [], G = [];
+    box(P, 0, -0.1, 0, 8, 0.1, 7, 0x6e3f2c);
+    box(P, 0, 0, -3.6, 8, 4, 0.2, 0x3f6a4a); box(P, 0, 0, -3.48, 8, 1.0, 0.05, 0x4a2e22); box(P, -4.0, 0, 0, 0.2, 4, 7, 0x3f6a4a);
+    box(P, 0.4, 0, -1.8, 5, 1.05, 0.7, 0x4a2e22); box(P, 0.4, 1.05, -1.8, 5.2, 0.07, 0.85, 0x6e3f2c);
+    for (let i = 0; i < 9; i++) box(P, -1.6 + i * 0.5, 1.12, -1.55, 0.04, 1.2, 0.04, 0xc9a24a);
+    box(P, 0.4, 2.3, -1.55, 4.2, 0.06, 0.06, 0xc9a24a);
+    // l'appareil : clé de manipulateur, parleur
+    box(P, 0.9, 1.12, -2.0, 0.6, 0.06, 0.35, 0x2a1a12); box(P, 0.8, 1.18, -2.0, 0.3, 0.04, 0.06, 0xc9a24a); box(P, 1.1, 1.18, -2.1, 0.14, 0.2, 0.14, 0xc9a24a);
+    // casiers, horloge (18 h), affiche, banc
+    for (let i = 0; i < 5; i++) for (let j = 0; j < 3; j++) box(P, 1.4 + i * 0.4, 1.6 + j * 0.38, -3.45, 0.36, 0.34, 0.12, 0x6e3f2c);
+    cyl(P, -1.6, 2.4, -3.42, 0.5, 0.06, 0x4a2e22);
+    const ck = new THREE.Mesh(Pixel.mergeParts([{ geo: GEO.CYL, m: new THREE.Matrix4().makeRotationX(Math.PI / 2).premultiply(new THREE.Matrix4().makeScale(0.42, 0.42, 0.04)), c: 0xf4f4f8 }]), lit);
+    ck.position.set(-1.6, 2.4, -3.3); g.add(ck);
+    box(P, -1.6, 2.4, -3.27, 0.04, 0.32, 0.02, 0x060608); box(P, -1.6, 2.38, -3.27, 0.04, 0.2, 0.02, 0x060608);
+    spotAt('telegraphe', 'horloge', -1.6, 2.95, -3.2);
+    box(P, -3.9, 1.3, 0.5, 0.04, 1.2, 0.9, 0xe8dcc0); box(P, -3.88, 1.5, 0.5, 0.02, 0.3, 0.7, 0x8a2a2e);
+    box(P, -2.6, 0, 0.2, 0.5, 0.45, 2.0, 0x4a2e22); box(P, -2.85, 0.45, 0.2, 0.08, 0.6, 2.0, 0x4a2e22);
+    G.push({ geo: GEO.BOX, m: mtx(-3.95, 2.4, -1.5, 0, 0.12, 0.3, 0.2), c: 0xfff2a0 }); G.push({ geo: GEO.BOX, m: mtx(3.0, 2.5, -3.46, 0, 0.2, 0.3, 0.1), c: 0xfff2a0 });
+    box(P, 3.9, 0, 0, 0.2, 4, 7, 0x3f6a4a); box(P, 3.8, 1.2, 0.8, 0.06, 1.6, 1.4, 0xe8dcc0); box(P, 3.78, 1.3, 0.8, 0.04, 1.4, 1.2, 0x1e2448);
+    g.add(mesh(P), mesh(G, true));
+    const l1 = new THREE.PointLight(0xffd8a0, 1.5, 12, 1.3); l1.position.set(0, 2.8, -0.5); g.add(l1);
+    const Lt = person({ coat: 0xf4f4f8, sleeve: 0xf4f4f8, dress: 0x24242e, hair: 0x2a1a12, bun: true, hat: 'visor', collar: 0x24242e });
+    Lt.position.set(0.0, 0, -2.6); g.add(Lt); spotAt('telegraphe', 'lattimer', 0.0, 2.1, -2.6);
+  })();
+
+  // ---------------------------------------------------------------- les pièces à conviction, en petits tableaux « pixel »
+  function drawPhoto() {
+    const c = document.createElement('canvas'); c.width = 124; c.height = 84; const x = c.getContext('2d');
+    const S0 = ['#2a2014', '#4a3a26', '#6e5a3e', '#94805c', '#b8a27a', '#d8c8a0', '#efe2c0'];
+    const r = (cx, cy, w, h, i) => { x.fillStyle = S0[i]; x.fillRect(cx, cy, w, h); };
+    r(0, 0, 124, 84, 5); for (let i = 0; i < 30; i++) r(0, i, 124, 1, i < 10 ? 6 : 5);
+    r(0, 30, 124, 18, 4); for (let i = 0; i < 40; i++) r((i * 37) % 124, 32 + (i * 7) % 15, 4, 1, 5);
+    r(0, 48, 124, 36, 2); for (let i = 0; i < 124; i += 3) r(i, 48, 1, 36, 1);
+    r(0, 40, 124, 2, 6); for (let i = 2; i < 124; i += 9) r(i, 40, 2, 9, 6); r(0, 47, 124, 2, 1);
+    // les mouettes sur la rambarde, bec vers le large (à gauche)
+    const gl = (gx, gy) => { r(gx, gy, 2, 2, 6); r(gx - 1, gy + 1, 1, 1, 0); r(gx + 1, gy + 2, 5, 2, 6); r(gx + 2, gy + 2, 3, 1, 3); r(gx + 6, gy + 3, 2, 1, 0); r(gx + 3, gy + 4, 1, 1, 1); };
+    for (const gx of [6, 16, 27, 38, 82, 95, 108]) gl(gx, 34);
+    // Sir Reginald, haut-de-forme et redingote
+    r(56, 14, 10, 2, 0); r(58, 4, 6, 10, 0); r(58, 16, 6, 7, 5); r(59, 20, 4, 1, 1); r(54, 23, 14, 30, 0); r(59, 23, 4, 6, 6); r(60, 24, 2, 4, 1);
+    r(52, 25, 3, 18, 0); r(67, 25, 3, 18, 0); r(56, 53, 4, 20, 0); r(62, 53, 4, 20, 0); r(70, 30, 1, 40, 1); r(69, 29, 3, 2, 4);
+    x.fillStyle = 'rgba(42,32,20,0.25)'; for (let i = 0; i < 124; i++) for (let j = 0; j < 84; j++) if ((i * 31 + j * 17) % 23 === 0) x.fillRect(i, j, 1, 1);
+    r(0, 0, 124, 2, 0); r(0, 82, 124, 2, 0); r(0, 0, 2, 84, 0); r(122, 0, 2, 84, 0);
+    return c;
+  }
+  function drawPainting() {
+    const c = document.createElement('canvas'); c.width = 132; c.height = 88; const x = c.getContext('2d');
+    const r = (cx, cy, w, h, col) => { x.fillStyle = col; x.fillRect(cx, cy, w, h); };
+    for (let i = 0; i < 26; i++) r(0, i, 132, 1, ['#2a3160', '#3a427a', '#8a5a7a', '#c87a8a', '#e0905a'][Math.min(4, Math.floor(i / 5.5))]);
+    r(6, 14, 120, 58, '#e8dcc0'); r(4, 12, 124, 3, '#d8c8a0');
+    // fenêtres, enseigne
+    for (let fl = 0; fl < 4; fl++) for (let i = 0; i < 9; i++) { const wx = 11 + i * 13, wy = 20 + fl * 13; if (fl === 3 && i > 2 && i < 6) continue; r(wx, wy, 6, 8, (i + fl) % 3 ? '#1e2448' : '#ffd060'); }
+    r(48, 59, 34, 5, '#1e3a2e'); r(51, 60, 28, 3, '#c9a24a');
+    // balcons du premier étage ; la 12 et la 14 à droite de l'enseigne, reliés
+    const bal = (bx, bw) => { r(bx, 50, bw, 1, '#24242e'); for (let k = bx; k <= bx + bw; k += 2) r(k, 50, 1, 4, '#24242e'); r(bx, 54, bw, 1, '#6a6878'); };
+    bal(8, 10); bal(21, 10); bal(34, 10); bal(85, 24); bal(112, 10);
+    r(97, 51, 1, 3, '#24242e');
+    // l'ombre derrière le rideau de la 14 (haut-de-forme)
+    r(102, 44, 6, 8, '#1e2448'); r(103, 43, 4, 1, '#060608'); r(104, 39, 2, 4, '#060608'); r(103, 45, 4, 6, '#060608');
+    // la mouette de la 14 : de dos, tournée vers la fenêtre
+    r(103, 47, 4, 3, '#f4f4f8'); r(103, 47, 4, 1, '#8f8c9c'); r(104, 50, 2, 1, '#24242e');
+    // les mouettes de la corniche, bec vers l'est (à droite)
+    const gr = (gx, gy) => { r(gx + 4, gy, 2, 2, '#ffffff'); r(gx + 6, gy + 1, 1, 1, '#f2c81e'); r(gx, gy + 2, 5, 2, '#f4f4f8'); r(gx + 1, gy + 2, 3, 1, '#8f8c9c'); r(gx - 1, gy + 3, 1, 1, '#24242e'); };
+    for (const gx of [12, 32, 52, 72, 92, 112]) gr(gx, 8);
+    // plage, promenade, signature
+    r(0, 72, 132, 4, '#d8c8a0'); r(0, 76, 132, 12, '#8f8c9c'); for (let i = 0; i < 60; i++) r((i * 29) % 132, 77 + (i * 11) % 10, 2, 1, i % 2 ? '#6a6878' : '#b8b4c0');
+    for (let i = 0; i < 132; i += 5) r(i, 69, 1, 3, '#e8dcc0');
+    x.fillStyle = '#6e1a24'; x.font = '6px monospace'; x.fillText('A.B. 16h30', 94, 86);
+    x.fillStyle = 'rgba(0,0,0,0.12)'; for (let i = 0; i < 132; i += 2) for (let j = (i / 2) % 2; j < 88; j += 2) if ((i * 7 + j * 13) % 11 < 2) x.fillRect(i, j, 1, 1);
+    r(0, 0, 132, 2, '#6e3f2c'); r(0, 86, 132, 2, '#6e3f2c'); r(0, 0, 2, 88, '#6e3f2c'); r(130, 0, 2, 88, '#6e3f2c');
+    return c;
+  }
+  const IMGS = { photo: drawPhoto(), tableau: drawPainting() };
+  const IMG_URL = { photo: IMGS.photo.toDataURL(), tableau: IMGS.tableau.toDataURL() };
+  { const t = new THREE.CanvasTexture(IMGS.tableau); t.magFilter = t.minFilter = THREE.NearestFilter; paintTex.m.material = new THREE.MeshBasicMaterial({ map: t }); }
+
+  // ================================================================ les repères cliquables (indices, témoins)
+  const SPOTS = {
+    chambre: [['whitcombe', 'p', 'Le professeur'], ['mary', 'p', 'Mary Hobbs'], ['dossier', 'c', 'Le bureau'], ['loquet', 'c', 'La porte-fenêtre'], ['balcon', 'c', 'Le balcon'], ['serrure', 'c', 'La porte']],
+    hall: [['tobias', 'p', 'Tobias, le groom'], ['sir', 'p', 'Sir Reginald'], ['penrose', 'p', 'Miss Penrose'], ['registre', 'c', 'Le registre'], ['passe', 'c', 'Le tableau des clés']],
+    jetee: [['crane', 'p', 'Le capitaine'], ['quill', 'p', 'Le photographe'], ['journal', 'c', 'Le pupitre'], ['maintenant', 'c', 'Les mouettes']],
+    plage: [['brisseau', 'p', 'Le peintre'], ['facade', 'c', 'La façade']],
+    telegraphe: [['lattimer', 'p', 'La télégraphiste'], ['horloge', 'c', 'L’horloge']]
+  };
+  // les objets donnent leur indice ; le pupitre de la jetée, la façade : idem
+  const SPOT_CLUE = { dossier: 'dossier', loquet: 'loquet', balcon: 'balcon', serrure: 'serrure', registre: 'registre', passe: 'passe_obj', journal: 'journal', maintenant: 'maintenant', facade: 'facade', horloge: 'horloge' };
+  CLUES.passe_obj = { k: 'indice', t: 'Le tableau des clés', x: 'Derrière le comptoir, vingt-quatre clés à leur crochet, et le passe-partout à son pompon rouge. Le crochet de la 12 porte sa clé de rechange, couverte de poussière.' };
+  const ICON = {
+    c: '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M5.5 1.5a4 4 0 1 1 0 8 4 4 0 0 1 0-8zM8.5 8.5l4 4"/></svg>',
+    p: '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path fill="currentColor" d="M1 2h12v7H6l-3 3V9H1z"/></svg>',
+    ok: '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M2 7.5l3 3 7-7"/></svg>'
+  };
+  let spotEls = [];
+  function buildSpots() {
+    $('spots').innerHTML = '';
+    spotEls = (SPOTS[S.loc] || []).map(([id, kind, label]) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'spot ' + (kind === 'p' ? 'person' : 'clue');
+      b.innerHTML = `<i></i><span>${esc(label)}</span>`; b.setAttribute('aria-label', label);
+      b.addEventListener('click', (e) => { e.stopPropagation(); if (kind === 'p') talk(id); else examine(id); });
+      $('spots').appendChild(b);
+      return { id, kind, el: b, at: SPOT_AT[S.loc][id] };
+    });
+    refreshSpots();
+  }
+  function refreshSpots() {
+    for (const s of spotEls) {
+      const seen = s.kind === 'p' ? S.seen.includes(s.id) && !personFresh(s.id) : has(SPOT_CLUE[s.id]);
+      const fresh = s.kind === 'p' ? personFresh(s.id) && S.seen.includes(s.id) : false;
+      s.el.classList.toggle('seen', seen); s.el.classList.toggle('new', fresh);
+      s.el.classList.toggle('pulse', !seen && !S.seen.includes(s.id));
+      s.el.querySelector('i').innerHTML = seen ? ICON.ok : ICON[s.kind];
+    }
+  }
+  const tmpV = new THREE.Vector3();
+  function placeSpots() {
+    const w = stage.clientWidth, h = stage.clientHeight;
+    for (const s of spotEls) {
+      tmpV.copy(s.at).project(camera);
+      if (tmpV.z > 1) { s.el.style.visibility = 'hidden'; continue; }
+      const x = (tmpV.x * 0.5 + 0.5) * w, y = (-tmpV.y * 0.5 + 0.5) * h;
+      s.el.style.visibility = x < -20 || x > w + 20 || y < -20 || y > h + 20 ? 'hidden' : 'visible';
+      s.el.style.transform = `translate(${Math.round(x - 14)}px, ${Math.round(y - 14)}px)`;
+    }
+  }
+
+  // ================================================================ panneau de droite : examiner, interroger, carnet, déductions
+  let panel = null; // { kind: 'clue'|'person'|'carnet'|'deduire', id, topic }
+  function openPanel(p) {
+    panel = p; $('drawer').hidden = false; renderPanel();
+    $('dBody').scrollTop = 0;
+  }
+  function closePanel() { panel = null; $('drawer').hidden = true; renderNav(); }
+  function clueHtml(id, withImg) {
+    const c = CLUES[id];
+    let h = '';
+    if (withImg && c.img) h += `<figure class="ev" data-img="${c.img}"><figcaption>${c.img === 'photo' ? 'Tirage sur papier albuminé. Au dos, à l’encre : « 16 h 15 ».' : 'Huile sur carton, signée en bas à droite.'}</figcaption></figure>`;
+    h += `<p class="txt">${H(c.x)}</p>`;
+    return h;
+  }
+  function mountImgs() {
+    $('dBody').querySelectorAll('figure.ev[data-img]').forEach((f) => { const im = new Image(); im.src = IMG_URL[f.dataset.img]; im.width = IMGS[f.dataset.img].width * 3; im.height = IMGS[f.dataset.img].height * 3; im.alt = CLUES[f.dataset.img].t; f.prepend(im); });
+  }
+  function renderPanel() {
+    if (!panel) return;
+    const body = $('dBody');
+    if (panel.kind === 'clue') {
+      const cid = panel.id, c = CLUES[cid];
+      $('dEye').textContent = { indice: 'Indice', temoin: 'Témoignage', piece: 'Pièce à conviction' }[c.k];
+      $('dTitle').textContent = fr(c.t);
+      body.innerHTML = clueHtml(cid, true) + (panel.got ? '<p class="got">Noté dans le carnet</p>' : '');
+    } else if (panel.kind === 'person') {
+      const pe = PEOPLE[panel.id];
+      $('dEye').textContent = fr(pe.role); $('dTitle').textContent = fr(pe.name);
+      const t = pe.topics.find((x) => x.id === panel.topic);
+      let h = '';
+      if (t) {
+        h += `<p class="lab">${H(t.q)}</p><p class="say">${H('« ' + t.a + ' »')}</p>`;
+        const gave = (t.gives || []).filter((g) => panel.got && panel.got.includes(g));
+        if (gave.length) h += `<p class="got">Au carnet : ${gave.map((g) => esc(fr(CLUES[g].t))).join(' · ')}</p>`;
+        for (const g of t.gives || []) if (CLUES[g].img) h += `<figure class="ev" data-img="${CLUES[g].img}"><figcaption>${esc(fr(CLUES[g].t))}</figcaption></figure>`;
+      }
+      const av = pe.topics.filter(topicOpen);
+      h += `<p class="lab">Lui demander</p><div class="topics">${av.map((x) => { const k = panel.id + ':' + x.id, rd = S.read.includes(k); return `<button type="button" data-t="${x.id}" class="${x.id === panel.topic ? 'cur' : rd ? 'read' : 'fresh'}">${H(x.q)}</button>`; }).join('')}</div>`;
+      body.innerHTML = h;
+      body.querySelectorAll('.topics button').forEach((b) => b.addEventListener('click', () => ask(panel.id, b.dataset.t)));
+    } else if (panel.kind === 'carnet') {
+      $('dEye').textContent = S.found.length + ' notes'; $('dTitle').textContent = 'Le carnet';
+      const groups = [['piece', 'Pièces à conviction'], ['indice', 'Indices'], ['temoin', 'Témoignages']];
+      let h = '';
+      if (!S.found.length) h = '<p class="txt">Rien encore. Examinez les lieux (loupes) et interrogez les témoins (bulles).</p>';
+      for (const [k, lab] of groups) {
+        const list = S.found.filter((id) => CLUES[id].k === k);
+        if (!list.length) continue;
+        h += `<p class="lab">${lab}</p>` + list.map((id) => `<button type="button" class="clue-row" data-c="${id}"><small>${esc(locOfClue(id))}</small><b>${esc(fr(CLUES[id].t))}</b><span class="txt">${H(CLUES[id].x)}</span></button>`).join('');
+      }
+      body.innerHTML = h;
+      body.querySelectorAll('.clue-row').forEach((b) => b.addEventListener('click', () => { const id = b.dataset.c; if (CLUES[id].img) openPanel({ kind: 'clue', id }); else b.classList.toggle('open'); }));
+      S.carnet = S.found.length; save();
+    } else if (panel.kind === 'deduire') {
+      $('dEye').textContent = QS.filter((q) => ans(q.id).ok).length + ' / ' + QS.length + ' déductions'; $('dTitle').textContent = 'Réfléchir';
+      let h = '<p class="txt"><i>Une fois l’impossible écarté, ce qui reste, même improbable, est la vérité.</i></p>';
+      h += QS.map((q) => qHtml(q, Q_PTS)).join('');
+      if (allDeduced()) h += '<p class="lab">L’accusation</p>' + FINAL.filter(finalOpen).map((f) => qHtml(f, f.pts, true)).join('');
+      else h += `<div class="dq locked final"><h3>L’accusation</h3><p class="need">Elle s’ouvre quand les ${QS.length} déductions sont faites.</p></div>`;
+      if (ans('coupable').ok) for (const f of FINAL.slice(1)) if (!finalOpen(f)) h += `<div class="dq locked final"><h3>${H(f.q)}</h3><p class="need">${needText(f)}</p></div>`;
+      body.innerHTML = h;
+      body.querySelectorAll('.opts button').forEach((b) => b.addEventListener('click', () => answer(b.dataset.q, Number(b.dataset.i))));
+      if (panel.focus) { const el = body.querySelector(`[data-dq="${panel.focus}"]`); if (el) el.scrollIntoView({ block: 'nearest' }); panel.focus = null; }
+    }
+    mountImgs();
+  }
+  function needText(q) {
+    const miss = (q.needs || []).filter((c) => !hasNeed(c)).length;
+    return miss ? 'Il vous manque ' + (miss > 1 ? miss + ' indices' : 'un indice') + ' pour y répondre.' : '';
+  }
+  function qHtml(q, base, isFinal) {
+    const a = ans(q.id), open = isFinal ? finalOpen(q) : qOpen(q);
+    if (!open) return `<div class="dq locked" data-dq="${q.id}"><h3>${H(q.q)}</h3><p class="need">${needText(q)}</p></div>`;
+    let h = `<div class="dq${a.ok ? ' ok' : ''}${isFinal ? ' final' : ''}" data-dq="${q.id}"><h3>${H(q.q)}</h3><div class="opts">`;
+    h += q.opts.map((o, i) => `<button type="button" data-q="${q.id}" data-i="${i}" class="${a.ok && i === q.ok ? 'yes' : a.no.includes(i) ? 'no' : ''}"${a.ok || a.no.includes(i) ? ' disabled' : ''}>${H(o)}</button>`).join('');
+    h += '</div>';
+    if (a.ok) h += `<p class="why">${H(q.why)}</p><span class="pts">+${ptsOf(q, base)} pts</span>`;
+    else if (a.no.length) { const last = a.no[a.no.length - 1]; h += `<p class="nope">${H(q.nope && q.nope[last] ? q.nope[last] : 'Non. Relisez vos notes.')}</p><span class="pts">Encore ${Math.round(base * Math.pow(0.5, a.no.length))} pts à gagner</span>`; }
+    else h += `<span class="pts">${base} pts du premier coup</span>`;
+    return h + '</div>';
+  }
+  function locOfClue(id) {
+    for (const [loc, list] of Object.entries(SPOTS)) for (const [sid] of list) { if (SPOT_CLUE[sid] === id) return LOC[loc].name; }
+    for (const pe of Object.values(PEOPLE)) if (pe.topics.some((t) => (t.gives || []).includes(id))) return 'Dit par ' + pe.name.replace(/^(Pr|Miss|Sir|Capitaine) /, '');
+    return '';
+  }
+
+  // ================================================================ actions
+  function examine(sid) {
+    const cid = SPOT_CLUE[sid];
+    const got = addClue(cid);
+    snd.tone(660, 0, 0.05, 0.5, 'triangle');
+    openPanel({ kind: 'clue', id: cid, got });
+    after();
+  }
+  function talk(pid) {
+    if (!S.seen.includes(pid)) S.seen.push(pid);
+    const pe = PEOPLE[pid];
+    const first = pe.topics.find((t) => topicOpen(t) && !S.read.includes(pid + ':' + t.id)) || pe.topics[0];
+    ask(pid, first.id);
+  }
+  function ask(pid, tid) {
+    const t = PEOPLE[pid].topics.find((x) => x.id === tid);
+    if (!t || !topicOpen(t)) return;
+    const k = pid + ':' + tid;
+    if (!S.read.includes(k)) S.read.push(k);
+    if (!S.seen.includes(pid)) S.seen.push(pid);
+    const got = (t.gives || []).filter((g) => addClue(g));
+    (t.opens || []).forEach(openLoc);
+    snd.tone(520, 0, 0.05, 0.4, 'sine');
+    openPanel({ kind: 'person', id: pid, topic: tid, got });
+    after();
+  }
+  function answer(qid, i) {
+    const q = QS.find((x) => x.id === qid) || FINAL.find((x) => x.id === qid);
+    const a = ans(qid);
+    if (a.ok || a.no.includes(i)) return;
+    if (i === q.ok) { a.ok = true; snd.tone(784, 0, 0.12); snd.tone(1175, 0.1, 0.2); feed('Déduction juste !', 'good'); }
+    else { a.no.push(i); snd.tone(220, 0, 0.18, 1, 'sawtooth'); feed('Fausse piste…', 'bad'); }
+    save();
+    if (FINAL.every((f) => ans(f.id).ok)) { finish(); return; }
+    if (panel) { panel.focus = qid; renderPanel(); }
+    after();
+  }
+  function after() { save(); refreshSpots(); renderNav(); }
+  function go(loc) {
+    if (!S.open.includes(loc) || S.done) return;
+    S.loc = loc; save();
+    for (const [id, s] of Object.entries(SC)) s.g.visible = id === loc;
+    const s = SC[loc]; scene.fog.near = s.fog[0]; scene.fog.far = s.fog[1]; scene.fog.color.set(s.bg); stage.style.background = '#' + s.bg.toString(16).padStart(6, '0');
+    scene.background = new THREE.Color(s.bg);
+    $('placeName').textContent = LOC[loc].name;
+    buildSpots(); renderNav();
+    if (panel && (panel.kind === 'clue' || panel.kind === 'person')) closePanel();
+  }
+
+  // ================================================================ barre des lieux
+  function renderNav() {
+    const nq = QS.filter((q) => qOpen(q) && !ans(q.id).ok).length + (allDeduced() ? FINAL.filter((f) => finalOpen(f) && !ans(f.id).ok).length : 0);
+    const nc = Math.max(0, S.found.length - S.carnet);
+    $('nav').innerHTML = LOCS.map((l, i) => `<button type="button" data-l="${l.id}"${S.open.includes(l.id) ? '' : ' disabled'} aria-current="${S.loc === l.id && !(panel && (panel.kind === 'carnet' || panel.kind === 'deduire'))}" title="${esc(l.sub)}"><span>${i + 1}</span><span class="lbl">${S.open.includes(l.id) ? esc(l.name) : '?'}</span></button>`).join('')
+      + `<span class="grow"></span><button type="button" data-p="carnet" aria-current="${!!(panel && panel.kind === 'carnet')}">Carnet <span class="badge">${nc || ''}</span></button>`
+      + `<button type="button" class="main" data-p="deduire" aria-current="${!!(panel && panel.kind === 'deduire')}">Réfléchir <span class="badge">${nq || ''}</span></button>`;
+    $('nav').querySelectorAll('[data-l]').forEach((b) => b.addEventListener('click', () => go(b.dataset.l)));
+    $('nav').querySelectorAll('[data-p]').forEach((b) => b.addEventListener('click', () => { if (panel && panel.kind === b.dataset.p) closePanel(); else { openPanel({ kind: b.dataset.p }); renderNav(); } }));
+  }
+  $('dClose').addEventListener('click', closePanel);
+
+  // ================================================================ début, fin
+  let mode = 'menu';
+  function start(reset) {
+    if (reset) { S = fresh(); save(); }
+    mode = 'play';
+    $('intro').hidden = true; $('results').hidden = true; $('app').classList.remove('menu');
+    $('place').hidden = false; $('clock').hidden = false;
+    go(S.loc || 'chambre');
+    if (!S.found.length && !S.read.length) feed('Cliquez sur les loupes et les bulles', 'gold');
+  }
+  function finish() {
+    S.done = true; mode = 'done'; save(); closePanel(); $('spots').innerHTML = ''; spotEls = [];
+    const dPts = QS.reduce((s, q) => s + ptsOf(q, Q_PTS), 0), first = QS.filter((q) => ans(q.id).no.length === 0).length;
+    const [fc, fm, fl] = FINAL.map((f) => ptsOf(f, f.pts));
+    const tb = timeBonus(), total = dPts + fc + fm + fl + tb;
+    const mm = Math.floor(S.t / 60), ss = String(Math.floor(S.t % 60)).padStart(2, '0');
+    $('resRows').innerHTML = `<dt>Déductions</dt><dd class="n">${first} / ${QS.length} du premier coup</dd><dd>${dPts}</dd>`
+      + `<dt>Le coupable</dt><dd class="n">${ans('coupable').no.length ? ans('coupable').no.length + ' erreur' + (ans('coupable').no.length > 1 ? 's' : '') : 'du premier coup'}</dd><dd>${fc}</dd>`
+      + `<dt>Le mobile</dt><dd class="n"></dd><dd>${fm}</dd><dt>Le manuscrit</dt><dd class="n"></dd><dd>${fl}</dd>`
+      + `<dt>Temps</dt><dd class="n">${mm} min ${ss}</dd><dd class="pos">+${tb}</dd>`;
+    $('resTotal').textContent = fmtInt(total) + ' pts';
+    $('resSub').textContent = 'Affaire des mouettes';
+    $('resMention').textContent = total >= 900 ? 'S' : total >= 750 ? 'A' : total >= 550 ? 'B' : 'C';
+    $('resStory').innerHTML = H('À 18 h 52, sur le quai de la gare, le carton à chapeau de Sir Reginald s’ouvre devant deux agents. À 20 h, le professeur Whitcombe démontre son théorème devant la Société royale d’ornithologie et, pour la première fois, présente le corollaire sous deux noms : Whitcombe et Penrose. Dehors, sur la corniche du Grand Hôtel, toutes les mouettes regardent l’est.');
+    const prevFirst = Number(store.get(FIRST_KEY)) || 0, prevRec = Number(store.get(REC_KEY)) || 0;
+    if (total > prevRec) store.set(REC_KEY, String(total));
+    let note;
+    if (Pixel.EMBED && !prevFirst) { store.set(FIRST_KEY, String(total)); report('mouettes', total); note = 'Score envoyé au classement · ta première enquête'; }
+    else if (prevFirst) note = 'Hors classement : ta première enquête (' + fmtInt(prevFirst) + ' pts) y reste';
+    else note = total > prevRec && prevRec ? 'Nouveau record ! L’ancien : ' + fmtInt(prevRec) + ' pts' : 'Enquête résolue';
+    $('resRec').textContent = note;
+    $('results').hidden = false; $('app').classList.add('menu');
+    $('place').hidden = true; $('clock').hidden = true;
+    snd.win();
+  }
+  $('again').addEventListener('click', () => { S = fresh(); save(); refreshIntro(); $('results').hidden = true; $('intro').hidden = false; });
+
+  function refreshIntro() {
+    const G2 = [
+      ['Observer', 'loupes', 'Chaque lieu a ses détails : ils vont dans ton carnet.'],
+      ['Interroger', 'bulles', 'Chaque témoin a sa version. De nouvelles questions apparaissent avec les indices.'],
+      ['Réfléchir', Q_PTS + ' pts', 'Les déductions s’ouvrent quand tu as les bons indices. Justes du premier coup : ' + Q_PTS + ' points, chaque erreur divise par deux.'],
+      ['Accuser', '+360', 'Le coupable (200), son mobile, le manuscrit. Et jusqu’à ' + TIME_PTS + ' points si tu fais vite.']
+    ];
+    $('goals').innerHTML = G2.map(([a, b, c]) => `<li><i></i><span>${a}</span><b>${b}</b><small>${esc(fr(c))}</small></li>`).join('');
+    const inProgress = !S.done && (S.found.length || S.read.length);
+    $('introActions').innerHTML = inProgress
+      ? `<button class="go" id="goPlay" type="button">Reprendre l’enquête</button><button class="go ghost" id="goNew" type="button">Recommencer</button>`
+      : '<button class="go" id="goPlay" type="button">Mener l’enquête</button>';
+    $('goPlay').addEventListener('click', (e) => { e.stopPropagation(); if (S.done) S = fresh(); start(false); });
+    if ($('goNew')) $('goNew').addEventListener('click', (e) => { e.stopPropagation(); start(true); });
+    const first = Number(store.get(FIRST_KEY)) || 0, rec = Number(store.get(REC_KEY)) || 0;
+    $('rec').textContent = inProgress ? S.found.length + ' notes au carnet · ' + QS.filter((q) => ans(q.id).ok).length + ' déductions' : first ? 'Ta première enquête : ' + fmtInt(first) + ' pts' : rec ? 'Ton record : ' + fmtInt(rec) + ' pts' : 'L’enquête dure de 10 à 20 minutes';
+    if (first) $('tip').textContent = fr('Ta première enquête est au classement (' + fmtInt(first) + ' pts). Tu peux rejouer pour le plaisir.');
+  }
+  refreshIntro();
+  renderNav();
+  for (const [id, s] of Object.entries(SC)) s.g.visible = id === S.loc;
+
+  // clavier : 1 à 5 lieux, C carnet, D déductions, Échap ferme
+  window.addEventListener('keydown', (e) => {
+    if (mode !== 'play') return;
+    if (/^Digit[1-5]$/.test(e.code)) { const l = LOCS[Number(e.code.slice(-1)) - 1]; if (l) go(l.id); }
+    else if (e.code === 'KeyC') { if (panel && panel.kind === 'carnet') closePanel(); else { openPanel({ kind: 'carnet' }); renderNav(); } }
+    else if (e.code === 'KeyD' || e.code === 'KeyR') { if (panel && panel.kind === 'deduire') closePanel(); else { openPanel({ kind: 'deduire' }); renderNav(); } }
+    else if (e.code === 'Escape') closePanel();
+    else if (e.code === 'KeyM') $('sndBtn').click();
+  });
+
+  // ================================================================ boucle : caméra qui respire, mouettes, horloge de l'enquête
+  let time = 0;
+  const camPos = new THREE.Vector3(), camLook = new THREE.Vector3();
+  function step(dt) {
+    time += dt;
+    if (mode === 'play' && !document.hidden) S.t += dt;
+  }
+  let saveT = 0;
+  function render(dt) {
+    const s = SC[S.loc] || SC.chambre;
+    const narrow = V.RW / V.RH < 1;
+    const sw = Math.sin(time * 0.25) * 0.25, k = narrow ? 1.35 : 1;
+    camLook.set(s.look[0], s.look[1], s.look[2]);
+    camPos.set(s.look[0] + (s.cam[0] - s.look[0]) * k + sw, s.look[1] + (s.cam[1] - s.look[1]) * k + Math.sin(time * 0.31) * 0.08, s.look[2] + (s.cam[2] - s.look[2]) * k);
+    if (mode === 'menu') { camPos.x += Math.sin(time * 0.15) * 1.2; }
+    // panneau ouvert sur grand écran : on décale le décor vers la gauche
+    const shift = panel && !narrow && stage.clientWidth > 640 ? 1 : 0;
+    camera.position.copy(camPos);
+    camera.lookAt(camLook);
+    if (shift) { camera.updateMatrixWorld(); const r = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0); camera.position.addScaledVector(r, 1.3 * k); camLook.addScaledVector(r, 1.3 * k); camera.lookAt(camLook); }
+    camera.fov = narrow ? 52 : 42; camera.updateProjectionMatrix();
+    camera.updateMatrixWorld();
+    for (const gm of gulls) { gm.position.y = gm.userData.y0 + (Math.sin(time * 2 + gm.userData.ph) > 0.97 ? 0.03 : 0); }
+    V.render();
+    if (mode === 'play') {
+      placeSpots();
+      const t = 17 * 60 + 30 + Math.floor(S.t / 60 * 3);
+      $('clockT').textContent = String(Math.min(18 * 60 + 59, t) / 60 | 0).padStart(2, '0') + ':' + String(Math.min(18 * 60 + 59, t) % 60).padStart(2, '0');
+      saveT += dt; if (saveT > 5) { saveT = 0; save(); }
+    }
+  }
+  const L = Pixel.loop(step, render);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+
+  // console de test
+  window.enquete = {
+    state: () => ({ mode, loc: S.loc, found: S.found.slice(), open: S.open.slice(), t: Math.round(S.t), deduits: QS.filter((q) => ans(q.id).ok).length, done: S.done, ans: JSON.parse(JSON.stringify(S.ans)) }),
+    start, go, examine, talk, ask, answer, CLUES, PEOPLE, QS, FINAL, SPOTS,
+    setTime(t) { S.t = t; },
+    // tout explorer puis tout résoudre (sans erreur, ou avec des erreurs au hasard)
+    solve(err) {
+      for (const l of LOCS) { if (!S.open.includes(l.id)) continue; }
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const l of LOCS) {
+          if (!S.open.includes(l.id)) continue;
+          go(l.id);
+          for (const [sid, kind] of SPOTS[l.id]) {
+            if (kind === 'c' && !has(SPOT_CLUE[sid])) { examine(sid); changed = true; }
+            if (kind === 'p') for (const t of PEOPLE[sid].topics) if (topicOpen(t) && !S.read.includes(sid + ':' + t.id)) { ask(sid, t.id); changed = true; }
+          }
+        }
+      }
+      for (const q of [...QS, ...FINAL]) {
+        if (S.done) break;
+        if (err) for (let i = 0; i < q.opts.length && Math.random() < err; i++) if (i !== q.ok) answer(q.id, i);
+        answer(q.id, q.ok);
+      }
+      return window.enquete.state();
+    }
+  };
+})();
+</script>
+</body>
+</html>
