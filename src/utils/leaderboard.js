@@ -96,11 +96,42 @@ export async function importerSiBesoin() {
     if (await config()) await importerRecords();
 }
 
+// Fantôme d'un record (Col du Fuji) : gardé le temps que le score parte, puis envoyé s'il est bien le record du joueur
+// (l'API le refuse sinon). Le jeu le redemande ensuite pour le n° 1 de chaque circuit : GET /api/fantome?jeu=…
+const fantomes = new Map();
+export function retenirFantome(jeu, score, data) {
+    if (jeu && score > 0 && data && Array.isArray(data.pr)) fantomes.set(jeu, { score, data });
+}
+function envoyerFantome(jeu, score, jeton) {
+    const f = fantomes.get(jeu);
+    if (!f || f.score !== score) return;
+    fantomes.delete(jeu);
+    api('fantome', { methode: 'POST', corps: { jeu, score, data: f.data }, jeton }).then(() => fantomeEnvoye(jeu, score), () => { /* le chrono, lui, est bien enregistré */ });
+}
+// Fantômes déjà proposés depuis cet appareil (jeu → chrono), pour ne pas renvoyer le même à chaque partie
+const ENVOYES = '30years:fantomes-envoyes';
+function envoyes() {
+    try { return JSON.parse(localStorage.getItem(ENVOYES) || '{}') || {}; } catch { return {}; }
+}
+function fantomeEnvoye(jeu, score) {
+    try { localStorage.setItem(ENVOYES, JSON.stringify({ ...envoyes(), [jeu]: score })); } catch { /* navigation privée */ }
+}
+// Le fantôme d'un record fait avant cette fonction (le jeu le garde sur l'appareil où il a été fait) : envoyé une fois,
+// pour que le n° 1 actuel ait le sien. L'API le refuse (409) si ce chrono n'est pas, ou plus, le record du joueur.
+export function proposerFantome(jeu, score, data) {
+    const j = moi();
+    if (!j || !jeu || !(score > 0) || !data || !Array.isArray(data.pr) || envoyes()[jeu] === score) return;
+    api('fantome', { methode: 'POST', corps: { jeu, score, data }, jeton: j.jeton })
+        .then(() => fantomeEnvoye(jeu, score), (e) => { if (e.status === 400 || e.status === 409) fantomeEnvoye(jeu, score); });
+}
+
 export async function envoyerScore(jeu, score, portee = 'tout') {
     const j = moi();
     if (!j) throw new ErreurClassement('Choisis un pseudo pour entrer au classement.', 401);
     try {
-        return await api('score', { methode: 'POST', corps: { jeu, score, portee }, jeton: j.jeton });
+        const r = await api('score', { methode: 'POST', corps: { jeu, score, portee }, jeton: j.jeton });
+        if (r && r.meilleur === score) envoyerFantome(jeu, score, j.jeton);
+        return r;
     } catch (e) {
         if (e.status === 401) oublier(); // pseudo effacé côté serveur : on le redemandera
         throw e;

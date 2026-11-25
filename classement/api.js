@@ -12,6 +12,8 @@
 //   POST /api/import        { records: { jeu: score } } + jeton → records déjà faits dans ce navigateur
 //   POST /api/admin         { action, … } + clé admin
 //   POST /api/avis          { question, note, commentaire, jeu } (+ jeton facultatif) → réponse à une question posée avant un jeu
+//   POST /api/fantome       { jeu, score, data } + jeton → le fantôme du record d'un joueur (Col du Fuji), gardé s'il colle à son record
+//   GET  /api/fantome?jeu=… → le fantôme du meilleur record qui en a un : { pseudo, temps, premier, data }
 
 // Les jeux du site (src/games/index.js) et un score maximal plausible pour chacun (garde-fou contre les envois trafiqués)
 const JEUX = {
@@ -28,6 +30,9 @@ const JEUX = {
 // Col du Fuji : 3 tours en centièmes de seconde (le pilote d'essai le plus rapide fait 3:01)
 // Régate du lac : centièmes de seconde aussi (le barreur d'essai fait un peu plus de 3 min)
 const CHRONOS = { envers: { min: 10 }, fuji: { min: 16000 }, regate: { min: 12000 } };
+// Col du Fuji, les 10 autres circuits (fuji-2 à fuji-11) : un classement chacun ; temps minimal = 80 % du pilote d'essai rapide
+const MIN_CIRCUITS = {2: 11200, 3: 14600, 4: 9800, 5: 13100, 6: 16000, 7: 11100, 8: 6200, 9: 9100, 10: 9200, 11: 11700};
+for (const [n, min] of Object.entries(MIN_CIRCUITS)) { JEUX['fuji-' + n] = 60000; CHRONOS['fuji-' + n] = { min }; }
 JEUX.envers = 6 * 3600;
 // Jeux de la quête : le classement du jour retient le premier essai (comme le « score officiel » du site)
 const PREMIER_ESSAI = new Set(['monts', 'reveillon', 'chrono', 'aventure']);
@@ -317,6 +322,53 @@ async function admin(env, request) {
     return erreur('Action inconnue.');
 }
 
+// Fantômes du Col du Fuji : le parcours du record de chaque joueur (10 positions par seconde), pour courir contre le n° 1
+// d'un circuit. Table créée par l'API au premier usage (rien à coller dans la console). Un fantôme n'est gardé que s'il
+// correspond exactement au record du joueur, et n'est servi que tant que ce record tient (sinon le suivant prend la place).
+const FANTOMES = /^fuji(-\d{1,2})?$/;
+const SQL_FANTOMES = `CREATE TABLE IF NOT EXISTS fantomes (
+    jeu TEXT NOT NULL, joueur INTEGER NOT NULL REFERENCES joueurs(id) ON DELETE CASCADE, temps INTEGER NOT NULL,
+    data TEXT NOT NULL, quand TEXT NOT NULL DEFAULT (datetime('now')), PRIMARY KEY (jeu, joueur))`;
+const FANTOME_MAX = 150000; // octets : 3 tours d'environ 3 min font 40 ko
+async function envoyerFantome(env, request) {
+    const joueur = await joueurDuJeton(env, request);
+    if (!joueur) return erreur('Pseudo inconnu.', 401);
+    let corps = null;
+    try {
+        const t = await request.text();
+        if (t.length > FANTOME_MAX) return erreur('Fantôme trop lourd.', 413);
+        corps = JSON.parse(t);
+    } catch { /* illisible */ }
+    if (!corps) return erreur('Requête illisible.');
+    const { jeu } = corps;
+    if (!FANTOMES.test(String(jeu)) || !Object.prototype.hasOwnProperty.call(JEUX, jeu)) return erreur('Jeu inconnu.');
+    const score = Math.round(Number(corps.score));
+    const g = corps.data || {};
+    const n = Array.isArray(g.pr) ? g.pr.length : 0;
+    const nombres = (a) => Array.isArray(a) && a.length === n && a.every((v) => typeof v === 'number' && Number.isFinite(v));
+    if (n < 50 || n > 9000 || !nombres(g.pr) || !nombres(g.d) || !nombres(g.psi)) return erreur('Fantôme illisible.');
+    // 10 positions par seconde : sa durée doit coller au chrono
+    if (Math.abs(n / 10 - score / 100) > 1.5) return erreur('Le fantôme ne correspond pas au chrono.');
+    const r = await env.DB.prepare('SELECT score FROM records WHERE jeu = ? AND joueur = ?').bind(jeu, joueur.id).first();
+    if (!r || r.score !== score) return erreur('Ce chrono n\'est pas ton record.', 409);
+    const data = JSON.stringify({ car: String(g.car || '').slice(0, 12), pr: g.pr, d: g.d, psi: g.psi });
+    await env.DB.prepare(SQL_FANTOMES).run();
+    await env.DB.prepare(`INSERT INTO fantomes (jeu, joueur, temps, data, quand) VALUES (?1, ?2, ?3, ?4, datetime('now'))
+        ON CONFLICT (jeu, joueur) DO UPDATE SET temps = excluded.temps, data = excluded.data, quand = excluded.quand`).bind(jeu, joueur.id, score, data).run();
+    return json({ ok: true });
+}
+async function fantome(env, url) {
+    const jeu = url.searchParams.get('jeu');
+    if (!FANTOMES.test(String(jeu)) || !Object.prototype.hasOwnProperty.call(JEUX, jeu)) return erreur('Jeu inconnu.');
+    await env.DB.prepare(SQL_FANTOMES).run();
+    const f = await env.DB.prepare(`SELECT f.temps, f.data, f.joueur, j.pseudo FROM fantomes f
+        JOIN records r ON r.jeu = f.jeu AND r.joueur = f.joueur AND r.score = f.temps JOIN joueurs j ON j.id = f.joueur
+        WHERE f.jeu = ? ORDER BY f.temps ASC, f.quand ASC LIMIT 1`).bind(jeu).first();
+    if (!f) return json({ jeu, data: null });
+    const premier = await env.DB.prepare(`SELECT joueur FROM records WHERE jeu = ? ORDER BY score ${sens(jeu)}, quand ASC LIMIT 1`).bind(jeu).first();
+    return json({ jeu, pseudo: f.pseudo, temps: f.temps, premier: !!premier && premier.joueur === f.joueur, data: JSON.parse(f.data) });
+}
+
 export async function onRequest(context) {
     const { request, env } = context;
     if (!env.DB) return erreur('Classement pas encore branché (base D1 « DB » manquante).', 503);
@@ -332,6 +384,8 @@ export async function onRequest(context) {
         if (route === 'import' && m === 'POST') return await importer(env, request);
         if (route === 'admin' && m === 'POST') return await admin(env, request);
         if (route === 'avis' && m === 'POST') return await avis(env, request);
+        if (route === 'fantome' && m === 'POST') return await envoyerFantome(env, request);
+        if (route === 'fantome' && m === 'GET') return await fantome(env, url);
         return erreur('Adresse inconnue.', 404);
     } catch (e) {
         // quota gratuit du jour dépassé ou base indisponible : les jeux continuent, seul le classement fait une pause

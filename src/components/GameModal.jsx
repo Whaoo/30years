@@ -48,11 +48,16 @@ export default function GameModal({ game, best, onScore, onClose, gameProps, now
         setEtape(pseudoAvant() ? 'pseudo' : 'jeu');
     };
 
-    // Fin de partie : record local comme avant, puis le classement s'ouvre avec ce score
-    const handleScore = useCallback((score) => {
-        const record = onScore(game.id, score);
+    // Jeu à plusieurs classements (Col du Fuji : un par circuit) : le jeu dit lequel est en cours
+    const [sous, setSous] = useState(null);
+    const choisirSous = useCallback((id) => { setSous(id === game.id ? null : id); }, [game.id]);
+    const jeuBoard = sous ? { ...game, id: sous } : game;
+
+    // Fin de partie : record local comme avant (classement principal seulement), puis le classement s'ouvre avec ce score
+    const handleScore = useCallback((score, jeu) => {
+        const record = !jeu || jeu === game.id ? onScore(game.id, score) : false;
         if (score > 0 && enLigneRef.current) {
-            setFin((f) => ({ score, n: (f?.n || 0) + 1 }));
+            setFin((f) => ({ score, jeu: jeu || game.id, n: (f?.n || 0) + 1 }));
             setBoardOpen(true);
         }
         return record;
@@ -90,7 +95,7 @@ export default function GameModal({ game, best, onScore, onClose, gameProps, now
                     <div className="game-stage">
                         {etape === 'jeu' ? (
                             <Suspense fallback={<p className="game-loading">Chargement…</p>}>
-                                <Game onScore={handleScore} {...gameProps} />
+                                <Game onScore={handleScore} onBoard={choisirSous} {...gameProps} />
                             </Suspense>
                         ) : etape === 'avis' ? (
                             <AvisPopup question={question} jeu={game.id} onDone={apresAvis} />
@@ -100,7 +105,7 @@ export default function GameModal({ game, best, onScore, onClose, gameProps, now
                     </div>
                     {boardOpen && (
                         <Suspense fallback={null}>
-                            <Leaderboard game={game} fin={fin} onClose={() => setBoardOpen(false)} />
+                            <Leaderboard game={jeuBoard} fin={fin && fin.jeu === jeuBoard.id ? fin : null} onClose={() => setBoardOpen(false)} />
                         </Suspense>
                     )}
                 </div>

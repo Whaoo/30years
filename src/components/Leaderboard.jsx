@@ -17,7 +17,31 @@ const DIRECT_MS = 20000;
 const DIRECT_CALMES = 15;
 const signature = (b) => (b ? b.top.map((l) => `${l.pseudo}:${l.score}`).join('|') + '#' + b.total : '');
 
-export default function Leaderboard({ game, fin, onClose }) {
+// Un jeu à plusieurs classements (game.boards : Col du Fuji, un par circuit) : un menu au-dessus de la liste pour passer
+// de l'un à l'autre. game.id = celui affiché d'abord (le circuit en cours dans la fenêtre de jeu). Un score de fin de partie
+// (fin) ne part qu'une fois, même si l'on revient sur son classement.
+export default function LeaderboardBoards(props) {
+    const { game, fin } = props;
+    const [jeu, setJeu] = useState(game.id);
+    useEffect(() => { setJeu(game.id); }, [game.id]);
+    if (!game.boards) return <Leaderboard {...props} />;
+    const b = game.boards.find((x) => x.id === jeu) || game.boards.find((x) => x.id === game.id) || game.boards[0];
+    const f = fin && b.id === game.id ? fin : null;
+    const choix = (
+        <label className="lb__choix">
+            <span>Circuit</span>
+            <select value={b.id} onChange={(e) => setJeu(e.target.value)}>
+                {game.boards.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+            </select>
+        </label>
+    );
+    return <Leaderboard key={b.id} {...props} game={{ ...game, id: b.id, title: `${game.title} · ${b.label.replace(/^\d+\. /, '')}` }} fin={f} choix={choix} />;
+}
+
+// chaque fin de partie n'est envoyée qu'une fois, même si le panneau est remonté (changement de circuit, aller-retour)
+const finsEnvoyees = new WeakSet();
+
+function Leaderboard({ game, fin, onClose, choix = null }) {
     const [joueur, setJoueur] = useState(moi);
     const [portee, setPortee] = useState(game.quest ? 'jour' : 'tout');
     const [board, setBoard] = useState(null);
@@ -38,6 +62,7 @@ export default function Leaderboard({ game, fin, onClose }) {
     const [captcha, setCaptcha] = useState({ cle: null, jeton: null });
     const captchaBox = useRef(null);
     const vu = useRef(0);
+    const [dejaEnvoyee] = useState(() => !!fin && finsEnvoyees.has(fin)); // revenu sur ce circuit après l'envoi
     const [direct, setDirect] = useState(false);
     const [neufs, setNeufs] = useState(() => new Set()); // pseudos dont la ligne vient de changer
     const boardRef = useRef(null);
@@ -74,8 +99,9 @@ export default function Leaderboard({ game, fin, onClose }) {
 
     // une nouvelle fin de partie
     useEffect(() => {
-        if (!fin || fin.n === vu.current) return;
+        if (!fin || fin.n === vu.current || finsEnvoyees.has(fin)) return;
         vu.current = fin.n;
+        finsEnvoyees.add(fin);
         setResultat(null);
         setMessage('');
         if (moi()) envoyer(fin.score);
@@ -85,7 +111,7 @@ export default function Leaderboard({ game, fin, onClose }) {
 
     // ouverture sans partie terminée : on montre juste le classement
     useEffect(() => {
-        if (!fin) charger(portee, propose(portee));
+        if (!fin || dejaEnvoyee) charger(portee, propose(portee));
         config().then((c) => setCaptcha((x) => ({ ...x, cle: c?.captcha || null })));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -207,6 +233,7 @@ export default function Leaderboard({ game, fin, onClose }) {
                 <button type="button" className="lb__close" onClick={onClose} aria-label="Fermer le classement"><Icon name="close" size={18} /></button>
             </div>
 
+            {choix}
             {titre && <p className="lb__titre">{titre}</p>}
             {message && <p className="lb__msg">{message}</p>}
 

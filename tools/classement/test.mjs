@@ -84,6 +84,38 @@ assert.equal((await appel('GET', 'classement?jeu=envers')).data.top[0].score, 20
 assert.equal((await appel('GET', 'classement?jeu=envers&portee=jour')).data.top.length, 2, 'les imports ne vont pas dans le classement du jour');
 assert.equal((await appel('POST', 'import', { records: { envers: 200 } })).status, 401);
 
+// fantômes du Col du Fuji : un par record, servi pour le meilleur record qui en a un
+const kai = (await appel('POST', 'pseudo', { pseudo: 'Kai' })).data;
+const noa = (await appel('POST', 'pseudo', { pseudo: 'Noa' })).data;
+const trace = (cs) => { const n = Math.floor(cs / 10) + 1; return { car: 'hugo', pr: Array.from({ length: n }, (_, i) => i * 4.2), d: Array(n).fill(0.5), psi: Array(n).fill(0.01) }; };
+assert.equal((await appel('GET', 'fantome?jeu=fuji-3')).data.data, null, 'pas encore de fantôme');
+assert.equal((await appel('GET', 'fantome?jeu=golf')).status, 400, 'seulement le Col du Fuji');
+assert.equal((await appel('GET', 'fantome?jeu=fuji-12')).status, 400, 'circuit inconnu');
+assert.equal((await appel('POST', 'score', { jeu: 'fuji-3', score: 18000 }, kai.jeton)).data.record, true, 'un circuit = un classement');
+assert.equal((await appel('POST', 'score', { jeu: 'fuji-3', score: 9000 }, kai.jeton)).status, 400, 'en dessous du temps minimal du circuit');
+assert.equal((await appel('POST', 'fantome', { jeu: 'fuji-3', score: 18000, data: trace(18000) })).status, 401);
+assert.equal((await appel('POST', 'fantome', { jeu: 'fuji-3', score: 18000, data: trace(15000) }, kai.jeton)).status, 400, 'la durée doit coller au chrono');
+assert.equal((await appel('POST', 'fantome', { jeu: 'fuji-3', score: 18500, data: trace(18500) }, kai.jeton)).status, 409, 'pas son record');
+assert.equal((await appel('POST', 'fantome', { jeu: 'fuji-3', score: 18000, data: { ...trace(18000), d: [1, 2] } }, kai.jeton)).status, 400);
+assert.equal((await appel('POST', 'fantome', { jeu: 'fuji-3', score: 18000, data: trace(18000) }, kai.jeton)).status, 200);
+r = await appel('GET', 'fantome?jeu=fuji-3');
+assert.equal(r.data.pseudo, 'Kai'); assert.equal(r.data.temps, 18000); assert.equal(r.data.premier, true); assert.equal(r.data.data.pr.length, 1801);
+assert.equal((await appel('GET', 'fantome?jeu=fuji')).data.data, null, 'chaque circuit a les siens');
+await appel('POST', 'score', { jeu: 'fuji-3', score: 19000 }, noa.jeton);
+await appel('POST', 'fantome', { jeu: 'fuji-3', score: 19000, data: trace(19000) }, noa.jeton);
+assert.equal((await appel('GET', 'fantome?jeu=fuji-3')).data.pseudo, 'Kai', 'le meilleur gagne');
+await appel('POST', 'score', { jeu: 'fuji-3', score: 17500 }, noa.jeton); // n° 1, mais sans fantôme envoyé
+r = await appel('GET', 'fantome?jeu=fuji-3');
+assert.equal(r.data.pseudo, 'Kai'); assert.equal(r.data.premier, false, 'Kai n\'est plus n° 1 : on le dit');
+await appel('POST', 'score', { jeu: 'fuji-3', score: 17000 }, kai.jeton); // nouveau record sans fantôme : l'ancien n'est plus servi
+assert.equal((await appel('GET', 'fantome?jeu=fuji-3')).data.data, null, 'un fantôme ne sert que tant que son record tient');
+assert.equal((await appel('POST', 'fantome', { jeu: 'fuji-3', score: 17000, data: trace(17000) }, kai.jeton)).status, 200);
+r = await appel('GET', 'fantome?jeu=fuji-3');
+assert.equal(r.data.pseudo, 'Kai'); assert.equal(r.data.temps, 17000); assert.equal(r.data.premier, true);
+assert.equal((await onRequest({ request: new Request('https://30years.pages.dev/api/fantome', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + kai.jeton }, body: 'x'.repeat(160000) }), env })).status, 413);
+r = await appel('GET', 'classement?jeu=fuji-3');
+assert.deepEqual(r.data.top.map((t) => [t.pseudo, t.score]), [['Kai', 17000], ['Noa', 17500]]);
+
 // administration
 assert.equal((await appel('POST', 'admin', { action: 'effacer-pseudo', pseudo: 'Max' })).status, 403);
 env.ADMIN_KEY = 'secret';

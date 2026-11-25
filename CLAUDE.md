@@ -48,8 +48,14 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
     `VOL` (« Vol du soir », 20/11) : `public/jeux/vol-du-soir.html`, jet de Noël en 3D pixel (three.js r149 servi par le site :
     `public/jeux/lib/three.min.js`), mission de 3 min, console `window.vol` (`startMission()`, `bot(n)`, `endMission()`).
     `FUJI` (« Col du Fuji », 23/11) : `public/jeux/col-du-fuji.html`, contre-la-montre de 3 tours (trois couleurs, mêmes performances),
-    fantôme du meilleur chrono (`col-du-fuji:fantome:1`) ou « fantôme du col » simulé au chargement ; score = temps en centièmes
-    (`lowerIsBetter`, `format`, `CHRONOS.fuji`) ; console `window.fuji` (`setup('race')`, `bot(n, { k, turbo, drift })`, `state()`).
+    11 circuits au choix (`CIRCUITS` dans la page, `?circuit=n`, retenu dans `col-du-fuji:circuit` ; le n° 1 est l'original, les 10 autres
+    sont générés et vérifiés par `tools/fuji/`), un classement par circuit (`fuji`, puis `fuji-2` à `fuji-11` : `boards` dans
+    `src/games/index.js`, `MIN_CIRCUITS` dans `classement/api.js`). Adversaire fantôme au choix : le n° 1 du classement du circuit
+    (`GET /api/fantome`, table `fantomes` créée par l'API : le parcours d'un record, envoyé par le site après le score s'il est bien
+    le record du joueur ; un record plus ancien est proposé une fois à l'ouverture du jeu depuis l'appareil qui le garde,
+    `proposerFantome`), ton record (`col-du-fuji:fantome:1`, `…:c<n>`) ou le « fantôme du col » simulé au chargement (mentions des
+    circuits 2 à 11 calées sur lui) ; score = temps en centièmes (`lowerIsBetter`, `format`, `CHRONOS`) ;
+    console `window.fuji` (`setup('race')`, `bot(n, { k, turbo, drift })`, `state()`, `C`, `champ()`).
     Les jeux suivants partagent `public/jeux/lib/pixel.js` (rendu basse résolution + palette, ATH, messages, pas fixe, son, styles communs,
     `Pixel.report(jeu, score)`). `GOLF` (« Golf au couchant », 24/11) : `public/jeux/golf-au-couchant.html`, 6 trous de mini-golf
     (`HOLES` : couloir, pentes, rochers, sable, eau), physique sans hasard ; points par trou (trou en un 500, birdie 400, par 300…) ;

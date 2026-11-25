@@ -615,6 +615,8 @@ html, body, #root { height: 100%; }
 .lb__tabs { order: 3; flex: 1 1 100%; display: flex; border-radius: 999px; background: rgba(0, 0, 0, 0.25); padding: 2px; }
 .lb__tabs button { flex: 1 1 0; border: 0; background: transparent; color: rgba(255, 255, 255, 0.75); font: 700 12px 'DM Sans', sans-serif; padding: 6px 9px; border-radius: 999px; cursor: pointer; }
 .lb__tabs button[aria-pressed="true"] { background: var(--accent); color: #14172b; }
+.lb__choix { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: rgba(255, 255, 255, 0.7); }
+.lb__choix select { flex: 1 1 auto; min-width: 0; padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.22); background: rgba(0, 0, 0, 0.3); color: #fff; font: 700 13px 'DM Sans', sans-serif; }
 .lb__close { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.1); color: #fff; cursor: pointer; }
 .lb__titre { margin: 0; font-weight: 800; font-size: 16px; color: var(--accent); }
 .lb__msg, .lb__aide, .lb__pied, .lb__vide { margin: 0; font-size: 13px; color: rgba(255, 255, 255, 0.78); }

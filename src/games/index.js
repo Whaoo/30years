@@ -244,7 +244,21 @@ export const FUJI = {
     eyebrow: 'Jeu du jour · lun. 23 nov.',
     from: new Date(2026, 10, 23, 9, 0),
     icon: 'car', unit: '', lowerIsBetter: true, format: chrono, frame: '/jeux/col-du-fuji.html',
-    pitch: 'Contre-la-montre au pied du Fuji',
+    pitch: 'Contre-la-montre au pied du Fuji, 11 circuits',
+    // un classement par circuit (le jeu les choisit, le panneau Classement les montre) : mêmes noms que CIRCUITS dans la page du jeu
+    boards: [
+        { id: 'fuji', label: "1. Col du Fuji" },
+        { id: 'fuji-2', label: "2. Le tour du lac" },
+        { id: 'fuji-3', label: "3. Les lacets d’Irohazaka" },
+        { id: 'fuji-4', label: "4. La route des érables" },
+        { id: 'fuji-5', label: "5. Les rizières" },
+        { id: 'fuji-6', label: "6. Le col de Hakone" },
+        { id: 'fuji-7', label: "7. Le serpent de Shirakawa" },
+        { id: 'fuji-8', label: "8. L’anneau des lanternes" },
+        { id: 'fuji-9', label: "9. La corniche d’Izu" },
+        { id: 'fuji-10', label: "10. Le temple de Nikko" },
+        { id: 'fuji-11', label: "11. Les mille torii" }
+    ],
     help: 'Flèches ou souris pour diriger (l’accélérateur est automatique), Espace pour déraper, Maj ou F pour le turbo, ↓ pour freiner. 3 tours : le meilleur temps gagne.',
     component: lazy(() => import('./FrameGame'))
 };

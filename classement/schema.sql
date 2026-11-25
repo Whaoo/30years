@@ -51,3 +51,13 @@ CREATE TABLE IF NOT EXISTS avis (
     jour TEXT NOT NULL,                -- date de Paris
     cree TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Fantômes du Col du Fuji (créée aussi par l'API au premier usage) : le parcours du record de chaque joueur, par circuit
+CREATE TABLE IF NOT EXISTS fantomes (
+    jeu TEXT NOT NULL,                 -- fuji (circuit 1) ou fuji-2 … fuji-11
+    joueur INTEGER NOT NULL REFERENCES joueurs(id) ON DELETE CASCADE,
+    temps INTEGER NOT NULL,            -- centièmes, égal au record du joueur quand le fantôme a été envoyé
+    data TEXT NOT NULL,                -- { car, pr, d, psi } : 10 positions par seconde
+    quand TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (jeu, joueur)
+);
