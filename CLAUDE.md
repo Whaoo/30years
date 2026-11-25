@@ -87,9 +87,12 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
     10 pts par mètre + 50 par boule + 100 par corbeau sauté. Console `window.sapin` (`start()`, `bot(n)` : pilote parfait
     qui simule ses sauts, corbeaux compris ; `state()`).
   - `MOUETTES` (« Le théorème des mouettes blanches américaines », 25/11) : `public/jeux/mouettes.html`, enquête à la manière
-    des romans de détective (histoire inventée, Brighton 1891) : 5 lieux en 3D pixel (`SC`), repères cliquables (`SPOTS`, indices
+    des romans de détective (histoire inventée, Brighton 1891) : 5 lieux en 3D au rendu réaliste (`SC` ; three.js en pleine définition,
+    ombres des becs de gaz, tons ACES, brouillard, halos, nappes de brume, vie du décor `ANIM` ; sur téléphone moins de pixels et
+    une seule lumière à ombres, et `adaptQuality` baisse encore si les images ne suivent pas), repères cliquables (`SPOTS`, indices
     `CLUES`, témoins `PEOPLE` dont les questions s'ouvrent avec les indices), 9 déductions (`QS`, 60 pts du premier coup, divisés
     par deux à chaque erreur) puis l'accusation (`FINAL` : coupable 200, mobile 80, manuscrit 80) + jusqu'à 100 pts de temps.
+    Le télégramme, le registre et le journal de la capitainerie se lisent sur le document lui-même (`DOCS`).
     Partie sauvegardée (`mouettes:enquete`) ; seule la première enquête finie dans le site part au classement (`mouettes:premiere`).
     Console `window.enquete` (`solve(err)`, `state()`).
   - Où on les trouve : deux tuiles sous la liste « Ensuite » (`GameTiles.jsx` : les jeux du jour ; s'il n'y en a qu'un, « Historique »),

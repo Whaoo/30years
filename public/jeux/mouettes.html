@@ -20,15 +20,19 @@
 .card .story { font: 400 15px/1.45 var(--serif); color: var(--paper); }
 #spots { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .spot { position: absolute; left: 0; top: 0; display: grid; justify-items: center; gap: 3px; padding: 0; border: 0; background: none; color: var(--paper); cursor: pointer; pointer-events: auto; }
-.spot i { position: relative; width: 28px; height: 28px; display: grid; place-items: center; background: rgba(18, 20, 28, 0.85); border: 2px solid var(--accent); color: var(--accent); box-shadow: 2px 2px 0 #000; }
-.spot.person i { border-radius: 50%; }
-.spot span { padding: 3px 4px 2px; background: rgba(18, 20, 28, 0.85); font: 400 8px/1 var(--pixel); text-transform: uppercase; white-space: nowrap; }
-.spot.seen i { border-color: #6a6878; color: #8f8c9c; }
-.spot.new i::after { content: ''; position: absolute; top: -4px; right: -4px; width: 8px; height: 8px; background: #d0343a; box-shadow: 0 0 0 1px #000; }
-.spot:hover i, .spot:focus-visible i { background: var(--accent); color: var(--accent-ink); }
+.spot i { position: relative; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: rgba(255, 236, 200, 0.14); border: 1.5px solid rgba(255, 230, 180, 0.9); color: #ffe6b4; box-shadow: 0 0 12px rgba(255, 210, 140, 0.5); }
+.spot span { padding: 4px 6px 3px; border-radius: 3px; background: rgba(10, 10, 14, 0.62); font: 500 11px/1 var(--mono); white-space: nowrap; }
+.spot.seen i { border-color: rgba(200, 196, 214, 0.55); color: #c9c4d6; background: rgba(10, 10, 14, 0.45); box-shadow: none; }
+.spot.new i::after { content: ''; position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; border-radius: 50%; background: #d0343a; box-shadow: 0 0 0 1px #000; }
+.spot:hover i, .spot:focus-visible i { background: rgba(255, 230, 180, 0.9); color: #1a1408; }
 .spot:focus-visible { outline: none; }
-.spot.pulse i { animation: pulse 1.4s steps(4) infinite; }
-@keyframes pulse { 50% { box-shadow: 0 0 0 4px rgba(201, 162, 74, 0.45), 2px 2px 0 #000; } }
+.spot.pulse i { animation: pulse 1.8s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 5px rgba(255, 220, 160, 0.22), 0 0 18px rgba(255, 210, 140, 0.75); } }
+#gl { image-rendering: auto; }
+#hud { display: none; }
+#vig { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 45%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.5) 100%); }
+#grain { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0.07; mix-blend-mode: overlay; }
+@media (prefers-reduced-motion: reduce) { .spot.pulse i { animation: none; } }
 #drawer { position: absolute; top: 8px; right: 8px; bottom: 8px; width: min(410px, calc(100% - 16px)); display: flex; flex-direction: column; background: rgba(16, 18, 26, 0.96); border: 1px solid var(--line); box-shadow: 0 0 0 1px #000, 6px 6px 0 rgba(0, 0, 0, 0.35); z-index: 3; }
 #drawer header { display: flex; align-items: flex-start; gap: 10px; padding: 12px 12px 10px 14px; border-bottom: 1px solid var(--line); }
 #drawer header > div { flex: 1; display: grid; gap: 5px; min-width: 0; }
@@ -46,7 +50,25 @@
 .topics button.cur { border-color: var(--accent); background: rgba(201, 162, 74, 0.12); }
 .topics button.fresh::before { content: '● '; color: #d0343a; }
 .ev { margin: 0; display: grid; justify-items: start; gap: 6px; }
-.ev img { display: block; width: 100%; max-width: 372px; height: auto; image-rendering: pixelated; image-rendering: crisp-edges; box-shadow: 0 0 0 1px #000, 3px 3px 0 rgba(0, 0, 0, 0.4); }
+.ev img { display: block; width: 100%; max-width: 372px; height: auto; image-rendering: pixelated; image-rendering: crisp-edges; }
+.ev[data-img="photo"] img { padding: 10px 10px 30px; background: #e9dfc6 linear-gradient(180deg, #efe6d0, #ded2b2); box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5); transform: rotate(-1deg); }
+.ev[data-img="tableau"] img { border: 9px solid #9a7430; outline: 2px solid #5a4018; box-shadow: inset 0 0 0 2px #d8b46a, 0 10px 24px rgba(0, 0, 0, 0.55); }
+.doc { position: relative; padding: 14px 16px 16px; background: linear-gradient(180deg, #f6efdf, #ebdfc3); color: #3a2a1c; box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4); font: 400 12px/1.4 Georgia, 'Times New Roman', serif; display: grid; gap: 8px; }
+.doc .hand { font: italic 400 17px/1.35 var(--serif); color: #1e2a4a; }
+.doc .hd { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; align-items: baseline; border-bottom: 1px solid rgba(58, 42, 28, 0.5); padding-bottom: 6px; }
+.doc .hd b { font: 700 13px/1 Georgia, serif; letter-spacing: 0.08em; text-transform: uppercase; color: #8a1f1f; }
+.doc .hd span { font: 400 11px/1 Georgia, serif; color: #5a4a3a; }
+.doc dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: baseline; }
+.doc dt { font-size: 11px; color: #5a4a3a; }
+.doc dd { margin: 0; }
+.doc .lines { margin: 0; padding: 4px 0; background: repeating-linear-gradient(180deg, transparent 0 22px, rgba(58, 42, 28, 0.22) 22px 23px); }
+.doc .stamp { justify-self: end; padding: 4px 8px; border: 2px solid rgba(138, 31, 31, 0.75); border-radius: 50%; color: rgba(138, 31, 31, 0.8); font: 700 10px/1 var(--mono); transform: rotate(-8deg); }
+.doc table { width: 100%; border-collapse: collapse; }
+.doc th { text-align: left; font: 400 10px/1.2 Georgia, serif; text-transform: uppercase; letter-spacing: 0.04em; color: #5a4a3a; border-bottom: 1px solid rgba(58, 42, 28, 0.5); padding: 2px 4px; }
+.doc td { padding: 3px 4px; border-bottom: 1px solid rgba(58, 42, 28, 0.18); vertical-align: top; }
+.doc td.hand { font-size: 15px; }
+.doc tr.hl td { background: rgba(201, 162, 74, 0.2); }
+.doc s { color: #8a1f1f; }
 .need { margin: 0; font: 400 8px/1.4 var(--pixel); letter-spacing: 0; text-transform: uppercase; color: var(--muted); }
 .ev figcaption { font: 400 13px/1.4 var(--serif); font-style: italic; color: var(--soft); }
 .got { margin: 0; padding: 6px 8px 5px; background: rgba(159, 224, 168, 0.1); border: 1px dashed #3f7a4a; font: 400 8px/1.3 var(--pixel); text-transform: uppercase; color: #9fe0a8; }
@@ -94,6 +116,8 @@
   <div id="stage">
     <canvas id="gl"></canvas>
     <canvas id="hud"></canvas>
+    <canvas id="grain"></canvas>
+    <div id="vig"></div>
     <div id="spots"></div>
     <div class="tag tl" id="place" hidden><span class="sq"></span><span id="placeName">Chambre 12</span></div>
     <div class="tag tr" id="clock" hidden><span id="clockT">17:30</span></div>
@@ -299,24 +323,41 @@
     S.open.push(id); feed('Nouveau lieu : ' + LOC[id].name, 'good');
   }
 
-  // ================================================================ rendu 3D : cinq décors, un seul visible
-  const PAL = [0x060608, 0x0b0d1a, 0x141826, 0x1e2448, 0x2a3160, 0x3a427a, 0x565f9e, 0x7f86b8,
-    0x1e3a4a, 0x2a5260, 0x3f6e78, 0x6a9aa0,
-    0x24242e, 0x4a4a58, 0x6a6878, 0x8f8c9c, 0xb8b4c0, 0xd8d4dc, 0xf4f4f8, 0xffffff,
-    0x2a1a12, 0x4a2e22, 0x6e3f2c, 0x94573a, 0xb87a4a, 0xd29a64, 0xe8dcc0, 0xd8c8a0, 0xbfa878,
-    0xc9a24a, 0xf2c81e, 0xffd060, 0xfff2a0, 0x6e1a24, 0x8a2a2e, 0xb83a3a, 0xd0343a,
-    0x1e3a2e, 0x2f4a3a, 0x3f6a4a, 0x6a8a5a, 0x2f4a8a, 0x4a6ab8, 0xf0c8a0, 0xd8a880, 0xe0905a, 0xc87a8a, 0x8a5a7a];
-  const V = Pixel.view({ stage, gl: $('gl'), hud: $('hud'), palette: PAL, fov: 42, near: 0.1, far: 400, target: 560, dither: 0.06 });
-  const { scene, camera } = V;
-  scene.fog = new THREE.Fog(0x141826, 12, 60);
-  const hemi = new THREE.HemisphereLight(0xd8d4f0, 0x2a1a12, 0.7); scene.add(hemi);
-  const sun = new THREE.DirectionalLight(0xfff0d8, 0.35); sun.position.set(3, 8, 6); scene.add(sun);
-  const lit = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+  // ================================================================ rendu 3D réaliste : cinq décors, un seul visible
+  // Pleine définition, lumière physique (tons ACES), ombres portées des becs de gaz, brouillard, halos, nappes de brume, et la vie
+  // (flammes qui vacillent, mouettes qui sautillent, fumées, fiacre, vagues). Sur téléphone : définition et ombres réduites,
+  // et la qualité baisse d'elle-même si les images ne suivent pas (adaptQuality).
+  const hash2 = Pixel.hash2;
+  const TOUCH = Pixel.isTouch;
+  const Q = { dpr: Math.min(window.devicePixelRatio || 1, TOUCH ? 1.5 : 2), shadowMap: TOUCH ? 512 : 1024, shadows2: !TOUCH, minDpr: 0.75 };
+  const renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: true, powerPreference: 'high-performance' });
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.25;
+  $('gl').addEventListener('webglcontextlost', (e) => { e.preventDefault(); feed('Affichage interrompu : recharge la page si l’image ne revient pas', 'bad'); });
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(42, 16 / 9, 0.1, 400);
+  camera.rotation.order = 'YXZ';
+  const V = { RW: 16, RH: 9, render() { renderer.render(scene, camera); } };
+  function resize() {
+    const sw = stage.clientWidth || 1, sh = stage.clientHeight || 1;
+    renderer.setPixelRatio(Q.dpr); renderer.setSize(sw, sh, false);
+    V.RW = sw; V.RH = sh; camera.aspect = sw / sh; camera.updateProjectionMatrix();
+    const g = $('grain'); g.width = Math.ceil(sw / 2); g.height = Math.ceil(sh / 2); grainDraw();
+  }
+  scene.fog = new THREE.FogExp2(0x262a38, 0.03);
+  const hemi = new THREE.HemisphereLight(0x9aa0c0, 0x2a1a12, 0.45); scene.add(hemi);
+  const sun = new THREE.DirectionalLight(0xfff0d8, 0.12); sun.position.set(3, 8, 6); scene.add(sun);
+  const lit = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.88, metalness: 0 });
   const basic = new THREE.MeshBasicMaterial({ vertexColors: true });
   const box = (P, x, y, z, w, h, d, c, ry) => P.push({ geo: GEO.BOX, m: mtx(x, y + h / 2, z, ry || 0, w, h, d), c });
   const cyl = (P, x, y, z, r, h, c) => P.push({ geo: GEO.CYL, m: mtx(x, y + h / 2, z, 0, r, h, r), c });
   const sph = (P, x, y, z, r, c, sy) => P.push({ geo: GEO.SPH, m: mtx(x, y, z, 0, r, sy == null ? r : sy, r), c });
-  function mesh(P, glow) { return new THREE.Mesh(Pixel.mergeParts(P), glow ? basic : lit); }
+  const wheel = (P, x, y, z, r, w, c) => P.push({ geo: GEO.CYL, m: new THREE.Matrix4().makeTranslation(x, y, z).multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2)).multiply(new THREE.Matrix4().makeScale(r, w, r)), c });
+  function mesh(P, glow) {
+    const m = new THREE.Mesh(Pixel.mergeParts(P), glow ? basic : lit);
+    if (!glow) m.castShadow = m.receiveShadow = true;
+    return m;
+  }
   // un personnage, tourné vers +z
   function person(o) {
     const P = [], skin = o.skin || 0xf0c8a0, coat = o.coat, hair = o.hair || 0x4a2e22;
@@ -346,7 +387,17 @@
     if (o.extra) o.extra(P);
     const g = new THREE.Group(); g.add(mesh(P)); return g;
   }
-  // une mouette posée, bec vers +z
+  // ce qui bouge : chaque fonction reçoit (temps, dt) à chaque image, seulement pour le lieu affiché
+  const ANIM = {};
+  const live = (loc, f) => (ANIM[loc] || (ANIM[loc] = [])).push(f);
+  // un témoin qui respire et se balance un peu
+  function place(loc, g, P, x, z, ry) {
+    P.position.set(x, 0, z); P.rotation.y = ry; g.add(P);
+    const ph = hash2(Math.round(x * 10), Math.round(z * 10), 7) * 6, m = P.children[0];
+    live(loc, (t) => { m.scale.y = 1 + Math.sin(t * 2.1 + ph) * 0.008; P.rotation.y = ry + Math.sin(t * 0.45 + ph) * 0.06; });
+    return P;
+  }
+  // une mouette posée, bec vers +z (elle sautille de temps en temps, sans jamais changer de cap : c'est un indice)
   const gullGeo = Pixel.mergeParts([
     { geo: GEO.ICO, m: mtx(0, 0.15, -0.02, 0, 0.13, 0.11, 0.22), c: 0xf4f4f8 },
     { geo: GEO.BOX, m: mtx(0, 0.21, -0.04, 0, 0.25, 0.05, 0.26), c: 0x8f8c9c },
@@ -357,14 +408,66 @@
     { geo: GEO.BOX, m: mtx(0, 0.03, 0, 0, 0.09, 0.06, 0.03), c: 0xe0905a }
   ]);
   const gulls = [];
-  function gull(group, x, y, z, ry, s) { const m = new THREE.Mesh(gullGeo, lit); m.position.set(x, y, z); m.rotation.y = ry; m.scale.setScalar(s || 1.4); m.userData.ph = Math.random() * 6; m.userData.y0 = y; group.add(m); gulls.push(m); return m; }
+  function gull(group, x, y, z, ry, s) {
+    const m = new THREE.Mesh(gullGeo, lit); m.castShadow = true;
+    m.position.set(x, y, z); m.rotation.y = ry; m.scale.setScalar(s || 1.4);
+    m.userData.ph = hash2(Math.round(x * 10), Math.round(z * 10), 4) * 20; m.userData.y0 = y; group.add(m); gulls.push(m); return m;
+  }
   function lamp(P, G, x, y, z, h, light) {
-    box(P, x, y, z, 0.1, h, 0.1, 0x24242e); box(P, x, y + h, z, 0.26, 0.05, 0.26, 0x24242e);
-    G.push({ geo: GEO.BOX, m: mtx(x, y + h + 0.17, z, 0, 0.2, 0.28, 0.2), c: 0xfff2a0 });
-    box(P, x, y + h + 0.32, z, 0.28, 0.06, 0.28, 0x24242e);
+    box(P, x, y, z, 0.1, h, 0.1, 0x262a38); box(P, x, y + h, z, 0.26, 0.05, 0.26, 0x262a38);
+    G.push({ geo: GEO.BOX, m: mtx(x, y + h + 0.17, z, 0, 0.2, 0.28, 0.2), c: 0xffe0a8 });
+    box(P, x, y + h + 0.32, z, 0.28, 0.06, 0.28, 0x262a38);
     if (light) { const l = new THREE.PointLight(0xffd8a0, light, 9, 1.6); l.position.set(x, y + h + 0.2, z); return l; }
     return null;
   }
+  // textures dessinées une fois
+  const tex = (w, h, draw, rx, ry) => {
+    const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
+    const t = new THREE.CanvasTexture(c);
+    if (rx) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); }
+    return t;
+  };
+  const haloTex = tex(64, 64, (g, w, h) => { const r = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.35, 'rgba(255,255,255,0.45)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); });
+  const mistTex = tex(256, 128, (g, w, h) => {
+    for (let i = 0; i < 46; i++) { const x = hash2(i, 1, 9) * w, y = h * (0.3 + hash2(i, 2, 9) * 0.45), r = 18 + hash2(i, 3, 9) * 40;
+      const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, 'rgba(255,255,255,0.22)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+      if (x < r) { g.save(); g.translate(w, 0); g.fillStyle = gr; g.fillRect(-w, 0, w, h); g.restore(); } }
+  });
+  mistTex.wrapS = THREE.RepeatWrapping;
+  // papiers peints (vert de la chambre, damas rouge du hall), tapis, horloge du télégraphe
+  const paperTex = (base, alt, motif, gold) => tex(16, 16, (g) => {
+    g.fillStyle = base; g.fillRect(0, 0, 16, 16); g.fillStyle = alt; g.fillRect(0, 0, 8, 16);
+    g.fillStyle = motif; [[3, 2], [2, 3], [4, 3], [3, 4], [11, 10], [10, 11], [12, 11], [11, 12]].forEach(([x, y]) => g.fillRect(x, y, 1, 1));
+    g.fillStyle = gold; g.fillRect(3, 3, 1, 1); g.fillRect(11, 11, 1, 1);
+  }, 1, 1);
+  const WALL = { vert: paperTex('#24382c', '#2f4a3a', '#6a8a5a', '#c9a24a'), rouge: paperTex('#4e1418', '#5e1a20', '#8a2a2e', '#c9a24a') };
+  const rugTex = tex(64, 32, (g) => {
+    g.fillStyle = '#6e1a24'; g.fillRect(0, 0, 64, 32); g.fillStyle = '#3a2a22'; g.fillRect(3, 3, 58, 26); g.fillStyle = '#8a2a2e'; g.fillRect(5, 5, 54, 22);
+    g.fillStyle = '#c9a24a'; for (let i = 6; i < 58; i += 4) { g.fillRect(i, 1, 2, 1); g.fillRect(i, 30, 2, 1); }
+    g.fillStyle = '#2f4a8a'; g.fillRect(27, 12, 10, 8); g.fillStyle = '#e8a860'; g.fillRect(31, 15, 2, 2);
+    g.fillStyle = '#4a2e22'; for (let i = 0; i < 9; i++) { g.fillRect(9 + i * 5, 8, 2, 2); g.fillRect(9 + i * 5, 22, 2, 2); }
+  });
+  function texMesh(geo, map) { const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map, roughness: 0.9 })); m.receiveShadow = true; return m; }
+  // un pan de papier peint (le motif garde la même taille quel que soit le pan)
+  function paper(g, kind, w, h, x, y, z, ry) { const t = WALL[kind].clone(); t.needsUpdate = true; t.repeat.set(w / 0.6, h / 0.4); const m = texMesh(new THREE.PlaneGeometry(w, h), t); m.position.set(x, y, z); m.rotation.y = ry || 0; g.add(m); return m; }
+  // halo d'une flamme (et la lumière qui vacille avec)
+  function halo(loc, g, x, y, z, s, color, light, op) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTex, color, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: op || 0.5, fog: false }));
+    sp.position.set(x, y, z); sp.scale.setScalar(s); g.add(sp);
+    const ph = hash2(Math.round(x * 7), Math.round(z * 7), 2) * 10, i0 = light ? light.intensity : 0, o0 = op || 0.5;
+    live(loc, (t) => { const f = 0.9 + 0.06 * Math.sin(t * 9 + ph) + 0.05 * Math.sin(t * 23.7 + ph * 2); sp.material.opacity = o0 * f; if (light) light.intensity = i0 * f; });
+    return sp;
+  }
+  // une nappe de brume qui glisse
+  function mist(loc, g, x, y, z, w, h, op, speed, color) {
+    const t = mistTex.clone(); t.needsUpdate = true; t.repeat.set(1.6, 1);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: t, color, transparent: true, opacity: op, depthWrite: false, fog: false }));
+    m.position.set(x, y, z); g.add(m);
+    live(loc, (tt) => { t.offset.x = (tt * speed) % 1; });
+    return m;
+  }
+  // une lumière qui porte des ombres : 1 = la principale du lieu (toujours), 2 = une seconde (pas sur téléphone)
+  function shadowLight(l, rank) { l.userData.shadow = rank; l.castShadow = rank === 1 || Q.shadows2; l.shadow.mapSize.set(Q.shadowMap, Q.shadowMap); l.shadow.bias = l.isPointLight ? -0.004 : -0.0008; return l; }
   const SC = {};
   const SPOT_AT = {};
   const spotAt = (loc, id, x, y, z) => { (SPOT_AT[loc] || (SPOT_AT[loc] = {}))[id] = new THREE.Vector3(x, y, z); };
@@ -373,211 +476,377 @@
 
   // ---------------------------------------------------------------- chambre 12 (on regarde vers la porte-fenêtre, au sud)
   (() => {
-    const g = makeScene('chambre', { cam: [0.9, 2.5, 5.6], look: [-0.3, 1.25, -2], bg: 0x141826, fog: [14, 40] });
+    const g = makeScene('chambre', { cam: [0.9, 2.5, 5.6], look: [-0.3, 1.3, -2], bg: 0x262a38, dens: 0.022, amb: 0.42 });
     const P = [], G = [];
-    box(P, 0, -0.1, 0, 8.4, 0.1, 7.4, 0x6e3f2c);
-    for (let i = -4; i < 4; i++) box(P, i + 0.5, -0.02, 0, 0.04, 0.03, 7.4, 0x4a2e22);
-    box(P, -0.6, -0.01, -0.4, 4, 0.02, 3, 0x8a2a2e); box(P, -0.6, -0.005, -0.4, 3.6, 0.02, 2.6, 0x6e1a24);
-    // murs : fond (avec l'ouverture de la porte-fenêtre), gauche
-    box(P, -2.3, 0, -3.6, 3.4, 3.6, 0.2, 0x2f4a3a); box(P, 3.25, 0, -3.6, 1.5, 3.6, 0.2, 0x2f4a3a); box(P, 1.2, 2.9, -3.6, 2.6, 0.7, 0.2, 0x2f4a3a);
-    box(P, -4.1, 0, 0, 0.2, 3.6, 7.4, 0x6e1a24);
-    box(P, -2.3, 0, -3.48, 3.4, 0.9, 0.06, 0x4a2e22); box(P, -4.0, 0, 0, 0.06, 0.9, 7.4, 0x4a2e22);
-    for (let i = 0; i < 7; i++) box(P, -3.7 + i * 0.5, 1.2, -3.49, 0.04, 2.3, 0.02, 0x3f6a4a);
+    box(P, 0, -0.1, 0, 8.4, 0.1, 7.4, 0x5a3e2c);
+    for (let i = -4; i < 4; i++) box(P, i + 0.5, -0.02, 0, 0.03, 0.03, 7.4, 0x3a2a22);
+    const rug = texMesh(new THREE.PlaneGeometry(4.2, 3.1).rotateX(-Math.PI / 2), rugTex); rug.position.set(-0.6, 0.015, -0.4); g.add(rug);
+    // murs : papier peint au-dessus d'un lambris (l'ouverture de la porte-fenêtre laissée libre), cimaise, moulure haute
+    paper(g, 'vert', 4.2, 3.6, -2.1, 1.8, -3.49); paper(g, 'vert', 1.8, 3.6, 3.3, 1.8, -3.49); paper(g, 'vert', 2.4, 0.7, 1.2, 3.25, -3.49); paper(g, 'vert', 7.4, 3.6, -4.02, 1.8, 0, Math.PI / 2);
+    box(P, -2.1, 0, -3.62, 4.2, 3.6, 0.2, 0x24382c); box(P, 3.3, 0, -3.62, 1.8, 3.6, 0.2, 0x24382c); box(P, 1.2, 2.9, -3.62, 2.4, 0.7, 0.2, 0x24382c); box(P, -4.15, 0, 0, 0.2, 3.6, 7.4, 0x24382c);
+    box(P, -2.1, 0, -3.44, 4.2, 0.95, 0.06, 0x3a2a22); box(P, 3.3, 0, -3.44, 1.8, 0.95, 0.06, 0x3a2a22); box(P, -3.95, 0, 0, 0.06, 0.95, 7.4, 0x3a2a22);
+    box(P, -2.1, 0.95, -3.42, 4.2, 0.05, 0.08, 0x8a5a36); box(P, 3.3, 0.95, -3.42, 1.8, 0.05, 0.08, 0x8a5a36); box(P, -3.93, 0.95, 0, 0.08, 0.05, 7.4, 0x8a5a36);
+    box(P, 0, 3.3, -3.42, 8.4, 0.12, 0.1, 0xbfa878); box(P, -3.93, 3.3, 0, 0.1, 0.12, 7.4, 0xbfa878);
     // porte-fenêtre : cadre, battants (l'un entrouvert), loquet doré
-    box(P, 0.02, 0, -3.55, 0.12, 2.9, 0.22, 0xe8dcc0); box(P, 2.38, 0, -3.55, 0.12, 2.9, 0.22, 0xe8dcc0); box(P, 1.2, 2.82, -3.55, 2.48, 0.12, 0.22, 0xe8dcc0);
-    box(P, 0.62, 0, -3.5, 1.1, 2.8, 0.05, 0xe8dcc0); box(P, 0.62, 0.2, -3.47, 0.9, 2.4, 0.03, 0x1e2448);
-    box(P, 0.62, 1.4, -3.46, 0.9, 0.05, 0.03, 0xe8dcc0); box(P, 0.62, 0.2, -3.46, 0.05, 2.4, 0.03, 0xe8dcc0);
-    box(P, 1.95, 0, -3.15, 0.05, 2.8, 1.0, 0xe8dcc0, 0); box(P, 1.92, 0.2, -3.15, 0.03, 2.4, 0.8, 0x1e2448);
-    box(P, 1.12, 1.3, -3.44, 0.1, 0.2, 0.05, 0xc9a24a);
-    spotAt('chambre', 'loquet', 1.12, 1.4, -3.4);
-    // le balcon, la rambarde, la séparation basse vers la 14 (à gauche : l'est)
-    box(P, 1.2, -0.1, -4.6, 6, 0.12, 1.8, 0xb8b4c0);
-    for (let i = 0; i <= 12; i++) box(P, -1.8 + i * 0.5, 0, -5.45, 0.05, 1.0, 0.05, 0x24242e);
-    box(P, 1.2, 1.0, -5.45, 6, 0.07, 0.08, 0x24242e);
-    box(P, -0.45, 0, -4.55, 0.05, 0.55, 1.75, 0x24242e); box(P, -0.45, 0.55, -4.55, 0.07, 0.05, 1.8, 0x24242e);
+    box(P, 0.02, 0, -3.42, 0.12, 2.9, 0.12, 0xe8dcc0); box(P, 2.38, 0, -3.42, 0.12, 2.9, 0.12, 0xe8dcc0); box(P, 1.2, 2.82, -3.42, 2.48, 0.12, 0.12, 0xe8dcc0);
+    box(P, 0.62, 0, -3.38, 1.1, 2.8, 0.04, 0xe8dcc0); box(P, 0.62, 0.2, -3.35, 0.9, 2.4, 0.02, 0x5c6480);
+    box(P, 0.62, 1.4, -3.34, 0.9, 0.05, 0.03, 0xe8dcc0); box(P, 0.62, 0.2, -3.34, 0.05, 2.4, 0.03, 0xe8dcc0);
+    box(P, 1.95, 0, -3.05, 0.05, 2.8, 0.9, 0xe8dcc0); box(P, 1.92, 0.2, -3.05, 0.02, 2.4, 0.7, 0x5c6480);
+    box(P, 1.12, 1.3, -3.32, 0.1, 0.2, 0.05, 0xc9a24a);
+    spotAt('chambre', 'loquet', 1.12, 1.4, -3.28);
+    // rideaux de velours et lambrequin
+    for (const [x, s] of [[-0.35, 1], [2.75, -1]]) { for (let k = 0; k < 4; k++) box(P, x + s * k * 0.12, 0, -3.3 + (k % 2) * 0.05, 0.16, 3.1, 0.12, k % 2 ? 0x6e1a24 : 0x8a2a2e); box(P, x + s * 0.2, 1.1, -3.22, 0.5, 0.08, 0.1, 0xc9a24a); }
+    box(P, 1.2, 3.0, -3.25, 3.6, 0.45, 0.16, 0x6e1a24); for (let x = -0.5; x < 2.9; x += 0.3) box(P, x, 2.9, -3.16, 0.12, 0.12, 0.04, 0xc9a24a);
+    // le balcon, la rambarde, la séparation basse vers la 14 (à gauche : l'est), les miettes
+    box(P, 1.2, -0.1, -4.6, 6, 0.12, 1.8, 0x9aa0b4);
+    for (let i = 0; i <= 24; i++) box(P, -1.8 + i * 0.25, 0, -5.45, 0.04, 1.0, 0.04, 0x262a38);
+    box(P, 1.2, 1.0, -5.45, 6, 0.07, 0.08, 0x262a38); box(P, -0.45, 0, -4.55, 0.05, 0.55, 1.75, 0x262a38); box(P, -0.45, 0.55, -4.55, 0.07, 0.05, 1.8, 0x262a38);
     G.push({ geo: GEO.BOX, m: mtx(-0.47, 0.6, -4.3, 0, 0.04, 0.02, 0.3), c: 0xb87a4a });
     spotAt('chambre', 'balcon', -0.45, 0.9, -4.7);
     // dehors : la mer dans le brouillard, quelques lumières
-    box(P, 0, -6, -40, 120, 0.1, 60, 0x1e3a4a);
-    for (let i = 0; i < 9; i++) G.push({ geo: GEO.BOX, m: mtx(-20 + i * 6, -5.5, -30 - (i % 3) * 6, 0, 0.3, 0.3, 0.3), c: 0xffd060 });
-    // bureau, dossier vide, encrier, lampe
-    box(P, -2.0, 0, -2.7, 2.1, 0.78, 0.9, 0x4a2e22); box(P, -2.0, 0.78, -2.7, 2.2, 0.07, 1.0, 0x6e3f2c);
+    box(P, 0, -6, -40, 120, 0.1, 60, 0x343a4e);
+    for (let i = 0; i < 9; i++) G.push({ geo: GEO.BOX, m: mtx(-20 + i * 6, -5.5, -30 - (i % 3) * 6, 0, 0.3, 0.3, 0.3), c: 0xffe0a8 });
+    // cheminée de marbre, braises, miroir, pendule, appliques à gaz
+    box(P, -3.75, 0, -2.0, 0.5, 1.15, 1.5, 0xd8d4dc); box(P, -3.7, 1.15, -2.0, 0.62, 0.08, 1.75, 0xbcc0cc);
+    box(P, -3.6, 0, -2.0, 0.3, 0.75, 0.8, 0x060608); G.push({ geo: GEO.BOX, m: mtx(-3.58, 0.12, -2.0, 0, 0.26, 0.12, 0.6), c: 0xe8a860 }); G.push({ geo: GEO.BOX, m: mtx(-3.57, 0.2, -1.95, 0, 0.2, 0.06, 0.3), c: 0xffe0a8 });
+    box(P, -3.92, 1.35, -2.0, 0.06, 1.15, 1.1, 0xc9a24a); box(P, -3.89, 1.43, -2.0, 0.03, 0.98, 0.94, 0x464e66);
+    box(P, -3.65, 1.23, -2.0, 0.22, 0.3, 0.32, 0x3a2a22); box(P, -3.53, 1.31, -2.0, 0.02, 0.16, 0.16, 0xe8dcc0);
+    for (const z of [-2.55, -1.45]) cyl(P, -3.65, 1.23, z, 0.05, 0.25, 0xc9a24a);
+    for (const z of [-0.9, -3.0]) { box(P, -3.93, 2.2, z, 0.08, 0.06, 0.3, 0xc9a24a); G.push({ geo: GEO.SPH, m: mtx(-3.75, 2.42, z, 0, 0.14), c: 0xffe0a8 }); }
+    // bureau, dossier vide, encrier, lampe à huile, chaise
+    box(P, -2.0, 0, -2.7, 2.1, 0.78, 0.9, 0x44301e); box(P, -2.0, 0.78, -2.7, 2.2, 0.07, 1.0, 0x5a3e2c);
     box(P, -1.85, 0.85, -2.55, 0.62, 0.02, 0.44, 0x6e3f2c); box(P, -1.25, 0.85, -2.55, 0.62, 0.02, 0.44, 0x94573a);
     box(P, -2.7, 0.85, -2.7, 0.16, 0.12, 0.16, 0x060608); box(P, -2.45, 0.85, -2.9, 0.5, 0.01, 0.34, 0xe8dcc0);
-    box(P, -2.85, 0.85, -3.0, 0.14, 0.4, 0.14, 0xc9a24a); G.push({ geo: GEO.CONE7, m: mtx(-2.85, 1.35, -3.0, 0, 0.26, 0.24, 0.26), c: 0x6a8a5a });
-    box(P, -1.6, 0, -1.9, 0.5, 0.5, 0.5, 0x6e3f2c); box(P, -1.6, 0.5, -2.12, 0.5, 0.6, 0.06, 0x6e3f2c);
+    box(P, -2.85, 0.85, -3.0, 0.16, 0.06, 0.16, 0xc9a24a); cyl(P, -2.85, 0.9, -3.0, 0.07, 0.3, 0xc9a24a); G.push({ geo: GEO.SPH, m: mtx(-2.85, 1.38, -3.0, 0, 0.16, 0.2, 0.16), c: 0xffe0a8 });
+    box(P, -1.6, 0, -1.9, 0.5, 0.5, 0.5, 0x5a3e2c); box(P, -1.6, 0.5, -2.12, 0.5, 0.6, 0.06, 0x5a3e2c);
     spotAt('chambre', 'dossier', -1.55, 1.05, -2.55);
-    // lit, armoire, porte de la chambre (mur de gauche, devant), applique
-    box(P, -3.15, 0, 0.4, 1.7, 0.5, 2.2, 0x4a2e22); box(P, -3.15, 0.5, 0.45, 1.6, 0.18, 2.1, 0xf4f4f8); box(P, -3.15, 0.68, -0.4, 1.4, 0.16, 0.45, 0xffffff);
-    box(P, -3.15, 0.5, 0.95, 1.62, 0.2, 1.1, 0x8a2a2e); box(P, -3.15, 0, -0.75, 1.7, 1.3, 0.12, 0x4a2e22);
-    box(P, 3.5, 0, -2.4, 1.1, 2.6, 0.7, 0x4a2e22); box(P, 3.5, 0.1, -2.04, 0.02, 2.4, 0.02, 0x2a1a12);
-    box(P, -3.98, 0, 2.3, 0.1, 2.4, 1.1, 0x4a2e22); box(P, -3.92, 1.05, 1.9, 0.08, 0.1, 0.1, 0xc9a24a); box(P, -3.92, 1.2, 1.9, 0.06, 0.12, 0.06, 0xc9a24a);
+    // lit à colonnes, édredon, table de chevet et bougie
+    box(P, -3.15, 0, 0.4, 1.7, 0.5, 2.2, 0x44301e); box(P, -3.15, 0.5, 0.45, 1.6, 0.18, 2.1, 0xf4f4f8); box(P, -3.15, 0.68, -0.4, 1.4, 0.16, 0.45, 0xffffff);
+    box(P, -3.15, 0.5, 0.95, 1.62, 0.22, 1.1, 0x6e1a24); for (let k = 0; k < 4; k++) box(P, -3.15, 0.72, 0.5 + k * 0.28, 1.62, 0.01, 0.04, 0xc9a24a);
+    box(P, -3.15, 0, -0.75, 1.7, 1.5, 0.12, 0x44301e); for (const x of [-3.95, -2.35]) { cyl(P, x, 0, -0.75, 0.06, 2.2, 0x44301e); cyl(P, x, 0, 1.45, 0.05, 1.0, 0x44301e); }
+    box(P, -1.95, 0, -0.75, 0.5, 0.65, 0.45, 0x44301e); cyl(P, -1.95, 0.65, -0.75, 0.05, 0.16, 0xf4f4f8); G.push({ geo: GEO.BOX, m: mtx(-1.95, 0.86, -0.75, 0, 0.03, 0.06, 0.03), c: 0xffe0a8 });
+    // armoire, table de toilette (marbre, broc, cuvette), porte de la chambre
+    box(P, 3.5, 0, -2.4, 1.1, 2.6, 0.7, 0x44301e); box(P, 3.5, 0.1, -2.04, 0.02, 2.4, 0.02, 0x2a1a12); box(P, 3.5, 2.6, -2.4, 1.25, 0.15, 0.8, 0x5a3e2c);
+    box(P, 3.55, 0, -0.7, 0.7, 0.8, 1.2, 0x44301e); box(P, 3.55, 0.8, -0.7, 0.78, 0.06, 1.3, 0xd8d4dc);
+    cyl(P, 3.5, 0.86, -0.85, 0.3, 0.12, 0xf4f4f8); cyl(P, 3.55, 0.86, -0.4, 0.11, 0.38, 0xf4f4f8);
+    box(P, -3.98, 0, 2.3, 0.1, 2.4, 1.1, 0x44301e); box(P, -3.92, 1.05, 1.9, 0.08, 0.1, 0.1, 0xc9a24a); box(P, -3.92, 1.2, 1.9, 0.06, 0.12, 0.06, 0xc9a24a);
     spotAt('chambre', 'serrure', -3.9, 1.2, 1.9);
-    G.push({ geo: GEO.BOX, m: mtx(-3.95, 2.35, -1.6, 0, 0.12, 0.3, 0.2), c: 0xfff2a0 });
     g.add(mesh(P), mesh(G, true));
-    const l1 = new THREE.PointLight(0xffc890, 1.3, 10, 1.4); l1.position.set(-2.6, 1.6, -2.4); g.add(l1);
-    const l2 = new THREE.PointLight(0xffc890, 0.9, 9, 1.4); l2.position.set(-3.4, 2.4, -1.5); g.add(l2);
+    // lumières : lampe du bureau, appliques, braises, la nuit bleue derrière la vitre
+    const l1 = shadowLight(new THREE.PointLight(0xffc080, 1.25, 7, 1.6), 1); l1.position.set(-2.85, 1.5, -2.7); g.add(l1); halo('chambre', g, -2.85, 1.38, -2.95, 1.6, 0xffb060, l1);
+    const l2 = new THREE.PointLight(0xffc890, 0.6, 6, 1.6); l2.position.set(-3.6, 2.45, -0.9); g.add(l2); halo('chambre', g, -3.75, 2.42, -0.9, 1.1, 0xffc070, l2); halo('chambre', g, -3.75, 2.42, -3.0, 1.1, 0xffc070);
+    const fire = shadowLight(new THREE.PointLight(0xff8a40, 0.9, 4.5, 1.5), 2); fire.position.set(-3.3, 0.35, -2.0); g.add(fire); halo('chambre', g, -3.5, 0.25, -2.0, 1.4, 0xff8a40, fire);
+    const blue = new THREE.PointLight(0x7a8aa8, 0.45, 8, 1.4); blue.position.set(1.2, 2.0, -5.0); g.add(blue);
+    mist('chambre', g, 1, 0.4, -7.5, 18, 4, 0.7, 0.01, 0x9aa0b4); mist('chambre', g, 1, 1.6, -12, 30, 6, 0.6, -0.006, 0x767e98);
     gull(g, 0.9, 1.06, -5.45, EAST_IN); gull(g, 2.7, 1.06, -5.45, EAST_IN); gull(g, -1.4, 1.06, -5.45, EAST_IN, 1.3);
-    const W = person({ coat: 0x6a6878, legs: 0x4a4a58, hair: 0xd8d4dc, beard: 0xd8d4dc, specs: true, sleeve: 0x6a6878 });
-    W.position.set(-0.3, 0, -1.6); W.rotation.y = 0.25; g.add(W); spotAt('chambre', 'whitcombe', -0.3, 2.15, -1.6);
-    const M = person({ coat: 0x24242e, dress: 0x24242e, apron: true, hair: 0x6e3f2c, bun: true, hat: 'pill', hatC: 0xf4f4f8 });
-    M.position.set(-2.1, 0, 0.9); M.rotation.y = 0.55; g.add(M); spotAt('chambre', 'mary', -2.1, 2.1, 0.9);
+    place('chambre', g, person({ coat: 0x6a6878, legs: 0x4a4a58, hair: 0xd8d4dc, beard: 0xd8d4dc, specs: true, sleeve: 0x6a6878 }), -0.3, -1.6, 0.25); spotAt('chambre', 'whitcombe', -0.3, 2.15, -1.6);
+    place('chambre', g, person({ coat: 0x24242e, dress: 0x24242e, apron: true, hair: 0x6e3f2c, bun: true, hat: 'pill', hatC: 0xf4f4f8 }), -2.1, 0.9, 0.55); spotAt('chambre', 'mary', -2.1, 2.1, 0.9);
   })();
 
-  // ---------------------------------------------------------------- le hall du Grand Hôtel
+  // ---------------------------------------------------------------- le hall du Grand Hôtel, à la lumière du lustre
   (() => {
-    const g = makeScene('hall', { cam: [0.6, 2.9, 6.6], look: [0, 1.2, -2], bg: 0x141826, fog: [14, 40] });
+    const g = makeScene('hall', { cam: [0.6, 2.9, 6.6], look: [0, 1.3, -2], bg: 0x262a38, dens: 0.02, amb: 0.26 });
     const P = [], G = [];
-    for (let i = -5; i < 5; i++) for (let j = -4; j < 4; j++) box(P, i + 0.5, -0.1, j + 0.5, 1, 0.1, 1, (i + j) & 1 ? 0x24242e : 0xe8dcc0);
-    box(P, 0, 0, -4.1, 10, 4.2, 0.2, 0xd8c8a0); box(P, 0, 0, -3.98, 10, 1.0, 0.05, 0x4a2e22); box(P, 0, 3.6, -3.98, 10, 0.2, 0.06, 0xc9a24a);
-    box(P, -5.1, 0, 0, 0.2, 4.2, 8, 0xd8c8a0); box(P, -5.0, 0, 0, 0.05, 1.0, 8, 0x4a2e22);
+    for (let i = -5; i < 5; i++) for (let j = -4; j < 4; j++) box(P, i + 0.5, -0.1, j + 0.5, 1, 0.1, 1, (i + j) & 1 ? 0x24242e : 0xb8b4c0);
+    // murs : damas rouge au-dessus d'un haut lambris, corniche dorée
+    paper(g, 'rouge', 10, 3.0, 0, 2.6, -3.99); paper(g, 'rouge', 8, 3.0, -5.0, 2.6, 0, Math.PI / 2);
+    box(P, 0, 0, -4.12, 10, 4.2, 0.2, 0x4e1418); box(P, -5.13, 0, 0, 0.2, 4.2, 8, 0x4e1418);
+    box(P, 0, 0, -3.96, 10, 1.1, 0.06, 0x44301e); box(P, -4.97, 0, 0, 0.06, 1.1, 8, 0x44301e);
+    for (let x = -4.5; x < 5; x += 1.0) box(P, x, 0.15, -3.92, 0.7, 0.8, 0.02, 0x5a3e2c);
+    box(P, 0, 1.1, -3.93, 10, 0.06, 0.08, 0xc9a24a); box(P, -4.94, 1.1, 0, 0.08, 0.06, 8, 0xc9a24a);
+    box(P, 0, 4.0, -3.94, 10, 0.2, 0.12, 0xc9a24a); box(P, -4.95, 4.0, 0, 0.12, 0.2, 8, 0xc9a24a);
+    // un grand tableau de marine et un miroir doré
+    box(P, -4.93, 1.7, -1.5, 0.06, 1.3, 2.0, 0xc9a24a); box(P, -4.9, 1.78, -1.5, 0.03, 1.14, 1.84, 0x2a5260); box(P, -4.89, 1.78, -1.5, 0.03, 0.4, 1.84, 0x6a9aa0); box(P, -4.88, 2.0, -1.2, 0.02, 0.3, 0.2, 0xf4f4f8);
+    box(P, -2.2, 1.6, -3.9, 1.0, 1.5, 0.06, 0xc9a24a); box(P, -2.2, 1.68, -3.86, 0.86, 1.34, 0.02, 0x464e66);
     // comptoir, sonnette, registre ouvert
-    box(P, 1.4, 0, -2.4, 4.2, 1.05, 0.7, 0x6e1a24); box(P, 1.4, 1.05, -2.4, 4.4, 0.08, 0.85, 0x4a2e22); box(P, 1.4, 0.15, -2.03, 4.2, 0.06, 0.02, 0xc9a24a);
+    box(P, 1.4, 0, -2.4, 4.2, 1.05, 0.7, 0x6e1a24); box(P, 1.4, 1.05, -2.4, 4.4, 0.08, 0.85, 0x44301e); box(P, 1.4, 0.15, -2.03, 4.2, 0.06, 0.02, 0xc9a24a);
+    for (let x = -0.4; x < 3.3; x += 0.7) box(P, x, 0.3, -2.04, 0.5, 0.6, 0.02, 0x8a2a2e);
     box(P, 0.2, 1.13, -2.35, 0.7, 0.03, 0.5, 0xf4f4f8); box(P, 0.2, 1.13, -2.35, 0.03, 0.05, 0.5, 0x6e1a24);
     spotAt('hall', 'registre', 0.2, 1.3, -2.3);
     sph(P, 2.6, 1.17, -2.3, 0.09, 0xc9a24a, 0.06);
     // tableau des clés derrière le comptoir, le passe-partout au pompon rouge
-    box(P, 1.9, 1.3, -3.95, 2.2, 1.6, 0.08, 0x4a2e22);
-    for (let i = 0; i < 6; i++) for (let j = 0; j < 4; j++) { box(P, 1.05 + i * 0.34, 1.45 + j * 0.36, -3.9, 0.04, 0.04, 0.06, 0xc9a24a); box(P, 1.05 + i * 0.34, 1.32 + j * 0.36, -3.88, 0.05, 0.14, 0.02, 0xf2c81e); }
-    box(P, 2.9, 1.32, -3.86, 0.1, 0.28, 0.03, 0xf2c81e); box(P, 2.9, 1.18, -3.86, 0.08, 0.12, 0.04, 0xd0343a);
-    spotAt('hall', 'passe', 2.9, 1.6, -3.8);
-    // escalier, palmier, fauteuils, lustre
-    for (let i = 0; i < 9; i++) box(P, 4.3, i * 0.3, -1.2 - i * 0.35, 1.4, 0.3, 0.4, 0x6e1a24);
-    box(P, 3.55, 0, -2.6, 0.08, 3.6, 0.08, 0x4a2e22);
+    box(P, 1.9, 1.3, -3.88, 2.2, 1.6, 0.08, 0x44301e);
+    for (let i = 0; i < 6; i++) for (let j = 0; j < 4; j++) { box(P, 1.05 + i * 0.34, 1.45 + j * 0.36, -3.83, 0.04, 0.04, 0.06, 0xc9a24a); box(P, 1.05 + i * 0.34, 1.32 + j * 0.36, -3.81, 0.05, 0.14, 0.02, 0xf2c81e); }
+    box(P, 2.9, 1.32, -3.79, 0.1, 0.28, 0.03, 0xf2c81e); box(P, 2.9, 1.18, -3.79, 0.08, 0.12, 0.04, 0xd0343a);
+    spotAt('hall', 'passe', 2.9, 1.6, -3.75);
+    // escalier au tapis rouge (tringles de laiton), rampe, palmier, fauteuils, guéridon et journaux, porte-parapluies
+    for (let i = 0; i < 9; i++) { box(P, 4.3, i * 0.3, -1.2 - i * 0.35, 1.4, 0.3, 0.4, 0x44301e); box(P, 4.3, i * 0.3 + 0.3, -1.2 - i * 0.35, 1.0, 0.02, 0.42, 0x8a2a2e); box(P, 4.3, i * 0.3 + 0.31, -1.02 - i * 0.35, 1.0, 0.03, 0.03, 0xc9a24a); }
+    box(P, 3.55, 0, -2.6, 0.08, 3.6, 0.08, 0x44301e);
+    for (let i = 0; i < 8; i++) box(P, 3.58, 0.4 + i * 0.3, -1.25 - i * 0.35, 0.04, 0.9, 0.04, 0x44301e);
+    P.push({ geo: GEO.BOX, m: new THREE.Matrix4().makeTranslation(3.58, 2.2, -2.6).multiply(new THREE.Matrix4().makeRotationX(0.7)).multiply(new THREE.Matrix4().makeScale(0.08, 0.08, 3.8)), c: 0x5a3e2c });
     cyl(P, -4.2, 0, -3.2, 0.32, 0.6, 0x94573a);
-    for (let i = 0; i < 6; i++) { const a = i * 1.05; P.push({ geo: GEO.BOX, m: mtx(-4.2 + Math.sin(a) * 0.45, 1.5, -3.2 + Math.cos(a) * 0.45, a, 0.18, 0.04, 1.1), c: 0x3f6a4a }); }
-    box(P, -4.2, 0.6, -3.2, 0.08, 0.9, 0.08, 0x4a2e22);
-    for (const [x, z, r] of [[-3.3, -0.2, 0.5], [-1.9, 0.4, -0.3]]) { box(P, x, 0, z, 0.9, 0.45, 0.85, 0x8a2a2e, r); box(P, x - Math.sin(r) * 0.38, 0.45, z - Math.cos(r) * 0.38, 0.9, 0.7, 0.15, 0x8a2a2e, r); }
-    cyl(P, -2.6, 0, -1.1, 0.35, 0.55, 0x4a2e22);
-    G.push({ geo: GEO.SPH, m: mtx(0, 3.3, -0.5, 0, 0.45, 0.25, 0.45), c: 0xfff2a0 }); box(P, 0, 3.55, -0.5, 0.04, 0.6, 0.04, 0xc9a24a);
-    for (let i = 0; i < 6; i++) { const a = i * 1.047; G.push({ geo: GEO.BOX, m: mtx(Math.sin(a) * 0.6, 3.2, -0.5 + Math.cos(a) * 0.6, 0, 0.08, 0.14, 0.08), c: 0xffd060 }); }
+    for (let i = 0; i < 7; i++) { const a = i * 0.9; P.push({ geo: GEO.BOX, m: mtx(-4.2 + Math.sin(a) * 0.45, 1.5 + (i % 2) * 0.15, -3.2 + Math.cos(a) * 0.45, a, 0.18, 0.04, 1.1), c: i % 2 ? 0x3f6a4a : 0x2f4a3a }); }
+    box(P, -4.2, 0.6, -3.2, 0.08, 0.9, 0.08, 0x44301e);
+    for (const [x, z, r] of [[-3.3, -0.2, 0.5], [-1.9, 0.4, -0.3]]) { box(P, x, 0, z, 0.9, 0.45, 0.85, 0x8a2a2e, r); box(P, x - Math.sin(r) * 0.38, 0.45, z - Math.cos(r) * 0.38, 0.9, 0.7, 0.15, 0x8a2a2e, r); box(P, x, 0.45, z, 0.8, 0.06, 0.7, 0x6e1a24, r); }
+    cyl(P, -2.6, 0, -1.1, 0.35, 0.55, 0x44301e); box(P, -2.65, 0.55, -1.1, 0.42, 0.02, 0.3, 0xe8dcc0); box(P, -2.5, 0.57, -1.0, 0.3, 0.02, 0.36, 0xd8c8a0);
+    cyl(P, -4.4, 0, 1.6, 0.16, 0.6, 0x262a38); box(P, -4.4, 0.5, 1.6, 0.03, 0.5, 0.03, 0x2a1a12);
+    // le lustre à gaz
+    box(P, 0, 3.55, -0.5, 0.04, 0.8, 0.04, 0xc9a24a); cyl(P, 0, 3.2, -0.5, 0.5, 0.06, 0xc9a24a);
+    for (let i = 0; i < 6; i++) { const a = i * 1.047; G.push({ geo: GEO.SPH, m: mtx(Math.sin(a) * 0.6, 3.35, -0.5 + Math.cos(a) * 0.6, 0, 0.1, 0.13, 0.1), c: 0xffe0a8 }); }
+    // appliques murales
+    for (const x of [-3.6, 0.2, 3.0]) { box(P, x, 2.4, -3.95, 0.06, 0.06, 0.2, 0xc9a24a); G.push({ geo: GEO.SPH, m: mtx(x, 2.55, -3.82, 0, 0.12), c: 0xffe0a8 }); }
     g.add(mesh(P), mesh(G, true));
-    const l1 = new THREE.PointLight(0xffd8a0, 1.6, 14, 1.3); l1.position.set(0, 3, -0.5); g.add(l1);
-    const T = person({ coat: 0xb83a3a, legs: 0x24242e, collar: 0xc9a24a, hat: 'pill', hatC: 0xb83a3a, hair: 0xb87a4a });
-    T.position.set(2.0, 0, -3.25); g.add(T); spotAt('hall', 'tobias', 2.0, 2.15, -3.25);
-    const R = person({ coat: 0x24242e, legs: 0x4a4a58, tails: true, hat: 'top', stache: 0x8f8c9c, hair: 0x8f8c9c, extra: (P2) => { box(P2, 0.45, 0, 0.15, 0.04, 0.95, 0.04, 0x2a1a12); sph(P2, 0.45, 0.97, 0.15, 0.05, 0xc9a24a); } });
-    R.position.set(-3.4, 0, 0.75); R.rotation.y = 0.35; g.add(R); spotAt('hall', 'sir', -3.4, 2.35, 0.75);
+    const l1 = shadowLight(new THREE.PointLight(0xffd0a0, 1.3, 13, 1.4), 1); l1.position.set(0, 2.95, -0.5); g.add(l1); halo('hall', g, 0, 3.35, -0.5, 3.2, 0xffc070, l1, 0.45);
+    for (const x of [-3.6, 0.2, 3.0]) halo('hall', g, x, 2.55, -3.8, 1.1, 0xffc070);
+    const l2 = new THREE.PointLight(0xffc890, 0.55, 6, 1.6); l2.position.set(-3.6, 2.5, -3.4); g.add(l2);
+    const l3 = new THREE.PointLight(0xffc890, 0.55, 6, 1.6); l3.position.set(3.0, 2.5, -3.4); g.add(l3);
+    place('hall', g, person({ coat: 0xb83a3a, legs: 0x24242e, collar: 0xc9a24a, hat: 'pill', hatC: 0xb83a3a, hair: 0xb87a4a }), 2.0, -3.25, 0); spotAt('hall', 'tobias', 2.0, 2.15, -3.25);
+    place('hall', g, person({ coat: 0x24242e, legs: 0x4a4a58, tails: true, hat: 'top', stache: 0x8f8c9c, hair: 0x8f8c9c, extra: (P2) => { box(P2, 0.45, 0, 0.15, 0.04, 0.95, 0.04, 0x2a1a12); sph(P2, 0.45, 0.97, 0.15, 0.05, 0xc9a24a); } }), -3.4, 0.75, 0.35); spotAt('hall', 'sir', -3.4, 2.35, 0.75);
     const hb = []; cyl(hb, -2.85, 0, 1.25, 0.3, 0.42, 0xd29a64); box(hb, -2.85, 0.2, 1.25, 0.62, 0.05, 0.62, 0x6e1a24); g.add(mesh(hb));
-    const Pn = person({ coat: 0x2f4a8a, dress: 0x2f4a8a, hair: 0xb87a4a, bun: true, hat: 'bonnet', hatC: 0x4a6ab8 });
-    Pn.position.set(-1.0, 0, -1.4); Pn.rotation.y = 0.15; g.add(Pn); spotAt('hall', 'penrose', -1.0, 2.15, -1.4);
+    place('hall', g, person({ coat: 0x2f4a8a, dress: 0x2f4a8a, hair: 0xb87a4a, bun: true, hat: 'bonnet', hatC: 0x4a6ab8 }), -1.0, -1.4, 0.15); spotAt('hall', 'penrose', -1.0, 2.15, -1.4);
   })();
 
   // ---------------------------------------------------------------- la jetée Ouest (on regarde vers le large, au sud : l'est est à gauche)
   (() => {
-    const g = makeScene('jetee', { cam: [3.6, 4.4, 8.5], look: [-0.2, 2.2, -4], bg: 0x1e2448, fog: [10, 46] });
+    const g = makeScene('jetee', { cam: [3.6, 4.4, 8.5], look: [-0.2, 2.2, -4], bg: 0x343a4e, dens: 0.022, amb: 0.45 });
     const P = [], G = [], D = 1.6;
-    const sea = new THREE.PlaneGeometry(160, 160, 40, 40).rotateX(-Math.PI / 2); const sp = sea.attributes.position, sc = new Float32Array(sp.count * 3), c = new THREE.Color();
-    for (let i = 0; i < sp.count; i++) { c.set(Pixel.hash2(i, 7, 3) > 0.7 ? 0x2a5260 : 0x1e3a4a); sc[i * 3] = c.r; sc[i * 3 + 1] = c.g; sc[i * 3 + 2] = c.b; sp.setY(i, (Pixel.hash2(i, 3, 1) - 0.5) * 0.15); }
-    sea.setAttribute('color', new THREE.BufferAttribute(sc, 3)); g.add(new THREE.Mesh(sea, lit));
+    // la mer, qui bouge
+    const sea = new THREE.PlaneGeometry(160, 160, 48, 48).rotateX(-Math.PI / 2); const sp = sea.attributes.position, sc = new Float32Array(sp.count * 3), c = new THREE.Color();
+    for (let i = 0; i < sp.count; i++) { c.set(hash2(i, 7, 3) > 0.7 ? 0x2a5260 : 0x1e3a4a); sc[i * 3] = c.r; sc[i * 3 + 1] = c.g; sc[i * 3 + 2] = c.b; }
+    sea.setAttribute('color', new THREE.BufferAttribute(sc, 3));
+    const seaM = new THREE.Mesh(sea, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.32, metalness: 0.15 })); seaM.receiveShadow = true; g.add(seaM);
+    const X0 = new Float32Array(sp.count), Z0 = new Float32Array(sp.count);
+    for (let i = 0; i < sp.count; i++) { X0[i] = sp.getX(i); Z0[i] = sp.getZ(i); }
+    live('jetee', (t) => { for (let i = 0; i < sp.count; i++) sp.setY(i, Math.sin(X0[i] * 0.35 + t * 1.1) * 0.09 + Math.sin(Z0[i] * 0.5 - t * 1.6 + X0[i] * 0.1) * 0.12); sp.needsUpdate = true; });
+    // le platelage, les piles, la rambarde de fonte
     box(P, 0, D - 0.2, -14, 6.4, 0.2, 48, 0x94573a);
     for (let z = 9; z > -38; z -= 0.6) box(P, 0, D, z, 6.3, 0.02, 0.04, 0x6e3f2c);
-    for (let z = 8; z > -38; z -= 4) for (const x of [-2.9, 2.9]) box(P, x, -0.3, z, 0.25, D, 0.25, 0x4a2e22);
-    for (const x of [-3.1, 3.1]) { for (let z = 9; z > -38; z -= 1.5) box(P, x, D, z, 0.08, 1.1, 0.08, 0xe8dcc0); box(P, x, D + 1.1, -14, 0.12, 0.08, 47, 0xf4f4f8); }
+    for (let z = 8; z > -38; z -= 4) for (const x of [-2.9, 2.9]) { box(P, x, -0.3, z, 0.25, D, 0.25, 0x44301e); P.push({ geo: GEO.BOX, m: new THREE.Matrix4().makeTranslation(x, 0.6, z - 1).multiply(new THREE.Matrix4().makeRotationX(0.75)).multiply(new THREE.Matrix4().makeScale(0.08, 0.08, 2.6)), c: 0x44301e }); }
+    for (const x of [-3.1, 3.1]) {
+      for (let z = 9; z > -38; z -= 0.5) box(P, x, D, z, 0.05, 1.1, 0.05, 0xd8d4dc);
+      for (let z = 9; z > -38; z -= 3) { box(P, x, D, z, 0.12, 1.25, 0.12, 0xd8d4dc); sph(P, x, D + 1.3, z, 0.09, 0xd8d4dc); }
+      box(P, x, D + 1.1, -14, 0.12, 0.08, 47, 0xf4f4f8); box(P, x, D + 0.3, -14, 0.06, 0.05, 47, 0xd8d4dc);
+    }
     // la capitainerie, son pupitre, le mât et la flamme (soufflée vers l'ouest, à droite)
     box(P, -1.4, D, -7.5, 2.4, 2.2, 2.1, 0x2f4a3a); P.push({ geo: GEO.CONE4, m: mtx(-1.4, D + 2.6, -7.5, Math.PI / 4, 2.0, 0.9, 1.8), c: 0x8a2a2e });
-    box(P, -1.4, D, -6.43, 0.7, 1.6, 0.05, 0x4a2e22); G.push({ geo: GEO.BOX, m: mtx(-0.6, D + 1.4, -6.43, 0, 0.5, 0.45, 0.04), c: 0xffd060 });
-    box(P, -2.2, D, -6.0, 0.5, 1.0, 0.4, 0x4a2e22, 0.2); box(P, -2.2, D + 1.0, -6.0, 0.62, 0.05, 0.5, 0x6e3f2c, 0.2); box(P, -2.2, D + 1.06, -6.0, 0.4, 0.04, 0.3, 0xf4f4f8, 0.2);
+    box(P, -1.4, D, -6.43, 0.7, 1.6, 0.05, 0x44301e); G.push({ geo: GEO.BOX, m: mtx(-0.6, D + 1.4, -6.43, 0, 0.5, 0.45, 0.04), c: 0xffe0a8 });
+    box(P, -2.2, D, -6.0, 0.5, 1.0, 0.4, 0x44301e, 0.2); box(P, -2.2, D + 1.0, -6.0, 0.62, 0.05, 0.5, 0x6e3f2c, 0.2); box(P, -2.2, D + 1.06, -6.0, 0.4, 0.04, 0.3, 0xf4f4f8, 0.2);
     spotAt('jetee', 'journal', -2.2, D + 1.25, -6.0);
-    box(P, -2.5, D, -8.8, 0.08, 5, 0.08, 0xe8dcc0); P.push({ geo: GEO.BOX, m: mtx(-1.9, D + 4.6, -8.8, 0, 1.1, 0.3, 0.04), c: 0xd0343a });
+    box(P, -2.5, D, -8.8, 0.08, 5, 0.08, 0xe8dcc0);
+    const flag = []; for (let k = 0; k < 5; k++) { const f = new THREE.Mesh(Pixel.mergeParts([{ geo: GEO.BOX, m: mtx(0, 0, 0, 0, 0.24, 0.3 - k * 0.04, 0.03), c: 0xd0343a }]), lit); f.castShadow = true; f.position.set(-2.33 + k * 0.24, D + 4.75, -8.8); g.add(f); flag.push(f); }
+    live('jetee', (t) => flag.forEach((f, k) => { f.position.z = -8.8 + Math.sin(t * 6.5 - k * 0.9) * 0.06 * k; f.position.y = D + 4.75 - k * 0.015 + Math.sin(t * 5 - k) * 0.02 * k; }));
     // le photographe : tente rayée, appareil sur trépied
     for (let i = 0; i < 6; i++) box(P, 2.4, D, -1.6 + i * 0.24 - 0.6, 1.1, 2.1, 0.24, i & 1 ? 0xf4f4f8 : 0xb83a3a);
     P.push({ geo: GEO.CONE4, m: mtx(2.4, D + 2.4, -1.6, Math.PI / 4, 1.0, 0.6, 1.0), c: 0xb83a3a });
     box(P, 1.2, D + 1.15, -0.4, 0.38, 0.34, 0.5, 0x2a1a12); box(P, 1.2, D + 1.22, -0.68, 0.18, 0.18, 0.12, 0x24242e);
     for (const [a, b] of [[-0.15, 0.1], [0.15, 0.1], [0, -0.2]]) box(P, 1.2 + a, D, -0.4 + b, 0.04, 1.15, 0.04, 0x6e3f2c);
-    // réverbères, pavillon au bout de la jetée
+    // les becs de gaz (avec halo), le pavillon du bout de la jetée et ses kiosques
     const lights = [];
-    for (let z = 4; z > -36; z -= 8) { const l = lamp(P, G, 2.9, D, z, 2.6, z > -14 ? 1.1 : 0); if (l) lights.push(l); lamp(P, G, -2.9, D, z - 4, 2.6, 0); }
-    box(P, 0, D, -34, 6, 3, 4, 0xd8c8a0); P.push({ geo: GEO.CONE7, m: mtx(0, D + 4.2, -34, 0, 3.4, 2.4, 3.4), c: 0x3f6a4a });
-    for (let i = 0; i < 5; i++) G.push({ geo: GEO.BOX, m: mtx(-2 + i, D + 1.6, -31.98, 0, 0.4, 0.6, 0.04), c: 0xffd060 });
+    for (let z = 4; z > -36; z -= 8) {
+      const l = lamp(P, G, 2.9, D, z, 2.6, z > -14 ? 1.1 : 0); if (l) { lights.push(l); halo('jetee', g, 2.9, D + 2.8, z, 2.4, 0xffc070, l); } else halo('jetee', g, 2.9, D + 2.8, z, 2.4, 0xffc070);
+      lamp(P, G, -2.9, D, z - 4, 2.6, 0); halo('jetee', g, -2.9, D + 2.8, z - 4, 2.4, 0xffc070);
+    }
+    shadowLight(lights[0], 1);
+    box(P, 0, D, -34, 6, 3, 4, 0xd8c8a0); P.push({ geo: GEO.CONE7, m: mtx(0, D + 4.2, -34, 0, 3.4, 2.4, 3.4), c: 0x3f6a4a }); sph(P, 0, D + 5.5, -34, 0.3, 0xc9a24a);
+    for (const x of [-2.6, 2.6]) { cyl(P, x, D, -30.6, 0.7, 1.8, 0xd8c8a0); sph(P, x, D + 2.3, -30.6, 0.75, 0x3f6a4a, 1.0); box(P, x, D + 3.0, -30.6, 0.05, 0.5, 0.05, 0xc9a24a); }
+    for (let i = 0; i < 5; i++) G.push({ geo: GEO.BOX, m: mtx(-2 + i, D + 1.6, -31.98, 0, 0.4, 0.6, 0.04), c: 0xffe0a8 });
+    halo('jetee', g, 0, D + 1.6, -31.5, 7, 0xffb060, null, 0.35);
     g.add(mesh(P), mesh(G, true)); lights.forEach((l) => g.add(l));
+    // la lune au-dessus du large, et sa lumière froide
+    const moon = new THREE.Mesh(new THREE.SphereGeometry(1.4, 16, 10), new THREE.MeshBasicMaterial({ color: 0xd8d4dc, fog: false })); moon.position.set(-26, 10, -80); g.add(moon); halo('jetee', g, -26, 10, -79, 12, 0x9aa0b4, null, 0.4);
+    const ml = new THREE.DirectionalLight(0xa8b0d0, 0.3); ml.position.set(-26, 10, -80); ml.target.position.set(0, D, -4); g.add(ml, ml.target);
+    mist('jetee', g, 0, 1.0, -16, 70, 4, 0.45, 0.01, 0x9aa0b4); mist('jetee', g, 0, 2.2, -30, 90, 7, 0.45, -0.006, 0x8a90a8);
     // les mouettes sur les rambardes : à 18 h, toutes le bec à l'est
     for (const [x, z] of [[-3.1, 3], [-3.1, 1.5], [-3.1, -0.5], [-3.1, -3], [3.1, 2], [3.1, 0.2], [3.1, -3.5], [3.1, -5], [-3.1, -10], [3.1, -9]]) gull(g, x, D + 1.14, z, EAST_IN);
     spotAt('jetee', 'maintenant', -3.1, D + 1.7, -0.5);
-    const C = person({ coat: 0x1e2448, legs: 0x1e2448, beard: 0xb8b4c0, hair: 0xb8b4c0, hat: 'cap', hatC: 0x1e2448, collar: 0x1e2448, extra: (P2) => { box(P2, 0, 1.2, 0.16, 0.06, 0.06, 0.02, 0xc9a24a); box(P2, 0, 1.0, 0.16, 0.06, 0.06, 0.02, 0xc9a24a); } });
-    C.position.set(-0.7, D, -4.6); C.rotation.y = 0.3; g.add(C); spotAt('jetee', 'crane', -0.7, D + 2.15, -4.6);
-    const Qp = person({ coat: 0x6e3f2c, legs: 0x4a4a58, hat: 'bowler', hatC: 0x2a1a12, stache: 0x4a2e22 });
-    Qp.position.set(1.6, D, 0.6); Qp.rotation.y = -0.3; g.add(Qp); spotAt('jetee', 'quill', 1.6, D + 2.15, 0.6);
+    const C = place('jetee', g, person({ coat: 0x1e2448, legs: 0x1e2448, beard: 0xb8b4c0, hair: 0xb8b4c0, hat: 'cap', hatC: 0x1e2448, collar: 0x1e2448, extra: (P2) => { box(P2, 0, 1.2, 0.16, 0.06, 0.06, 0.02, 0xc9a24a); box(P2, 0, 1.0, 0.16, 0.06, 0.06, 0.02, 0xc9a24a); } }), -0.7, -4.6, 0.3); C.position.y = D; spotAt('jetee', 'crane', -0.7, D + 2.15, -4.6);
+    const Qp = place('jetee', g, person({ coat: 0x6e3f2c, legs: 0x4a4a58, hat: 'bowler', hatC: 0x2a1a12, stache: 0x4a2e22 }), 1.6, 0.6, -0.3); Qp.position.y = D; spotAt('jetee', 'quill', 1.6, D + 2.15, 0.6);
   })();
 
   // ---------------------------------------------------------------- le front de mer, face au Grand Hôtel (on regarde le nord : l'est est à droite)
   const paintTex = { t: null };
   (() => {
-    const g = makeScene('plage', { cam: [-2.2, 3.0, 13.5], look: [1.6, 6.6, -10], bg: 0x1e2448, fog: [18, 80] });
-    const P = [], G = [];
-    box(P, 0, -0.2, 2, 60, 0.2, 18, 0x8f8c9c);
-    for (let i = 0; i < 160; i++) { const x = (Pixel.hash2(i, 1, 5) - 0.5) * 40, z = -5 + Pixel.hash2(i, 2, 5) * 16; box(P, x, -0.06, z, 0.2, 0.08, 0.16, Pixel.hash2(i, 3, 5) > 0.5 ? 0x6a6878 : 0xb8b4c0); }
-    box(P, 0, -0.4, 14, 80, 0.1, 10, 0x1e3a4a);
-    box(P, 0, 0, -5, 60, 1.4, 0.6, 0xd8c8a0); box(P, 0, 1.4, -5.4, 60, 0.1, 1.6, 0xb8b4c0);
-    for (let x = -26; x <= 26; x += 1.2) box(P, x, 1.5, -4.75, 0.06, 0.8, 0.06, 0xe8dcc0);
-    box(P, 0, 2.3, -4.75, 60, 0.06, 0.06, 0xe8dcc0);
-    box(P, 0, 1.4, -8, 60, 0.05, 5, 0x4a4a58);
-    // la façade : cinq étages, enseigne, balcons du premier, corniche
-    const F = -11.5, fx0 = -10, fx1 = 12;
-    box(P, (fx0 + fx1) / 2, 1.4, F, fx1 - fx0, 12, 1, 0xe8dcc0);
-    box(P, (fx0 + fx1) / 2, 13.4, F + 0.2, fx1 - fx0 + 0.6, 0.5, 1.4, 0xd8c8a0);
-    box(P, 0, 4.3, F + 0.52, 4.4, 0.8, 0.06, 0x1e3a2e); for (let i = 0; i < 11; i++) box(P, -1.8 + i * 0.36, 4.55, F + 0.56, 0.22, 0.3, 0.02, 0xc9a24a);
-    for (let fl = 0; fl < 4; fl++) for (const x of [-8.5, -6.3, -4.1, -1.9, 1.9, 4.1, 6.3, 8.5, 10.6]) {
+    const g = makeScene('plage', { cam: [-2.6, 3.8, 18.0], look: [1.8, 8.6, -10], bg: 0x343a4e, dens: 0.011, amb: 0.45 });
+    const P = [], G = [], F = -11.5;
+    // galets, trois tons
+    box(P, 0, -0.2, 2, 60, 0.2, 18, 0x767e98);
+    for (let i = 0; i < 520; i++) { const x = (hash2(i, 1, 6) - 0.5) * 44, z = -4.8 + hash2(i, 2, 6) * 16.5, k = hash2(i, 3, 6);
+      box(P, x, -0.07, z, 0.12 + k * 0.16, 0.07 + k * 0.05, 0.1 + hash2(i, 4, 6) * 0.14, k > 0.66 ? 0x9aa0b4 : k > 0.33 ? 0x5c6480 : 0x464e66, k * 3); }
+    // promenade : mur, balustrade en fonte, trottoir, chaussée
+    box(P, 0, 0, -5, 60, 1.4, 0.6, 0xbfa878); for (let x = -27; x <= 27; x += 3) box(P, x, 0, -4.68, 0.3, 1.4, 0.06, 0xd8c8a0);
+    box(P, 0, 1.4, -5.4, 60, 0.1, 1.6, 0x9aa0b4);
+    for (let x = -26; x <= 26; x += 0.6) box(P, x, 1.5, -4.75, 0.04, 0.8, 0.04, 0x262a38);
+    for (let x = -25.8; x <= 26; x += 1.2) sph(P, x, 1.85, -4.75, 0.1, 0x262a38, 0.16);
+    box(P, 0, 2.3, -4.75, 60, 0.07, 0.1, 0x262a38); box(P, 0, 1.5, -4.75, 60, 0.05, 0.08, 0x262a38);
+    box(P, 0, 1.4, -8.2, 60, 0.05, 5.4, 0x343a4e); box(P, 0, 1.45, -10.7, 60, 0.12, 0.5, 0x9aa0b4);
+    // le Grand Hôtel : cinq étages crème, soubassement à refends, corniche, mansarde
+    const X0 = -10, X1 = 12, H = 14;
+    box(P, 1, 1.4, F, X1 - X0, H, 1, 0xe8dcc0);
+    for (let y = 1.7; y < 3.9; y += 0.45) box(P, 1, y, F + 0.5, X1 - X0, 0.05, 0.04, 0xbfa878);
+    for (const y of [3.95, 6.6, 9.3, 12.0]) box(P, 1, y, F + 0.42, X1 - X0 + 0.2, 0.14, 0.2, 0xd8c8a0);
+    box(P, 1, 15.4, F + 0.2, X1 - X0 + 0.8, 0.45, 1.5, 0xd8c8a0); box(P, 1, 15.85, F - 0.3, X1 - X0 + 0.3, 1.4, 1.2, 0x464e66);
+    for (const x of [-8, -4, 2, 6, 10]) { box(P, x, 15.85, F + 0.25, 0.9, 1.0, 0.3, 0x464e66); box(P, x, 16.0, F + 0.4, 0.5, 0.6, 0.05, 0x1e2448); }
+    for (const x of [-8.8, -2.6, 4.4, 10.8]) { box(P, x, 16.5, F - 0.4, 0.9, 1.6, 0.6, 0x8a5a36); for (let k = 0; k < 3; k++) cyl(P, x - 0.28 + k * 0.28, 18.1, F - 0.4, 0.09, 0.3, 0x6e3f2c); }
+    // le pavillon sur le toit : il flotte vers l'ouest (à gauche), le vent vient de l'est
+    box(P, 1, 17.2, F - 0.2, 0.08, 3.2, 0.08, 0xd8d4dc);
+    const flag = []; for (let k = 0; k < 6; k++) { const f = new THREE.Mesh(Pixel.mergeParts([{ geo: GEO.BOX, m: mtx(0, 0, 0, 0, 0.3, 0.75, 0.03), c: k % 2 ? 0xb83a3a : 0xd0343a }]), lit); f.castShadow = true; f.position.set(1 - 0.18 - k * 0.3, 19.95, F - 0.2); g.add(f); flag.push(f); }
+    live('plage', (t) => flag.forEach((f, k) => { f.position.z = F - 0.2 + Math.sin(t * 6 - k * 0.9) * 0.08 * k; f.rotation.y = Math.cos(t * 6 - k * 0.9) * 0.18 * Math.min(1, k); }));
+    // fenêtres : encadrements, appuis, frontons ; certaines éclairées, quelques rideaux
+    const COLS = [-8.5, -6.3, -4.1, -1.9, 1.9, 4.1, 6.3, 8.5, 10.6];
+    for (let fl = 0; fl < 4; fl++) for (const x of COLS) {
       if (fl === 0 && Math.abs(x) < 3) continue;
-      const y = 2.4 + fl * 2.7, lit2 = Pixel.hash2(fl, Math.round(x * 10), 11) > 0.45;
-      (lit2 ? G : P).push({ geo: GEO.BOX, m: mtx(x, y + 0.8, F + 0.5, 0, 1.0, 1.6, 0.06), c: lit2 ? 0xffd060 : 0x1e2448 });
-      box(P, x, y + 1.65, F + 0.55, 1.2, 0.12, 0.12, 0xd8c8a0);
+      const y = 4.3 + fl * 2.7, on = hash2(fl, Math.round(x * 10), 11) > 0.45;
+      box(P, x, y - 0.1, F + 0.52, 1.25, 1.95, 0.08, 0xd8c8a0);
+      (on ? G : P).push({ geo: GEO.BOX, m: mtx(x, y + 0.8, F + 0.58, 0, 1.0, 1.6, 0.04), c: on ? 0xffd060 : 0x262a38 });
+      box(P, x, y + 0.8, F + 0.62, 0.05, 1.6, 0.03, 0xd8c8a0); box(P, x, y + 1.1, F + 0.62, 1.0, 0.05, 0.03, 0xd8c8a0);
+      box(P, x, y - 0.12, F + 0.68, 1.4, 0.1, 0.25, 0xd8c8a0); box(P, x, y + 1.75, F + 0.62, 1.4, 0.14, 0.2, 0xd8c8a0);
+      if (on && hash2(fl, Math.round(x * 3), 5) > 0.5) box(P, x - 0.3, y, F + 0.61, 0.35, 1.5, 0.02, 0x8a2a2e);
     }
-    // premier étage : balcons ; la 12 et la 14 (à droite de l'enseigne) partagent la même rambarde, avec une séparation basse
-    const by = 2.4 + 2.7 - 0.05;
-    for (const [x0, x1] of [[-9.3, -7.7], [-7.1, -5.5], [-4.9, -3.3], [3.2, 7.2], [7.7, 9.3]]) {
-      box(P, (x0 + x1) / 2, by, F + 0.9, x1 - x0, 0.12, 0.9, 0xb8b4c0);
-      for (let x = x0; x <= x1 + 0.01; x += 0.25) box(P, x, by, F + 1.32, 0.04, 0.75, 0.04, 0x24242e);
-      box(P, (x0 + x1) / 2, by + 0.75, F + 1.32, x1 - x0, 0.06, 0.06, 0x24242e);
+    // bow-windows sur trois étages, aux deux bouts
+    for (const xc of [-7.4, 9.55]) for (let fl = 1; fl < 4; fl++) {
+      const y = 4.3 + fl * 2.7;
+      box(P, xc, y - 0.25, F + 1.1, 3.3, 2.5, 1.1, 0xe8dcc0);
+      for (const dx of [-1.05, 0, 1.05]) { const on = hash2(fl, Math.round((xc + dx) * 10), 3) > 0.4; (on ? G : P).push({ geo: GEO.BOX, m: mtx(xc + dx, y + 0.85, F + 1.67, 0, 0.8, 1.5, 0.04), c: on ? 0xffd060 : 0x262a38 }); }
     }
-    box(P, 5.2, by, F + 0.9, 0.04, 0.45, 0.85, 0x24242e);
-    box(P, 4.1, by + 2.0, F + 0.6, 0.5, 0.22, 0.02, 0xc9a24a); box(P, 6.3, by + 2.0, F + 0.6, 0.5, 0.22, 0.02, 0xc9a24a);
-    spotAt('plage', 'facade', 5.2, by + 1.2, F + 1.3);
-    // réverbères de la promenade
-    const ls = [];
-    for (let x = -12; x <= 12; x += 6) { const l = lamp(P, G, x, 1.4, -5.6, 3, x === 0 || x === 6 ? 1.2 : 0); if (l) ls.push(l); }
-    // le peintre : chevalet, toile (le tableau lui-même), tabouret
+    // entrée : portique à colonnes, perron, enseigne
+    for (const x of [-2.2, -0.8, 0.8, 2.2]) cyl(P, x, 1.4, F + 1.6, 0.18, 2.6, 0xe8dcc0);
+    box(P, 0, 4.0, F + 1.3, 5.4, 0.35, 1.7, 0xd8c8a0); box(P, 0, 1.4, F + 1.3, 5.6, 0.15, 2.0, 0x9aa0b4);
+    G.push({ geo: GEO.BOX, m: mtx(0, 2.7, F + 0.52, 0, 2.0, 2.4, 0.04), c: 0xe8a860 });
+    box(P, 0, 4.35, F + 2.12, 4.4, 0.8, 0.06, 0x1c2a22); for (let i = 0; i < 11; i++) box(P, -1.8 + i * 0.36, 4.6, F + 2.16, 0.22, 0.3, 0.02, 0xc9a24a);
+    // balcons du premier étage ; la 12 et la 14, à droite de l'enseigne, partagent la rambarde (séparation basse)
+    const by = 6.9;
+    for (const [x0, x1] of [[-4.9, -3.3], [3.2, 7.2]]) {
+      box(P, (x0 + x1) / 2, by, F + 0.95, x1 - x0, 0.12, 0.9, 0xd8c8a0);
+      for (let x = x0; x <= x1 + 0.01; x += 0.2) box(P, x, by, F + 1.36, 0.035, 0.75, 0.035, 0x262a38);
+      box(P, (x0 + x1) / 2, by + 0.75, F + 1.36, x1 - x0, 0.06, 0.06, 0x262a38);
+      for (let x = x0 + 0.1; x < x1; x += 0.4) box(P, x, by - 0.25, F + 1.38, 0.08, 0.25, 0.04, 0xbfa878);
+    }
+    box(P, 5.2, by, F + 0.95, 0.04, 0.45, 0.85, 0x262a38);
+    box(P, 4.1, by + 2.05, F + 0.66, 0.5, 0.22, 0.02, 0xc9a24a); box(P, 6.3, by + 2.05, F + 0.66, 0.5, 0.22, 0.02, 0xc9a24a);
+    spotAt('plage', 'facade', 5.2, by + 1.2, F + 1.4);
+    // becs de gaz de la promenade (avec halo), bancs
+    const lights = [];
+    for (let x = -12; x <= 12; x += 6) {
+      const l = lamp(P, G, x, 1.4, -5.6, 3.2, 1.0); lights.push(l); g.add(l); halo('plage', g, x, 1.4 + 3.4, -5.6, 2.6, 0xffc070, l);
+      box(P, x + 3, 1.4, -6.0, 1.6, 0.45, 0.5, 0x5a3e2c); box(P, x + 3, 1.85, -6.2, 1.6, 0.4, 0.06, 0x5a3e2c);
+    }
+    // deux cabines de bain sur roues, une barque tirée au sec et son cabestan
+    for (const [x, z, c2] of [[11.5, -2.6, 0xb83a3a], [14.2, -2.0, 0x2f4a8a]]) {
+      for (let k = 0; k < 5; k++) box(P, x - 0.8 + k * 0.4, 0.45, z, 0.4, 1.7, 1.6, k % 2 ? 0xe8dcc0 : c2);
+      box(P, x, 2.15, z, 2.2, 0.12, 1.8, 0x5a3e2c); P.push({ geo: GEO.CONE4, m: mtx(x, 2.45, z, Math.PI / 4, 1.5, 0.5, 1.3), c: 0x5a3e2c });
+      for (const dx of [-0.7, 0.7]) for (const dz of [-0.75, 0.75]) wheel(P, x + dx, 0.32, z + dz, 0.32, 0.08, 0x3a2a22);
+      box(P, x, 0, z + 1.0, 0.6, 0.12, 0.4, 0x5a3e2c);
+    }
+    { const bx = -6.4, bz = 4.2, ry = 0.5; P.push({ geo: GEO.BOX, m: mtx(bx, 0.35, bz, ry, 1.5, 0.6, 3.8), c: 0x2f4a8a }); P.push({ geo: GEO.BOX, m: mtx(bx, 0.62, bz, ry, 1.6, 0.1, 3.9), c: 0xe8dcc0 });
+      P.push({ geo: GEO.CONE4, m: mtx(bx + Math.sin(ry) * 2.2, 0.4, bz + Math.cos(ry) * 2.2, ry + Math.PI / 4, 0.8, 0.7, 0.8), c: 0x2f4a8a });
+      box(P, bx, 0.6, bz, 1.3, 0.06, 0.3, 0x5a3e2c, ry); box(P, bx - 1.4, 0, bz - 0.6, 0.3, 0.9, 0.3, 0x5a3e2c); cyl(P, -3.6, 0, 5.8, 0.25, 0.8, 0x5a3e2c);
+      for (let i = 0; i < 4; i++) box(P, bx + 0.9 + i * 0.12, 0.02, bz - 1.4 + i * 0.2, 0.9, 0.04, 0.9, 0x6a6878, i); }
+    // le peintre : chevalet, toile (le tableau lui-même), tabouret, lanterne
     box(P, 2.6, 0, 1.2, 0.05, 1.7, 0.05, 0x94573a); box(P, 3.4, 0, 1.2, 0.05, 1.7, 0.05, 0x94573a); box(P, 3.0, 0, 1.6, 0.05, 1.6, 0.05, 0x94573a);
     box(P, 3.0, 0.9, 1.22, 1.0, 0.04, 0.12, 0x94573a);
     const canvasMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.74), new THREE.MeshBasicMaterial({ color: 0xffffff }));
     canvasMesh.position.set(3.0, 1.32, 1.27); g.add(canvasMesh); paintTex.m = canvasMesh;
     box(P, 3.0, 0.94, 1.24, 1.14, 0.78, 0.02, 0xe8dcc0);
     box(P, 4.3, 0, 2.5, 0.4, 0.45, 0.4, 0x6e3f2c);
-    g.add(mesh(P), mesh(G, true)); ls.forEach((l) => g.add(l));
-    // les mouettes de la corniche : bec à l'est (à droite)
-    for (let i = 0; i < 9; i++) gull(g, -8 + i * 2.3, 13.9, F + 0.5, Math.PI / 2, 1.7);
+    box(P, 3.6, 0, 2.9, 0.22, 0.05, 0.22, 0x262a38); G.push({ geo: GEO.BOX, m: mtx(3.6, 0.2, 2.9, 0, 0.16, 0.26, 0.16), c: 0xffe0a8 }); box(P, 3.6, 0.36, 2.9, 0.22, 0.06, 0.22, 0x262a38);
+    g.add(mesh(P), mesh(G, true));
+    const cl = shadowLight(new THREE.PointLight(0xffd090, 0.9, 6, 1.5), 2); cl.position.set(3.6, 1.0, 2.9); g.add(cl); halo('plage', g, 3.6, 0.25, 2.9, 1.4, 0xffb060, cl);
+    // la lune derrière la brume, et la lumière froide qu'elle donne (les ombres portées de la façade)
+    const moon = new THREE.Mesh(new THREE.SphereGeometry(1.1, 12, 8), new THREE.MeshBasicMaterial({ color: 0xbcc0cc, fog: false })); moon.position.set(-14, 22, -40); g.add(moon);
+    halo('plage', g, -14, 22, -39, 9, 0x9aa0b4, null, 0.5);
+    const ml = shadowLight(new THREE.DirectionalLight(0xa8b0d0, 0.35), 1); ml.position.set(-14, 22, 30); ml.target.position.set(2, 4, -11); g.add(ml, ml.target);
+    Object.assign(ml.shadow.camera, { left: -20, right: 20, top: 20, bottom: -8, near: 1, far: 90 }); ml.shadow.mapSize.set(Q.shadowMap * 2, Q.shadowMap * 2);
+    const w14 = new THREE.PointLight(0xffc890, 0.6, 4, 1.5); w14.position.set(6.3, 8.5, F + 1.6); g.add(w14);
+    // le fiacre qui passe sur la chaussée, d'est en ouest
+    const cab = new THREE.Group(); { const CP = [], CG = [];
+      box(CP, 0, 0.55, 0, 1.6, 1.1, 1.0, 0x1c2a22); box(CP, -0.1, 1.65, 0, 1.4, 0.08, 1.05, 0x262a38); box(CP, 0.9, 0.9, 0, 0.5, 0.06, 0.9, 0x262a38);
+      CG.push({ geo: GEO.BOX, m: mtx(0.25, 1.05, 0.51, 0, 0.5, 0.4, 0.02), c: 0xe8a860 });
+      for (const dx of [-0.55, 0.6]) for (const dz of [-0.55, 0.55]) wheel(CP, dx, 0.42, dz, 0.42, 0.06, 0x3a2a22);
+      box(CP, 1.9, 0.7, 0, 1.2, 0.55, 0.45, 0x3a2a22); box(CP, 2.55, 1.05, 0, 0.32, 0.6, 0.3, 0x3a2a22); box(CP, 2.72, 1.3, 0, 0.35, 0.22, 0.24, 0x3a2a22);
+      for (const dx of [1.45, 2.35]) for (const dz of [-0.14, 0.14]) box(CP, dx, 0, dz, 0.1, 0.72, 0.1, 0x3a2a22);
+      box(CP, 1.0, 1.5, 0, 0.3, 0.5, 0.3, 0x262a38); cyl(CP, 1.0, 2.0, 0, 0.13, 0.25, 0x262a38);
+      cab.add(mesh(CP), mesh(CG, true)); }
+    cab.rotation.y = Math.PI; cab.position.set(0, 1.45, -8.6); g.add(cab);
+    live('plage', (t) => { cab.position.x = 20 - ((t * 1.6) % 44); cab.position.y = 1.45 + Math.abs(Math.sin(t * 7)) * 0.03; });
+    // les mouettes de la corniche (bec à l'est, à droite) et de la balustrade
+    for (let i = 0; i < 9; i++) gull(g, -8 + i * 2.3, 15.85, F + 0.95, Math.PI / 2, 1.7);
     for (const x of [-6, 1, 9]) gull(g, x, 2.36, -4.75, Math.PI / 2, 1.3);
-    const Bz = person({ coat: 0x7f86b8, legs: 0x4a4a58, sleeve: 0x7f86b8, hat: 'beret', hatC: 0x24242e, beard: 0x6e3f2c, hair: 0x6e3f2c });
-    Bz.position.set(4.3, 0, 2.3); Bz.rotation.y = 3.6; g.add(Bz); spotAt('plage', 'brisseau', 4.3, 2.15, 2.3);
-    const cl = new THREE.PointLight(0xffe0b0, 0.8, 6, 1.5); cl.position.set(2.2, 2.2, 3.4); g.add(cl);
+    // la fumée des cheminées, poussée vers l'ouest
+    const smoke = Pixel.puffs(g, 60); let sk = 0;
+    live('plage', (t, dt) => { smoke.step(dt); sk += dt; if (sk > 0.3) { sk = 0; for (const x of [-8.8, -2.6, 4.4, 10.8]) smoke.emit(new THREE.Vector3(x + (Math.random() - 0.5) * 0.3, 18.5, F - 0.4), 0.3, 1.1, 2.6, 0x9aa0b4, 0x464e66, new THREE.Vector3(-0.9 - Math.random() * 0.4, 0.5 + Math.random() * 0.3, 0.1)); } });
+    // la brume qui monte de la mer
+    mist('plage', g, 0, 1.0, 7.5, 46, 2.6, 0.3, 0.012, 0x9aa0b4); mist('plage', g, 0, 2.6, -2.5, 50, 5, 0.4, -0.008, 0x8a90a8); mist('plage', g, 0, 6.5, -9.0, 50, 10, 0.3, 0.006, 0x767e98);
+    place('plage', g, person({ coat: 0x7f86b8, legs: 0x4a4a58, sleeve: 0x7f86b8, hat: 'beret', hatC: 0x24242e, beard: 0x6e3f2c, hair: 0x6e3f2c }), 4.3, 2.3, 3.6); spotAt('plage', 'brisseau', 4.3, 2.15, 2.3);
   })();
 
   // ---------------------------------------------------------------- le bureau du télégraphe
+  const clockFace = { tex: null, min: -1 };
   (() => {
-    const g = makeScene('telegraphe', { cam: [0.5, 2.5, 5.6], look: [0, 1.4, -2], bg: 0x141826, fog: [14, 40] });
+    const g = makeScene('telegraphe', { cam: [0.5, 2.5, 5.6], look: [0, 1.4, -2], bg: 0x262a38, dens: 0.024, amb: 0.24 });
     const P = [], G = [];
-    box(P, 0, -0.1, 0, 8, 0.1, 7, 0x6e3f2c);
-    box(P, 0, 0, -3.6, 8, 4, 0.2, 0x3f6a4a); box(P, 0, 0, -3.48, 8, 1.0, 0.05, 0x4a2e22); box(P, -4.0, 0, 0, 0.2, 4, 7, 0x3f6a4a);
-    box(P, 0.4, 0, -1.8, 5, 1.05, 0.7, 0x4a2e22); box(P, 0.4, 1.05, -1.8, 5.2, 0.07, 0.85, 0x6e3f2c);
-    for (let i = 0; i < 9; i++) box(P, -1.6 + i * 0.5, 1.12, -1.55, 0.04, 1.2, 0.04, 0xc9a24a);
-    box(P, 0.4, 2.3, -1.55, 4.2, 0.06, 0.06, 0xc9a24a);
-    // l'appareil : clé de manipulateur, parleur
+    box(P, 0, -0.1, 0, 8, 0.1, 7, 0x5a3e2c); for (let i = -4; i < 4; i++) box(P, i + 0.5, -0.02, 0, 0.03, 0.03, 7, 0x3a2a22);
+    // murs peints : vert foncé en haut, lambris de chêne, panneaux moulurés
+    box(P, 0, 0, -3.6, 8, 4, 0.2, 0x2f4a3a); box(P, -4.0, 0, 0, 0.2, 4, 7, 0x2f4a3a); box(P, 3.9, 0, 0, 0.2, 4, 7, 0x2f4a3a);
+    box(P, 0, 0, -3.48, 8, 1.2, 0.05, 0x44301e); box(P, -3.88, 0, 0, 0.05, 1.2, 7, 0x44301e);
+    for (let x = -3.5; x < 4; x += 1.0) box(P, x, 0.15, -3.44, 0.7, 0.9, 0.02, 0x5a3e2c);
+    box(P, 0, 1.2, -3.45, 8, 0.05, 0.07, 0x8a5a36); box(P, 0, 3.6, -3.45, 8, 0.15, 0.1, 0xbfa878);
+    for (let x = -3.4; x < 0.5; x += 1.3) box(P, x, 1.5, -3.47, 1.0, 1.7, 0.02, 0x3f6a4a);
+    // comptoir, grille de laiton, appareils : manipulateur, parleur, galvanomètre
+    box(P, 0.4, 0, -1.8, 5, 1.05, 0.7, 0x44301e); box(P, 0.4, 1.05, -1.8, 5.2, 0.07, 0.85, 0x5a3e2c);
+    for (let x = -1.6; x < 2.4; x += 0.8) box(P, x + 0.4, 0.2, -1.44, 0.6, 0.65, 0.02, 0x5a3e2c);
+    for (let i = 0; i < 17; i++) box(P, -1.6 + i * 0.25, 1.12, -1.55, 0.025, 1.2, 0.025, 0xc9a24a);
+    box(P, 0.4, 2.3, -1.55, 4.2, 0.06, 0.06, 0xc9a24a); box(P, 0.4, 1.15, -1.55, 4.2, 0.04, 0.05, 0xc9a24a);
+    box(P, -0.1, 1.12, -1.5, 0.8, 0.22, 0.04, 0x44301e);
     box(P, 0.9, 1.12, -2.0, 0.6, 0.06, 0.35, 0x2a1a12); box(P, 0.8, 1.18, -2.0, 0.3, 0.04, 0.06, 0xc9a24a); box(P, 1.1, 1.18, -2.1, 0.14, 0.2, 0.14, 0xc9a24a);
-    // casiers, horloge (18 h), affiche, banc
-    for (let i = 0; i < 5; i++) for (let j = 0; j < 3; j++) box(P, 1.4 + i * 0.4, 1.6 + j * 0.38, -3.45, 0.36, 0.34, 0.12, 0x6e3f2c);
-    cyl(P, -1.6, 2.4, -3.42, 0.5, 0.06, 0x4a2e22);
-    const ck = new THREE.Mesh(Pixel.mergeParts([{ geo: GEO.CYL, m: new THREE.Matrix4().makeRotationX(Math.PI / 2).premultiply(new THREE.Matrix4().makeScale(0.42, 0.42, 0.04)), c: 0xf4f4f8 }]), lit);
-    ck.position.set(-1.6, 2.4, -3.3); g.add(ck);
-    box(P, -1.6, 2.4, -3.27, 0.04, 0.32, 0.02, 0x060608); box(P, -1.6, 2.38, -3.27, 0.04, 0.2, 0.02, 0x060608);
+    box(P, 1.6, 1.12, -2.05, 0.4, 0.3, 0.3, 0x44301e); cyl(P, 1.6, 1.42, -2.05, 0.1, 0.03, 0xf4f4f8); box(P, -0.3, 1.12, -2.1, 0.34, 0.03, 0.24, 0xe8dcc0);
+    for (let i = 0; i < 3; i++) box(P, -0.9 + i * 0.05, 1.12 + i * 0.006, -2.0, 0.3, 0.006, 0.4, 0xe8dcc0);
+    // casiers à formulaires, horloge, affiche, banc, fenêtre sur la brume
+    for (let i = 0; i < 5; i++) for (let j = 0; j < 3; j++) { box(P, 1.4 + i * 0.4, 1.6 + j * 0.38, -3.45, 0.36, 0.34, 0.12, 0x5a3e2c); box(P, 1.4 + i * 0.4, 1.62 + j * 0.38, -3.39, 0.28, 0.08 + hash2(i, j, 4) * 0.1, 0.02, 0xe8dcc0); }
+    wheel(P, -1.6, 2.4, -3.42, 0.5, 0.08, 0x44301e);
+    const ft = document.createElement('canvas'); ft.width = ft.height = 128; clockFace.c = ft;
+    clockFace.tex = new THREE.CanvasTexture(ft);
+    const face = new THREE.Mesh(new THREE.CircleGeometry(0.42, 32), new THREE.MeshStandardMaterial({ map: clockFace.tex, roughness: 0.6 }));
+    face.position.set(-1.6, 2.4, -3.33); g.add(face);
     spotAt('telegraphe', 'horloge', -1.6, 2.95, -3.2);
-    box(P, -3.9, 1.3, 0.5, 0.04, 1.2, 0.9, 0xe8dcc0); box(P, -3.88, 1.5, 0.5, 0.02, 0.3, 0.7, 0x8a2a2e);
-    box(P, -2.6, 0, 0.2, 0.5, 0.45, 2.0, 0x4a2e22); box(P, -2.85, 0.45, 0.2, 0.08, 0.6, 2.0, 0x4a2e22);
-    G.push({ geo: GEO.BOX, m: mtx(-3.95, 2.4, -1.5, 0, 0.12, 0.3, 0.2), c: 0xfff2a0 }); G.push({ geo: GEO.BOX, m: mtx(3.0, 2.5, -3.46, 0, 0.2, 0.3, 0.1), c: 0xfff2a0 });
-    box(P, 3.9, 0, 0, 0.2, 4, 7, 0x3f6a4a); box(P, 3.8, 1.2, 0.8, 0.06, 1.6, 1.4, 0xe8dcc0); box(P, 3.78, 1.3, 0.8, 0.04, 1.4, 1.2, 0x1e2448);
+    box(P, -3.88, 1.3, 0.5, 0.04, 1.2, 0.9, 0xe8dcc0); box(P, -3.86, 2.2, 0.5, 0.02, 0.14, 0.7, 0x6e1a24); for (let j = 0; j < 6; j++) box(P, -3.86, 1.45 + j * 0.12, 0.5, 0.02, 0.04, 0.6 - (j % 3) * 0.12, 0x6a6878);
+    box(P, -2.6, 0, 0.2, 0.5, 0.45, 2.0, 0x44301e); box(P, -2.85, 0.45, 0.2, 0.08, 0.6, 2.0, 0x44301e);
+    box(P, 1.6, 0, 1.4, 1.6, 1.0, 0.6, 0x44301e); P.push({ geo: GEO.BOX, m: new THREE.Matrix4().makeTranslation(1.6, 1.06, 1.4).multiply(new THREE.Matrix4().makeRotationX(0.18)).multiply(new THREE.Matrix4().makeScale(1.7, 0.06, 0.7)), c: 0x5a3e2c });
+    for (let i = 0; i < 3; i++) box(P, 1.1 + i * 0.45, 1.1, 1.38, 0.32, 0.01, 0.42, 0xe8dcc0); box(P, 2.2, 1.12, 1.25, 0.1, 0.08, 0.1, 0x060608); box(P, 2.0, 1.12, 1.28, 0.24, 0.015, 0.015, 0x2a1a12);
+    cyl(P, 3.0, 0, -1.0, 0.32, 0.9, 0x262a38); cyl(P, 3.0, 0.9, -1.0, 0.36, 0.06, 0x262a38); cyl(P, 3.0, 0.96, -1.0, 0.07, 2.9, 0x262a38); G.push({ geo: GEO.BOX, m: mtx(3.0, 0.35, -0.69, 0, 0.24, 0.16, 0.02), c: 0xe8a860 });
+    box(P, 3.78, 1.2, 0.8, 0.06, 1.6, 1.4, 0xe8dcc0); box(P, 3.76, 1.3, 0.8, 0.04, 1.4, 1.2, 0x5c6480); box(P, 3.74, 2.0, 0.8, 0.03, 0.05, 1.2, 0xe8dcc0); box(P, 3.74, 1.3, 0.8, 0.03, 1.4, 0.05, 0xe8dcc0);
+    // le lustre à gaz au-dessus du comptoir, une applique
+    box(P, 0.2, 3.1, -1.0, 0.03, 0.9, 0.03, 0x262a38); P.push({ geo: GEO.CONE7, m: mtx(0.2, 3.15, -1.0, 0, 0.45, 0.25, 0.45), c: 0x2f4a3a }); G.push({ geo: GEO.SPH, m: mtx(0.2, 3.0, -1.0, 0, 0.12), c: 0xffe0a8 });
+    box(P, -3.93, 2.3, -1.5, 0.08, 0.06, 0.2, 0xc9a24a); G.push({ geo: GEO.SPH, m: mtx(-3.78, 2.45, -1.5, 0, 0.12), c: 0xffe0a8 });
     g.add(mesh(P), mesh(G, true));
-    const l1 = new THREE.PointLight(0xffd8a0, 1.5, 12, 1.3); l1.position.set(0, 2.8, -0.5); g.add(l1);
-    const Lt = person({ coat: 0xf4f4f8, sleeve: 0xf4f4f8, dress: 0x24242e, hair: 0x2a1a12, bun: true, hat: 'visor', collar: 0x24242e });
-    Lt.position.set(0.0, 0, -2.6); g.add(Lt); spotAt('telegraphe', 'lattimer', 0.0, 2.1, -2.6);
+    const l1 = shadowLight(new THREE.PointLight(0xffd0a0, 1.3, 12, 1.3), 1); l1.position.set(0.2, 2.85, -0.9);
+    const st = new THREE.PointLight(0xff8a40, 0.35, 3, 1.5); st.position.set(3.0, 0.4, -0.5); g.add(st); halo('telegraphe', g, 3.0, 0.35, -0.66, 0.9, 0xff8a40, st); g.add(l1); halo('telegraphe', g, 0.2, 3.0, -1.0, 2.2, 0xffc070, l1);
+    const l2 = new THREE.PointLight(0xffc890, 0.5, 6, 1.6); l2.position.set(-3.5, 2.45, -1.5); g.add(l2); halo('telegraphe', g, -3.78, 2.45, -1.5, 1.1, 0xffc070, l2);
+    const blue = new THREE.PointLight(0x7a8aa8, 0.35, 6, 1.4); blue.position.set(3.2, 1.8, 0.8); g.add(blue);
+    place('telegraphe', g, person({ coat: 0xf4f4f8, sleeve: 0xf4f4f8, dress: 0x24242e, hair: 0x2a1a12, bun: true, hat: 'visor', collar: 0x24242e }), 0.0, -2.6, 0); spotAt('telegraphe', 'lattimer', 0.0, 2.1, -2.6);
   })();
+  // l'horloge du télégraphe donne l'heure de l'enquête (redessinée à chaque minute)
+  function drawClock(min) {
+    if (min === clockFace.min) return; clockFace.min = min;
+    const x = clockFace.c.getContext('2d'), R = 64;
+    x.fillStyle = '#f4efe2'; x.beginPath(); x.arc(R, R, R, 0, Math.PI * 2); x.fill();
+    x.strokeStyle = '#2a1a12'; x.lineWidth = 3; x.beginPath(); x.arc(R, R, R - 3, 0, Math.PI * 2); x.stroke();
+    x.fillStyle = '#2a1a12'; x.font = '600 15px Georgia, serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    const ROM = ['XII', 'I', 'II', 'III', 'IIII', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'];
+    for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; x.fillText(ROM[i], R + Math.sin(a) * 47, R - Math.cos(a) * 47); }
+    for (let i = 0; i < 60; i++) { const a = i / 60 * Math.PI * 2, r0 = i % 5 ? 58 : 55; x.lineWidth = i % 5 ? 1 : 2; x.beginPath(); x.moveTo(R + Math.sin(a) * r0, R - Math.cos(a) * r0); x.lineTo(R + Math.sin(a) * 61, R - Math.cos(a) * 61); x.stroke(); }
+    const hand = (a, len, w) => { x.lineWidth = w; x.lineCap = 'round'; x.beginPath(); x.moveTo(R, R); x.lineTo(R + Math.sin(a) * len, R - Math.cos(a) * len); x.stroke(); };
+    hand(((min / 60) % 12) / 12 * Math.PI * 2, 30, 5); hand((min % 60) / 60 * Math.PI * 2, 44, 3);
+    x.beginPath(); x.arc(R, R, 4, 0, Math.PI * 2); x.fill();
+    clockFace.tex.needsUpdate = true;
+  }
+  drawClock(17 * 60 + 30);
+
+  // grain de pellicule (fixe sur téléphone) et adaptation de la qualité
+  const gctx = $('grain').getContext('2d');
+  function grainDraw() { const gc = $('grain'); if (!gc.width) return; const im = gctx.createImageData(gc.width, gc.height); for (let i = 0; i < im.data.length; i += 4) { const v = Math.random() * 255; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 255; } gctx.putImageData(im, 0, 0); }
+  new ResizeObserver(resize).observe(stage);
+  resize();
+  const perf = { n: 0, sum: 0, checks: 0 };
+  function adaptQuality(dt) {
+    if (document.hidden || dt <= 0 || dt > 0.25) return;
+    perf.n++; perf.sum += dt;
+    if (perf.n < 90) return;
+    const avg = perf.sum / perf.n; perf.n = 0; perf.sum = 0; perf.checks++;
+    if (avg < 1 / 30 || perf.checks > 8) return;
+    // trop lent : moins de pixels d'abord, puis plus d'ombres
+    if (Q.dpr > Q.minDpr) { Q.dpr = Math.max(Q.minDpr, Q.dpr - 0.5); resize(); }
+    else if (renderer.shadowMap.enabled) { renderer.shadowMap.enabled = false; scene.traverse((o) => { if (o.material) o.material.needsUpdate = true; }); }
+  }
 
   // ---------------------------------------------------------------- les pièces à conviction, en petits tableaux « pixel »
   function drawPhoto() {
@@ -685,9 +954,32 @@
     $('dBody').scrollTop = 0;
   }
   function closePanel() { panel = null; $('drawer').hidden = true; renderNav(); }
+  // trois indices se lisent sur le document lui-même : le formulaire de télégramme, le registre, le journal de bord
+  const DOCS = {
+    telegramme: () => `<div class="doc"><div class="hd"><b>Post Office Telegraphs</b><span>Bureau de King’s Road · Brighton</span></div>
+      <dl><dt>Remis à</dt><dd>15 h 30</dd><dt>Pour</dt><dd class="hand">Hartley &amp; Fils, éditeurs, Londres</dd></dl>
+      <p class="lines hand">${H('Imprimez lundi comme prévu stop. Ce soir Whitcombe n’aura rien à montrer stop.')}</p>
+      <dl><dt>De</dt><dd class="hand">R. Ashby, Grand Hôtel</dd></dl><span class="stamp">BRIGHTON · 27 NO 91</span></div>`,
+    registre: () => `<div class="doc"><div class="hd"><b>Grand Hôtel</b><span>Registre des voyageurs · novembre 1891</span></div>
+      <table><thead><tr><th>Ch.</th><th>Nom</th><th>Venant de</th></tr></thead><tbody>
+      <tr><td class="hand">9</td><td class="hand">Mr &amp; Mrs T. Pell</td><td class="hand">Bath</td></tr>
+      <tr class="hl"><td class="hand">12</td><td class="hand">Prof. E. Whitcombe</td><td class="hand">Boston</td></tr>
+      <tr class="hl"><td class="hand"><s>31</s> 14</td><td class="hand">Sir Reginald Ashby</td><td class="hand">Londres</td></tr>
+      <tr><td></td><td colspan="2" class="hand">${H('changé pour la 14 « à sa demande », mercredi 25')}</td></tr>
+      <tr><td class="hand">16</td><td class="hand">Col. J. Hargreaves</td><td class="hand">Lewes</td></tr></tbody></table></div>`,
+    journal: () => `<div class="doc"><div class="hd"><b>Jetée Ouest</b><span>Journal de la capitainerie · ven. 27 novembre</span></div>
+      <table><thead><tr><th>Heure</th><th>Vent</th><th>Force</th></tr></thead><tbody>
+      <tr><td class="hand">14 h</td><td class="hand">S.-O., du large</td><td class="hand">4</td></tr>
+      <tr><td class="hand">15 h</td><td class="hand">du large</td><td class="hand">3</td></tr>
+      <tr class="hl"><td class="hand">16 h précises</td><td class="hand">tourne : de l’Est, le long de la côte</td><td class="hand">—</td></tr>
+      <tr><td class="hand">17 h</td><td class="hand">Est</td><td class="hand">2</td></tr>
+      <tr><td class="hand">18 h</td><td class="hand">Est · brouillard</td><td class="hand">2</td></tr></tbody></table>
+      <dl><dt>Visé</dt><dd class="hand">E. Crane, capitaine</dd></dl></div>`
+  };
   function clueHtml(id, withImg) {
     const c = CLUES[id];
     let h = '';
+    if (withImg && DOCS[id]) h += DOCS[id]();
     if (withImg && c.img) h += `<figure class="ev" data-img="${c.img}"><figcaption>${c.img === 'photo' ? 'Tirage sur papier albuminé. Au dos, à l’encre : « 16 h 15 ».' : 'Huile sur carton, signée en bas à droite.'}</figcaption></figure>`;
     h += `<p class="txt">${H(c.x)}</p>`;
     return h;
@@ -713,6 +1005,7 @@
         const gave = (t.gives || []).filter((g) => panel.got && panel.got.includes(g));
         if (gave.length) h += `<p class="got">Au carnet : ${gave.map((g) => esc(fr(CLUES[g].t))).join(' · ')}</p>`;
         for (const g of t.gives || []) if (CLUES[g].img) h += `<figure class="ev" data-img="${CLUES[g].img}"><figcaption>${esc(fr(CLUES[g].t))}</figcaption></figure>`;
+        for (const g of t.gives || []) if (DOCS[g]) h += DOCS[g]();
       }
       const av = pe.topics.filter(topicOpen);
       h += `<p class="lab">Lui demander</p><div class="topics">${av.map((x) => { const k = panel.id + ':' + x.id, rd = S.read.includes(k); return `<button type="button" data-t="${x.id}" class="${x.id === panel.topic ? 'cur' : rd ? 'read' : 'fresh'}">${H(x.q)}</button>`; }).join('')}</div>`;
@@ -729,7 +1022,7 @@
         h += `<p class="lab">${lab}</p>` + list.map((id) => `<button type="button" class="clue-row" data-c="${id}"><small>${esc(locOfClue(id))}</small><b>${esc(fr(CLUES[id].t))}</b><span class="txt">${H(CLUES[id].x)}</span></button>`).join('');
       }
       body.innerHTML = h;
-      body.querySelectorAll('.clue-row').forEach((b) => b.addEventListener('click', () => { const id = b.dataset.c; if (CLUES[id].img) openPanel({ kind: 'clue', id }); else b.classList.toggle('open'); }));
+      body.querySelectorAll('.clue-row').forEach((b) => b.addEventListener('click', () => { const id = b.dataset.c; if (CLUES[id].img || DOCS[id]) openPanel({ kind: 'clue', id }); else b.classList.toggle('open'); }));
       S.carnet = S.found.length; save();
     } else if (panel.kind === 'deduire') {
       $('dEye').textContent = QS.filter((q) => ans(q.id).ok).length + ' / ' + QS.length + ' déductions'; $('dTitle').textContent = 'Réfléchir';
@@ -803,12 +1096,16 @@
     after();
   }
   function after() { save(); refreshSpots(); renderNav(); }
+  // le décor d'un lieu : visible seul, avec son brouillard et son ciel
+  function showLoc(loc) {
+    for (const [id, s] of Object.entries(SC)) s.g.visible = id === loc;
+    const s = SC[loc] || SC.chambre; scene.fog.color.set(s.bg); scene.fog.density = s.dens; scene.background = new THREE.Color(s.bg); hemi.intensity = s.amb;
+    stage.style.background = '#' + s.bg.toString(16).padStart(6, '0');
+  }
   function go(loc) {
     if (!S.open.includes(loc) || S.done) return;
     S.loc = loc; save();
-    for (const [id, s] of Object.entries(SC)) s.g.visible = id === loc;
-    const s = SC[loc]; scene.fog.near = s.fog[0]; scene.fog.far = s.fog[1]; scene.fog.color.set(s.bg); stage.style.background = '#' + s.bg.toString(16).padStart(6, '0');
-    scene.background = new THREE.Color(s.bg);
+    showLoc(loc);
     $('placeName').textContent = LOC[loc].name;
     buildSpots(); renderNav();
     if (panel && (panel.kind === 'clue' || panel.kind === 'person')) closePanel();
@@ -883,7 +1180,7 @@
   }
   refreshIntro();
   renderNav();
-  for (const [id, s] of Object.entries(SC)) s.g.visible = id === S.loc;
+  showLoc(S.loc);
 
   // clavier : 1 à 5 lieux, C carnet, D déductions, Échap ferme
   window.addEventListener('keydown', (e) => {
@@ -917,11 +1214,14 @@
     if (shift) { camera.updateMatrixWorld(); const r = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0); camera.position.addScaledVector(r, 1.3 * k); camLook.addScaledVector(r, 1.3 * k); camera.lookAt(camLook); }
     camera.fov = narrow ? 52 : 42; camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
-    for (const gm of gulls) { gm.position.y = gm.userData.y0 + (Math.sin(time * 2 + gm.userData.ph) > 0.97 ? 0.03 : 0); }
+    for (const gm of gulls) { gm.position.y = gm.userData.y0 + (Math.sin(time * 2 + gm.userData.ph) > 0.97 ? 0.04 : 0); }
+    for (const f of ANIM[S.loc] || []) f(time, dt);
     V.render();
+    adaptQuality(dt);
     if (mode === 'play') {
       placeSpots();
       const t = 17 * 60 + 30 + Math.floor(S.t / 60 * 3);
+      if (S.loc === 'telegraphe') drawClock(Math.min(18 * 60 + 59, t));
       $('clockT').textContent = String(Math.min(18 * 60 + 59, t) / 60 | 0).padStart(2, '0') + ':' + String(Math.min(18 * 60 + 59, t) % 60).padStart(2, '0');
       saveT += dt; if (saveT > 5) { saveT = 0; save(); }
     }
