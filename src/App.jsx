@@ -395,7 +395,7 @@ function App() {
                     onLogo={onLogo}
                     onAdventure={isUnlocked(ADVENTURE, advent, now) ? () => openGame(ADVENTURE.id) : null}
                     onHistory={freeGames.length ? () => setGamesList(true) : null}
-                    games={[...todays, QUIZ, ...freeGames.filter((g) => !todays.includes(g))].map((g) => ({ id: g.id, title: g.title, icon: g.icon, onPlay: () => openGame(g.id) }))
+                    games={[...(isToday ? [CANDLES] : []), ...todays, QUIZ, ...freeGames.filter((g) => !todays.includes(g))].map((g) => ({ id: g.id, title: g.title, icon: g.icon, onPlay: () => openGame(g.id) }))
                         .concat(freeGames.length ? [{ id: 'historique', title: 'Historique', icon: 'history', onPlay: () => setGamesList(true) }] : [])
                         .concat([{ id: 'agenda', title: agendaCount ? `Agenda : ${agendaCount} nouveau${agendaCount > 1 ? 'x' : ''}` : 'Dans mon agenda', icon: 'calendar', badge: agendaCount > 0, onPlay: () => setAgendaOpen(true) }])
                         .concat(openBoards ? [{ id: 'classements', title: 'Classements', icon: 'trophy', onPlay: openBoards }] : [])}

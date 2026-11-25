@@ -274,7 +274,7 @@ html, body, #root { height: 100%; }
 .quiz-links { display: flex; flex-wrap: wrap; gap: 6px; }
 /* Bouton « Jeux » de l'en-tête, seulement sur téléphone (sur grand écran, les jeux sont sous la liste « Ensuite ») */
 .jeux-menu { display: none; position: relative; }
-.jeux-menu__btn { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; border: 0; cursor: pointer; }
+.jeux-menu__btn { height: 44px; display: inline-flex; align-items: center; gap: 7px; padding: 0 16px 0 13px; border-radius: 999px; border: 0; font: 800 15px 'DM Sans', sans-serif; cursor: pointer; }
 .app .jeux-menu__btn { color: #fff; }
 .jeux-menu__btn[aria-expanded="true"] { background: var(--accent); }
 .app .jeux-menu__btn[aria-expanded="true"] { color: #14172b; }
@@ -284,7 +284,8 @@ html, body, #root { height: 100%; }
 .app .jeux-menu__list button { color: #fff; }
 .jeux-menu__list button:hover { background: rgba(255, 255, 255, 0.1); }
 /* le bandeau des jeux (position fixe, au-dessus de la page) masquait le bas du menu ouvert : on le cache le temps du menu */
-.app:has(.jeux-menu__btn[aria-expanded="true"]) .news { visibility: hidden; }
+.app:has(.jeux-menu__btn[aria-expanded="true"]) .news,
+.app:has(.jeux-menu__btn[aria-expanded="true"]) .confetti { visibility: hidden; }
 /* Jeux libres (Le Grand Quiz, Où est-ce ?) : pages autonomes affichées dans un cadre */
 .frame-game { flex: 1 1 auto; align-self: stretch; width: 100%; min-height: 0; border: 0; border-radius: 18px; background: #070b24; display: block; }
 .hero__actions { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -814,13 +815,22 @@ html, body, #root { height: 100%; }
   .hero { flex-direction: column-reverse; justify-content: center; }
   .hero__pengs .peng { height: 18vh !important; width: calc(18vh * 0.807) !important; }
   .header__right { gap: 6px; }
-  .jeux-menu__btn { width: 40px; height: 40px; }
+  .jeux-menu__btn { height: 40px; padding: 0 14px 0 11px; }
   .hero__pengs .bubble-slot { height: 44px; }
   .game-best { display: none; }
   .game-panel { border-radius: 22px; }
 }
 /* Très petits téléphones : le cadenas de l'Avent perd son « J-x » pour laisser la place au bouton « Jeux » */
 @media (max-width: 400px) { .seg__lock > span { display: none; } }
+@media (max-width: 340px) { .jeux-menu__txt { display: none; } .jeux-menu__btn { padding: 0 11px; } }
+/* La carte du prochain anniversaire se resserre quand elle ne tient pas (mesuré dans Countdown.jsx) */
+.hero.is-fit1 { padding-top: 14px; padding-bottom: 14px; }
+.hero.is-fit1 .hero__text { gap: 6px; }
+.hero.is-fit1 .hero__pengs .peng { height: min(12vh, 110px) !important; width: calc(min(12vh, 110px) * 0.807) !important; }
+.hero.is-fit1 .hero__pengs .bubble-slot { height: 30px; }
+.hero.is-fit1 .hero__actions { gap: 8px; }
+.hero.is-fit1 .hero__actions .btn { min-height: 44px; }
+.hero.is-fit2 .hero__pengs { display: none; }
 @media (max-height: 640px) { .hide-short { display: none !important; } }
 /* Écrans peu hauts : la tuile des 15 mini-jeux se fait plus compacte */
 @media (max-height: 760px) { .gbtn__meta { display: none; } .gbtn { padding-top: 4px; padding-bottom: 4px; } }

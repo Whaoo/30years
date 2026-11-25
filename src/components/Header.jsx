@@ -15,7 +15,7 @@ function LogoMark() {
     );
 }
 
-// Sur téléphone, la colonne de droite (et ses liens vers les jeux) est masquée : un petit menu « Jeux » les remplace
+// Sur téléphone, la colonne de droite (et ses liens vers les jeux) est masquée : un bouton « Jeux » bien visible les remplace
 function GamesMenu({ games }) {
     const [open, setOpen] = useState(false);
     const box = useRef(null);
@@ -30,7 +30,8 @@ function GamesMenu({ games }) {
     return (
         <div className="jeux-menu" ref={box}>
             <button type="button" className="jeux-menu__btn glass" aria-expanded={open} aria-label="Jeux" title="Jeux" onClick={() => setOpen((o) => !o)}>
-                <Icon name="question" size={20} />
+                <Icon name="gamepad" size={20} />
+                <span className="jeux-menu__txt">Jeux</span>
                 {games.some((g) => g.badge) && <span className="jeux-menu__dot" aria-hidden="true" />}
             </button>
             {open && (

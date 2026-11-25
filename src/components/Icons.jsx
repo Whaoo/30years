@@ -250,7 +250,13 @@ const PATHS = {
             <path d="M3.5 10h17M8 3v4M16 3v4" />
         </>
     ),
-    check: <path d="M5 12.5l4.5 4.5L19 7.5" />
+    check: <path d="M5 12.5l4.5 4.5L19 7.5" />,
+    gamepad: (
+        <>
+            <path d="M6 11h4M8 9v4M15 12h.01M18 10h.01" />
+            <path d="M17.3 5H6.7a4 4 0 0 0-4 3.6l-.6 5.4a3 3 0 0 0 3 3.3c.7 0 1.4-.3 1.8-.9l1.5-1.9h7.2l1.5 1.9c.4.6 1.1.9 1.8.9a3 3 0 0 0 3-3.3l-.6-5.4a4 4 0 0 0-4-3.6Z" />
+        </>
+    )
 };
 
 export default function Icon({ name, size = 18 }) {
