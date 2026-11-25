@@ -1,13 +1,14 @@
 // Tests de l'API des classements avec une base en mémoire : node tools/classement/test.mjs
 import assert from 'node:assert/strict';
 import { d1Local } from './d1-local.mjs';
-import { onRequest, pseudoValide, cleDuPseudo } from '../../classement/api.js';
+import { onRequest, pseudoValide, cleDuPseudo, circuitOuvert, ouvertureCircuit } from '../../classement/api.js';
 
-const env = { DB: d1Local() };
-const appel = async (methode, chemin, corps, jeton, extra = {}) => {
+// MAINTENANT : une date où tous les circuits du Col du Fuji sont ouverts (leur calendrier est testé plus bas)
+const env = { DB: d1Local(), MAINTENANT: '2026-12-10T12:00:00Z' };
+const appel = async (methode, chemin, corps, jeton, extra = {}, hote = 'https://30years.pages.dev') => {
     const headers = { 'Content-Type': 'application/json', ...extra };
     if (jeton) headers.Authorization = 'Bearer ' + jeton;
-    const r = await onRequest({ request: new Request('https://30years.pages.dev/api/' + chemin, { method: methode, headers, body: corps ? JSON.stringify(corps) : undefined }), env });
+    const r = await onRequest({ request: new Request(hote + '/api/' + chemin, { method: methode, headers, body: corps ? JSON.stringify(corps) : undefined }), env });
     return { status: r.status, data: await r.json() };
 };
 
@@ -115,6 +116,30 @@ assert.equal(r.data.pseudo, 'Kai'); assert.equal(r.data.temps, 17000); assert.eq
 assert.equal((await onRequest({ request: new Request('https://30years.pages.dev/api/fantome', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + kai.jeton }, body: 'x'.repeat(160000) }), env })).status, 413);
 r = await appel('GET', 'classement?jeu=fuji-3');
 assert.deepEqual(r.data.top.map((t) => [t.pseudo, t.score]), [['Kai', 17000], ['Noa', 17500]]);
+
+// Col du Fuji : un circuit de plus chaque jour à 9 h, heure de Paris (le 2 le 25 novembre, le 11 le 4 décembre)
+assert.equal(ouvertureCircuit('fuji'), null); assert.equal(ouvertureCircuit('fuji-2'), '2026-11-25');
+assert.equal(ouvertureCircuit('fuji-7'), '2026-11-30'); assert.equal(ouvertureCircuit('fuji-11'), '2026-12-04'); assert.equal(ouvertureCircuit('fuji-12'), null);
+assert.equal(circuitOuvert('fuji-2', new Date('2026-11-25T07:59:00Z')), false, '8 h 59 à Paris');
+assert.equal(circuitOuvert('fuji-2', new Date('2026-11-25T08:00:00Z')), true, '9 h à Paris');
+assert.equal(circuitOuvert('fuji-3', new Date('2026-11-25T20:00:00Z')), false);
+assert.equal(circuitOuvert('fuji-3', new Date('2026-11-26T23:30:00Z')), true, 'le lendemain, après minuit à Paris');
+assert.equal(circuitOuvert('fuji', new Date('2026-11-01T00:00:00Z')), true, 'le n° 1 et les autres jeux ne sont pas concernés');
+assert.equal(circuitOuvert('golf', new Date('2026-11-01T00:00:00Z')), true);
+env.MAINTENANT = '2026-11-25T10:00:00Z'; // mercredi 25, 11 h à Paris : circuits 1 et 2 ouverts
+const ivy = (await appel('POST', 'pseudo', { pseudo: 'Ivy' })).data;
+assert.equal((await appel('POST', 'score', { jeu: 'fuji-2', score: 18000 }, ivy.jeton)).status, 200);
+r = await appel('POST', 'score', { jeu: 'fuji-3', score: 18000 }, ivy.jeton);
+assert.equal(r.status, 403); assert.match(r.data.erreur, /jeudi 26 novembre à 9 h/);
+assert.equal((await appel('POST', 'fantome', { jeu: 'fuji-4', score: 18000, data: trace(18000) }, ivy.jeton)).status, 403);
+r = await appel('POST', 'import', { records: { 'fuji-2': 17000, 'fuji-5': 17000, golf: 900 } }, ivy.jeton);
+assert.deepEqual(r.data.importes, ['fuji-2', 'golf'], 'un record importé n\'entre pas sur un circuit pas encore ouvert');
+assert.equal((await appel('POST', 'score', { jeu: 'fuji-3', score: 18000 }, ivy.jeton, {}, 'https://dev.30years.pages.dev')).status, 200, 'préversion : tout est ouvert');
+env.CIRCUITS_OUVERTS = '0';
+assert.equal((await appel('POST', 'score', { jeu: 'fuji-6', score: 18000 }, ivy.jeton, {}, 'https://dev.30years.pages.dev')).status, 403, 'sauf si on le demande');
+env.CIRCUITS_OUVERTS = '1';
+assert.equal((await appel('POST', 'score', { jeu: 'fuji-6', score: 18000 }, ivy.jeton)).status, 200, 'ou tout ouvert');
+delete env.CIRCUITS_OUVERTS; env.MAINTENANT = '2026-12-10T12:00:00Z';
 
 // administration
 assert.equal((await appel('POST', 'admin', { action: 'effacer-pseudo', pseudo: 'Max' })).status, 403);

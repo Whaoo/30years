@@ -18,6 +18,10 @@ const offset = override ? override.getTime() - Date.now() : 0;
 
 // Vrai si une date simulée est active (affiché dans le panneau de test)
 export const DATE_SIMULATED = !!override;
+// la date simulée telle qu'écrite dans l'adresse, transmise aux jeux autonomes (public/jeux/) en mode test
+export const DATE_PARAM = override ? new URLSearchParams(window.location.search).get('date') : null;
+// la même date que useNow, hors composant
+export const nowWithOffset = () => new Date(Date.now() + offset);
 
 export function useNow(intervalMs = 30000) {
     const [now, setNow] = useState(() => new Date(Date.now() + offset));

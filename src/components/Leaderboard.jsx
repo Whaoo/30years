@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Icon from './Icons';
-import { formatScore } from '../games';
+import { formatScore, openBoards } from '../games';
+import { nowWithOffset } from '../hooks/useNow';
 import { getBest } from '../games/scores';
 import { chargerTurnstile, choisirPseudo, classement, config, envoyerScore, importerRecords, moi, retrouverPseudo } from '../utils/leaderboard';
 
@@ -18,20 +19,21 @@ const DIRECT_CALMES = 15;
 const signature = (b) => (b ? b.top.map((l) => `${l.pseudo}:${l.score}`).join('|') + '#' + b.total : '');
 
 // Un jeu à plusieurs classements (game.boards : Col du Fuji, un par circuit) : un menu au-dessus de la liste pour passer
-// de l'un à l'autre. game.id = celui affiché d'abord (le circuit en cours dans la fenêtre de jeu). Un score de fin de partie
+// de l'un à l'autre (seulement les circuits déjà ouverts : un de plus chaque jour). game.id = celui affiché d'abord (le circuit en cours dans la fenêtre de jeu). Un score de fin de partie
 // (fin) ne part qu'une fois, même si l'on revient sur son classement.
 export default function LeaderboardBoards(props) {
     const { game, fin } = props;
     const [jeu, setJeu] = useState(game.id);
     useEffect(() => { setJeu(game.id); }, [game.id]);
     if (!game.boards) return <Leaderboard {...props} />;
-    const b = game.boards.find((x) => x.id === jeu) || game.boards.find((x) => x.id === game.id) || game.boards[0];
+    const boards = openBoards(game, nowWithOffset());
+    const b = boards.find((x) => x.id === jeu) || boards.find((x) => x.id === game.id) || boards[0];
     const f = fin && b.id === game.id ? fin : null;
     const choix = (
         <label className="lb__choix">
             <span>Circuit</span>
             <select value={b.id} onChange={(e) => setJeu(e.target.value)}>
-                {game.boards.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+                {boards.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
             </select>
         </label>
     );

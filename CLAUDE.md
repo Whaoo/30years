@@ -42,14 +42,18 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
     Ce sont des pages autonomes dans `public/jeux/` affichées dans un cadre (`FrameGame.jsx`, plein écran autorisé) ;
     elles renvoient leur score par `postMessage` (`{ type: '30years:score', game, score }`). Le record du site ne compte que les parties
     solo de 10 questions de culture G / de 10 lieux. Contours de la carte : IGN Admin Express via france-geojson (Licence ouverte).
-  - Jeux du jour (`DAILY_GAMES`, un par jour ouvré du 20 au 30/11/2026, deux le 20 : `VOL` et `LANTERNES`, le 26 : `REGATE` et `SAPIN`, le 27 : `TOKYO` et `MOUETTES`) : chacun a une date `from`
+  - Jeux du jour (`DAILY_GAMES`, un par jour ouvré du 20 au 30/11/2026, deux le 20 : `VOL` et `LANTERNES`, le 25 : `BALLON` et `MOUETTES`, le 26 : `REGATE` et `SAPIN`) : chacun a une date `from`
     (9 h, heure du navigateur) et s'ouvre seul, sans mise en ligne ce jour-là (`isUnlocked`) ; `dailyGames(now)` = ceux sortis en dernier. Ajouter un jeu : sa page dans `public/jeux/`,
     son entrée dans `src/games/index.js` (avec `from`) et son score maximal dans `JEUX` (`classement/api.js`).
     `VOL` (« Vol du soir », 20/11) : `public/jeux/vol-du-soir.html`, jet de Noël en 3D pixel (three.js r149 servi par le site :
     `public/jeux/lib/three.min.js`), mission de 3 min, console `window.vol` (`startMission()`, `bot(n)`, `endMission()`).
     `FUJI` (« Col du Fuji », 23/11) : `public/jeux/col-du-fuji.html`, contre-la-montre de 3 tours (trois couleurs, mêmes performances),
     11 circuits au choix (`CIRCUITS` dans la page, `?circuit=n`, retenu dans `col-du-fuji:circuit` ; le n° 1 est l'original, les 10 autres
-    sont générés et vérifiés par `tools/fuji/`), un classement par circuit (`fuji`, puis `fuji-2` à `fuji-11` : `boards` dans
+    sont générés et vérifiés par `tools/fuji/`). Un circuit de plus chaque jour à 9 h, du n° 2 le 25/11 au n° 11 le 4/12 : mêmes dates
+    dans la page (`opensAt` ; `?date=` simule une date, le site la transmet en mode test), dans `boards[].from` (`openBoards`, ligne
+    `note` de l'Historique) et dans `ouvertureCircuit` (`classement/api.js` : chronos, imports et fantômes refusés avant, heure de Paris ;
+    préversions et serveur local tout ouverts, variable `CIRCUITS_OUVERTS` = '1' ou '0' pour forcer). Le dernier circuit sorti
+    s'ouvre d'office une fois (`col-du-fuji:dernier-sorti`). Un classement par circuit (`fuji`, puis `fuji-2` à `fuji-11` : `boards` dans
     `src/games/index.js`, `MIN_CIRCUITS` dans `classement/api.js`). Adversaire fantôme au choix : le n° 1 du classement du circuit
     (`GET /api/fantome`, table `fantomes` créée par l'API : le parcours d'un record, envoyé par le site après le score s'il est bien
     le record du joueur ; un record plus ancien est proposé une fois à l'ouverture du jeu depuis l'appareil qui le garde,
@@ -82,7 +86,7 @@ Ce fichier donne le contexte du projet à Claude Code. Le reste de la doc est da
     branches mortes, qui tournent, glaçons, ressorts, fusées, boules, corbeaux ; difficulté jusqu'à 520 m puis plus lente.
     10 pts par mètre + 50 par boule + 100 par corbeau sauté. Console `window.sapin` (`start()`, `bot(n)` : pilote parfait
     qui simule ses sauts, corbeaux compris ; `state()`).
-  - `MOUETTES` (« Le théorème des mouettes blanches américaines », 27/11) : `public/jeux/mouettes.html`, enquête à la manière
+  - `MOUETTES` (« Le théorème des mouettes blanches américaines », 25/11) : `public/jeux/mouettes.html`, enquête à la manière
     des romans de détective (histoire inventée, Brighton 1891) : 5 lieux en 3D pixel (`SC`), repères cliquables (`SPOTS`, indices
     `CLUES`, témoins `PEOPLE` dont les questions s'ouvrent avec les indices), 9 déductions (`QS`, 60 pts du premier coup, divisés
     par deux à chaque erreur) puis l'accusation (`FINAL` : coupable 200, mobile 80, manuscrit 80) + jusqu'à 100 pts de temps.

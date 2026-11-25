@@ -20,7 +20,7 @@ import { notYetAdded } from './utils/agendaStore';
 import { adventState } from './utils/advent';
 import { resolveTheme, themeStyle } from './utils/theme';
 import { useWeather } from './hooks/useWeather';
-import { useNow } from './hooks/useNow';
+import { DATE_PARAM, useNow } from './hooks/useNow';
 import { useDialMode } from './hooks/useDialMode';
 import { usePenguinPlay } from './hooks/usePenguinPlay';
 import { ENVERS_BOARD, announceActive, dismissAnnounce, formatTime, isEnversOpen } from './envers/config';
@@ -354,7 +354,8 @@ function App() {
     const gameProps = (id) => {
         if (id === CANDLES.id) return { people: isToday ? group : [] };
         const g = getGame(id);
-        if (g?.frame) return { src: g.frame, title: g.title, gameId: g.id };
+        // en mode test, la date simulée suit dans le cadre (le Col du Fuji ouvre ses circuits selon la date)
+        if (g?.frame) return { src: DATE_PARAM ? `${g.frame}?date=${encodeURIComponent(DATE_PARAM)}` : g.frame, title: g.title, gameId: g.id };
         return undefined;
     };
 
@@ -430,7 +431,7 @@ function App() {
 
             {stage > 0 && !envers && <Crack stage={stage} />}
             {gamesList && !gameId && !envers && !board && (
-                <GamesList games={freeGames} todays={todays} bests={bests} onPlay={(id) => { setGamesList(false); openGame(id); }} onBoards={openBoards} onClose={() => setGamesList(false)} />
+                <GamesList games={freeGames} todays={todays} bests={bests} now={now} onPlay={(id) => { setGamesList(false); openGame(id); }} onBoards={openBoards} onClose={() => setGamesList(false)} />
             )}
             {agendaOpen && !gameId && !envers && (
                 <Suspense fallback={null}>

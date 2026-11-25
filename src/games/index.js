@@ -244,21 +244,23 @@ export const FUJI = {
     eyebrow: 'Jeu du jour · lun. 23 nov.',
     from: new Date(2026, 10, 23, 9, 0),
     icon: 'car', unit: '', lowerIsBetter: true, format: chrono, frame: '/jeux/col-du-fuji.html',
-    pitch: 'Contre-la-montre au pied du Fuji, 11 circuits',
-    // un classement par circuit (le jeu les choisit, le panneau Classement les montre) : mêmes noms que CIRCUITS dans la page du jeu
+    pitch: 'Contre-la-montre au pied du Fuji, un circuit de plus chaque jour',
+    // un classement par circuit (le jeu les choisit, le panneau Classement les montre) : mêmes noms que CIRCUITS dans la page du jeu.
+    // Un circuit de plus chaque jour à 9 h (`from`) : le 2 le mercredi 25 novembre… le 11 le vendredi 4 décembre ; mêmes dates
+    // dans la page du jeu et dans classement/api.js (ouvertureCircuit), qui refuse les chronos d'un circuit pas encore ouvert.
     boards: [
         { id: 'fuji', label: "1. Col du Fuji" },
-        { id: 'fuji-2', label: "2. Le tour du lac" },
-        { id: 'fuji-3', label: "3. Les lacets d’Irohazaka" },
-        { id: 'fuji-4', label: "4. La route des érables" },
-        { id: 'fuji-5', label: "5. Les rizières" },
-        { id: 'fuji-6', label: "6. Le col de Hakone" },
-        { id: 'fuji-7', label: "7. Le serpent de Shirakawa" },
-        { id: 'fuji-8', label: "8. L’anneau des lanternes" },
-        { id: 'fuji-9', label: "9. La corniche d’Izu" },
-        { id: 'fuji-10', label: "10. Le temple de Nikko" },
-        { id: 'fuji-11', label: "11. Les mille torii" }
+        ...["Le tour du lac", "Les lacets d’Irohazaka", "La route des érables", "Les rizières", "Le col de Hakone",
+            "Le serpent de Shirakawa", "L’anneau des lanternes", "La corniche d’Izu", "Le temple de Nikko", "Les mille torii"]
+            .map((nom, i) => ({ id: `fuji-${i + 2}`, label: `${i + 2}. ${nom}`, from: new Date(2026, 10, 25 + i, 9, 0) }))
     ],
+    // ligne de l'Historique : le circuit sorti aujourd'hui, sinon la date du suivant
+    note(now) {
+        const nouveau = this.boards.find((b) => b.from && now >= b.from && sameDay(b.from, now));
+        if (nouveau) return `Nouveau aujourd’hui : circuit ${nouveau.label}`;
+        const suivant = this.boards.find((b) => b.from && now < b.from);
+        return suivant ? `Prochain circuit ${dayLabel(suivant)} à 9 h` : null;
+    },
     help: 'Flèches ou souris pour diriger (l’accélérateur est automatique), Espace pour déraper, Maj ou F pour le turbo, ↓ pour freiner. 3 tours : le meilleur temps gagne.',
     component: lazy(() => import('./FrameGame'))
 };
@@ -317,7 +319,7 @@ export const LANTERNES = {
     help: 'Clique (ou touche) une lanterne : elle change d’état, et ses voisines aussi (haut, bas, gauche, droite). Allume tout le jardin avec le moins de gestes possible. R pour recommencer.',
     component: lazy(() => import('./FrameGame'))
 };
-// deuxième jeu du jeudi 26 (adresse, avec la Régate) et du vendredi 27 (enquête, avec Tokyo)
+// deuxième jeu du mercredi 25 (enquête, avec la Montgolfière) et du jeudi 26 (adresse, avec la Régate)
 export const SAPIN = {
     id: 'sapin', title: 'Le Grand Sapin', short: 'Grand Sapin',
     eyebrow: 'Jeu du jour · jeu. 26 nov.',
@@ -329,14 +331,14 @@ export const SAPIN = {
 };
 export const MOUETTES = {
     id: 'mouettes', title: 'Le théorème des mouettes', short: 'Mouettes',
-    eyebrow: 'Jeu du jour · ven. 27 nov.',
-    from: new Date(2026, 10, 27, 9, 0),
+    eyebrow: 'Jeu du jour · mer. 25 nov.',
+    from: new Date(2026, 10, 25, 9, 0),
     icon: 'search', unit: 'pts', frame: '/jeux/mouettes.html',
     pitch: 'Enquête à Brighton, 1891 : qui a volé la démonstration ?',
     help: 'Examine les lieux (loupes), interroge les témoins (bulles), puis « Réfléchir » : chaque déduction juste du premier coup rapporte le plus. Seule ta première enquête compte au classement.',
     component: lazy(() => import('./FrameGame'))
 };
-export const DAILY_GAMES = [VOL, LANTERNES, FUJI, GOLF, BALLON, REGATE, SAPIN, TOKYO, MOUETTES, TRAIN];
+export const DAILY_GAMES = [VOL, LANTERNES, FUJI, GOLF, BALLON, MOUETTES, REGATE, SAPIN, TOKYO, TRAIN];
 // le dernier jeu du jour sorti (null avant le premier)
 // Les jeux du jour : ceux sortis le plus récemment (deux le vendredi 20), dans l'ordre du registre
 export function dailyGames(now = new Date()) {
@@ -352,6 +354,11 @@ export function dailyGame(now = new Date()) {
 export function dayLabel(g) {
     if (g.from) return g.from.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
     return 'depuis le 18 nov.';
+}
+const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+// les classements d'un jeu à plusieurs circuits déjà ouverts (tous pour les autres jeux)
+export function openBoards(game, now = new Date()) {
+    return (game.boards || []).filter((b) => !b.from || now >= b.from);
 }
 
 export const FREE_GAMES = [CULTURE, GEO, ...DAILY_GAMES];

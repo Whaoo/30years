@@ -283,11 +283,32 @@ body { background: var(--ink); color: var(--paper); overflow: hidden; font-famil
       fujiAz: 1.071, center: [-69, 279], lake: { x: 721, z: -152, r: 380, level: 30 }, pagoda: [48,270], torii: [30,368],
       cp: [[0,0,45.9],[24,0,46.3],[48,0,46.6],[72,0,47],[96,2,47.4],[119,6,47.8],[143,12,48.2],[165,19,48.5],[187,28,48.9],[209,39,49.3],[229,52,49.6],[248,66,50],[267,81,50.3],[285,97,50.6],[303,112,50.9],[322,128,51.2],[340,143,51.4],[357,160,51.6],[369,181,51.8],[374,204,51.9],[372,228,52],[363,250,52],[351,270,52],[339,291,52.1],[327,312,52.3],[315,333,52.6],[303,353,52.9],[291,374,53.3],[284,397,53.7],[286,421,54.2],[291,444,54.7],[286,467,55.3],[271,486,55.9],[250,496,56.5],[227,504,57.1],[205,512,57.8],[182,521,58.5],[160,529,59.1],[137,537,59.8],[115,545,60.5],[92,553,61.1],[69,559,61.8],[45,556,62.4],[24,545,63],[4,532,63.5],[-18,523,64],[-42,521,64.5],[-66,521,64.9],[-90,521,65.2],[-114,521,65.5],[-138,521,65.8],[-162,521,65.9],[-186,521,66],[-210,521,66],[-234,521,65.8],[-257,521,65.6],[-281,521,65.2],[-305,521,64.7],[-329,521,64.2],[-353,521,63.6],[-377,521,63],[-401,521,62.3],[-425,521,61.6],[-449,521,60.9],[-473,518,60.1],[-493,505,59.4],[-507,486,58.8],[-512,463,58.1],[-509,439,57.6],[-505,416,57.1],[-501,392,56.6],[-497,369,56.3],[-493,345,56.1],[-489,321,56],[-484,298,55.9],[-480,274,55.7],[-476,251,55.4],[-472,227,54.9],[-468,203,54.4],[-467,180,53.7],[-471,156,53],[-478,133,52.2],[-479,109,51.4],[-474,86,50.5],[-464,65,49.7],[-448,47,48.8],[-428,34,48],[-405,27,47.2],[-381,23,46.4],[-358,18,45.7],[-334,14,45.2],[-310,10,44.7],[-287,6,44.3],[-263,2,44.1],[-239,0,44],[-216,0,44],[-192,0,44.1],[-168,0,44.2],[-144,0,44.4],[-120,0,44.6],[-96,0,44.8],[-72,0,45],[-48,0,45.3],[-24,0,45.6]] }
   ];
-  const CIRCUIT_KEY = 'col-du-fuji:circuit';
+  // Un circuit de plus chaque jour à 9 h : le n° 1 depuis le 23 novembre, le 2 le mercredi 25… le 11 le vendredi 4 décembre.
+  // Mêmes dates que `boards` (src/games/index.js) et ouvertureCircuit (classement/api.js, qui refuse les chronos d'un circuit
+  // pas encore ouvert). ?date=2026-11-27T10:00 simule une date : le site la transmet en mode test.
+  const NOW = (() => {
+    const m = String(new URLSearchParams(location.search).get('date') || '').match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?$/);
+    return m ? new Date(+m[1], +m[2] - 1, +m[3], m[4] ? +m[4] : 12, m[5] ? +m[5] : 0) : new Date();
+  })();
+  const opensAt = (c) => (c.id === 1 ? null : new Date(2026, 10, 25 + c.id - 2, 9, 0));
+  const isOpen = (c) => !opensAt(c) || NOW >= opensAt(c);
+  const OPEN = CIRCUITS.filter(isOpen);
+  const NEXT = CIRCUITS.find((c) => !isOpen(c)) || null;
+  const isNew = (c) => !!opensAt(c) && isOpen(c) && NOW - opensAt(c) < 15 * 3600e3; // sorti aujourd'hui
+  const dayFr = (d) => d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+  const CIRCUIT_KEY = 'col-du-fuji:circuit', NEWEST_KEY = 'col-du-fuji:dernier-sorti';
   const C = (() => {
+    const newest = OPEN[OPEN.length - 1];
     let q = Number(new URLSearchParams(location.search).get('circuit'));
-    if (!q) { try { q = Number(localStorage.getItem(CIRCUIT_KEY)); } catch { q = 0; } }
-    return CIRCUITS.find((c) => c.id === q) || CIRCUITS[0];
+    if (!q) {
+      // un circuit sorti depuis la dernière visite (il y a moins de 3 jours : le lundi rattrape le week-end) s'ouvre d'office, une fois
+      let seen = 0;
+      try { seen = Number(localStorage.getItem(NEWEST_KEY)) || 0; } catch { /* rien */ }
+      if (newest.id > seen && opensAt(newest) && NOW - opensAt(newest) < 3 * 86400e3) { q = newest.id; try { localStorage.setItem(CIRCUIT_KEY, String(q)); } catch { /* idem */ } }
+      else { try { q = Number(localStorage.getItem(CIRCUIT_KEY)); } catch { q = 0; } }
+    }
+    try { localStorage.setItem(NEWEST_KEY, String(newest.id)); } catch { /* navigation privée */ }
+    return OPEN.find((c) => c.id === q) || (q ? newest : CIRCUITS[0]);
   })();
   const BOARD = C.id === 1 ? 'fuji' : 'fuji-' + C.id;
   const W = 12;                      // largeur de la route
@@ -1339,8 +1360,15 @@ body { background: var(--ink); color: var(--paper); overflow: hidden; font-famil
       ['Fantôme', teamGhost ? fmtC(loadGhost().t) : '—', loadGhost() && loadGhost().kind === 'champ' ? 'La voiture transparente refait le chrono du n° 1 du classement de ce circuit, au centième près : l’écart s’affiche en haut.' : loadGhost() && loadGhost().kind === 'moi' ? 'La voiture transparente refait ton meilleur chrono, au centième près : l’écart s’affiche en haut.' : 'La voiture transparente roule proprement, sans turbo ni dérapage : c’est le fantôme du col à battre.']
     ];
     // le circuit : liste des 11, avec ton record sur chacun
-    $('cSel').innerHTML = CIRCUITS.map((c) => { const r = Number(store.get(timeKey(c.id))) || 0; return `<option value="${c.id}"${c.id === C.id ? ' selected' : ''}>${c.id}. ${esc(c.name)}${r ? ' · ' + fmtC(r) : ''}</option>`; }).join('');
-    $('blurb').textContent = C.id === 1 ? 'Une route de col au pied du Fuji, entre les érables rouges, les lanternes de pierre et les portiques vermillon. Trois tours chronométrés, seul sur la route : le meilleur temps gagne.' : C.blurb + ' ' + (T.L / 1000).toFixed(1).replace('.', ',') + ' km, trois tours chronométrés.';
+    // (les circuits pas encore sortis : leur date, sans leur nom)
+    $('cSel').innerHTML = CIRCUITS.map((c) => {
+      if (!isOpen(c)) return `<option value="${c.id}" disabled>${c.id}. Sortie ${dayFr(opensAt(c))} à 9 h</option>`;
+      const r = Number(store.get(timeKey(c.id))) || 0;
+      return `<option value="${c.id}"${c.id === C.id ? ' selected' : ''}>${c.id}. ${esc(c.name)}${isNew(c) ? ' · nouveau' : ''}${r ? ' · ' + fmtC(r) : ''}</option>`;
+    }).join('');
+    $('blurb').textContent = (isNew(C) ? 'Nouveau aujourd’hui ! ' : '')
+      + (C.id === 1 ? 'Une route de col au pied du Fuji, entre les érables rouges, les lanternes de pierre et les portiques vermillon. Trois tours chronométrés, seul sur la route : le meilleur temps gagne.' : C.blurb + ' ' + (T.L / 1000).toFixed(1).replace('.', ',') + ' km, trois tours chronométrés.')
+      + (NEXT ? ' Prochain circuit ' + dayFr(opensAt(NEXT)) + ' à 9 h.' : '');
     // l'adversaire fantôme
     const mine = myGhost();
     const R = [
@@ -1359,9 +1387,10 @@ body { background: var(--ink); color: var(--paper); overflow: hidden; font-famil
     const r = Number(store.get(TIME_KEY)) || 0;
     $('rec').textContent = r ? 'Ton record : ' + fmtC(r) : 'Pas encore de chrono : à toi de jouer';
   }
-  // changer de circuit recharge la page (le terrain et le décor sont construits au chargement pour chaque tracé)
+  // changer de circuit recharge la page (le terrain et le décor sont construits au chargement pour chaque tracé) ;
+  // ◀ ▶ tournent parmi les circuits déjà sortis (toujours les n° 1 à n)
   function goCircuit(id) {
-    const n = CIRCUITS.length, k = ((id - 1) % n + n) % n + 1;
+    const n = OPEN.length, k = ((id - 1) % n + n) % n + 1;
     store.set(CIRCUIT_KEY, String(k));
     const u = new URL(location.href); u.searchParams.set('circuit', k); location.replace(u.toString());
   }
@@ -1413,7 +1442,7 @@ body { background: var(--ink); color: var(--paper); overflow: hidden; font-famil
   loadChamp(); offerMyGhost();
   demoSetup(); refreshIntro(); setCam(0);
   window.fuji = {
-    setup, toMenu, setCam, input, cars, T, C, BOARD, CIRCUITS, MENTIONS: () => MENTIONS, champ: () => champ, setRival(r) { rival = r; refreshIntro(); },
+    setup, toMenu, setCam, input, cars, T, C, BOARD, CIRCUITS, NOW, open: () => OPEN.map((c) => c.id), MENTIONS: () => MENTIONS, champ: () => champ, setRival(r) { rival = r; refreshIntro(); },
     pause(p) { paused = p; },
     step(n) { for (let i = 0; i < n; i++) { step(STEP); poseCars(); updateCamera(STEP); } render(); },
     sim(n) { for (let i = 0; i < n; i++) { step(STEP); poseCars(); updateCamera(STEP); } },

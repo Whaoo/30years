@@ -3,8 +3,8 @@ import Icon from './Icons';
 import { dayLabel, formatScore } from '../games';
 
 // Historique : tous les jeux de novembre déjà sortis, jouables même après leur jour (ceux du jour en tête),
-// avec la date de sortie et le record de ce navigateur
-export default function GamesList({ games, todays, bests, onPlay, onBoards, onClose }) {
+// avec la date de sortie et le record de ce navigateur (et, pour le Col du Fuji, le circuit du jour : game.note)
+export default function GamesList({ games, todays, bests, now, onPlay, onBoards, onClose }) {
     useEffect(() => {
         const onKey = (e) => { if (e.key === 'Escape') onClose(); };
         window.addEventListener('keydown', onKey);
@@ -28,6 +28,7 @@ export default function GamesList({ games, todays, bests, onPlay, onBoards, onCl
                                 <span className="glist__txt">
                                     <b>{g.title}{todays.includes(g) ? <em>Jeu du jour</em> : <i>{dayLabel(g)}</i>}</b>
                                     <span>{g.pitch}</span>
+                                    {g.note && g.note(now) && <span className="glist__note">{g.note(now)}</span>}
                                 </span>
                                 <span className="glist__rec">{bests[g.id] != null ? formatScore(g, bests[g.id]) : 'à toi'}</span>
                             </button>

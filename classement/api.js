@@ -2,7 +2,7 @@
 // functions/api/[[route]].js ne fait qu'appeler onRequest d'ici (le code reste testable hors Cloudflare).
 // Base : D1, reliée au projet Pages sous le nom DB (schéma : classement/schema.sql).
 // Variables du projet (facultatives) : TURNSTILE_SITEKEY + TURNSTILE_SECRET (captcha à la création d'un pseudo),
-// ADMIN_KEY (effacer un score ou un pseudo).
+// ADMIN_KEY (effacer un score ou un pseudo), CIRCUITS_OUVERTS ('1' ou '0' : voir ouvertureCircuit).
 //
 //   GET  /api/config                                → { captcha: clé publique Turnstile ou null }
 //   POST /api/pseudo        { pseudo, captcha }      → { pseudo, jeton, code }  (le jeton reste dans le navigateur)
@@ -35,6 +35,32 @@ const CHRONOS = { envers: { min: 10 }, fuji: { min: 16000 }, regate: { min: 1200
 // Col du Fuji, les 10 autres circuits (fuji-2 à fuji-11) : un classement chacun ; temps minimal = 80 % du pilote d'essai rapide
 const MIN_CIRCUITS = {2: 11200, 3: 14600, 4: 9800, 5: 13100, 6: 16000, 7: 11100, 8: 6200, 9: 9100, 10: 9200, 11: 11700};
 for (const [n, min] of Object.entries(MIN_CIRCUITS)) { JEUX['fuji-' + n] = 60000; CHRONOS['fuji-' + n] = { min }; }
+// Un circuit de plus chaque jour à 9 h, heure de Paris : le 2 le mercredi 25 novembre… le 11 le vendredi 4 décembre
+// (mêmes dates que `boards` dans src/games/index.js et CIRCUITS dans la page du jeu). Avant, son classement refuse chronos,
+// records importés et fantômes. Les préversions (*.30years.pages.dev) et le serveur local ouvrent tout pour tester ;
+// la variable CIRCUITS_OUVERTS force l'un ou l'autre ('1' : tout ouvert, '0' : le calendrier, même en préversion).
+const SORTIE_CIRCUIT_2 = Date.UTC(2026, 10, 25);
+export function ouvertureCircuit(jeu) {
+    const m = /^fuji-(\d{1,2})$/.exec(String(jeu));
+    if (!m || !MIN_CIRCUITS[m[1]]) return null;
+    return new Date(SORTIE_CIRCUIT_2 + (Number(m[1]) - 2) * 86400000).toISOString().slice(0, 10); // AAAA-MM-JJ
+}
+const heureDeParis = (now) => Number(new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: 'numeric', hourCycle: 'h23' }).formatToParts(now).find((p) => p.type === 'hour').value);
+export function circuitOuvert(jeu, now = new Date()) {
+    const o = ouvertureCircuit(jeu);
+    if (!o) return true;
+    const jour = parisJour(now);
+    return jour > o || (jour === o && heureDeParis(now) >= 9);
+}
+// null si l'on peut jouer ce classement maintenant, sinon le message à montrer
+function pasEncoreOuvert(env, url, jeu) {
+    if (env.CIRCUITS_OUVERTS === '1') return null;
+    if (env.CIRCUITS_OUVERTS !== '0' && /\.30years\.pages\.dev$|^localhost$|^127\.0\.0\.1$/.test(url.hostname)) return null;
+    const now = env.MAINTENANT ? new Date(env.MAINTENANT) : new Date(); // MAINTENANT : pour les tests
+    if (circuitOuvert(jeu, now)) return null;
+    const jour = new Date(ouvertureCircuit(jeu) + 'T12:00:00Z').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+    return `Ce circuit ouvre ${jour} à 9 h : ton chrono comptera à partir de là.`;
+}
 JEUX.envers = 6 * 3600;
 // Jeux de la quête : le classement du jour retient le premier essai (comme le « score officiel » du site)
 const PREMIER_ESSAI = new Set(['monts', 'reveillon', 'chrono', 'aventure']);
@@ -172,7 +198,7 @@ async function rangJour(env, jeu, jour, score) {
     return { rang: r.rang, total: r.total };
 }
 
-async function envoyerScore(env, request) {
+async function envoyerScore(env, request, url) {
     const joueur = await joueurDuJeton(env, request);
     if (!joueur) return erreur('Pseudo inconnu : choisis-en un pour entrer au classement.', 401);
     const corps = await lireCorps(request);
@@ -181,6 +207,8 @@ async function envoyerScore(env, request) {
     const score = Math.round(Number(corps.score));
     if (!Object.prototype.hasOwnProperty.call(JEUX, jeu)) return erreur('Jeu inconnu.');
     if (!scoreValide(jeu, score)) return erreur('Score refusé.');
+    const ferme = pasEncoreOuvert(env, url, jeu);
+    if (ferme) return erreur(ferme, 403);
     // une seule requête pour le rythme d'envoi et l'ancien record
     const etat = await env.DB.prepare("SELECT (SELECT COUNT(*) FROM scores WHERE joueur = ?1 AND cree > datetime('now', '-10 minutes')) AS n, (SELECT score FROM records WHERE jeu = ?2 AND joueur = ?1) AS avant")
         .bind(joueur.id, jeu).first();
@@ -224,7 +252,7 @@ async function topListe(env, jeu, portee, jour, joueurId) {
 
 // Les records déjà faits avant le classement (gardés dans le navigateur) : ajoutés au classement « Toujours » seulement.
 // Repasser un import ne fait que garder le meilleur ; chaque valeur est bornée comme un score normal.
-async function importer(env, request) {
+async function importer(env, request, url) {
     const joueur = await joueurDuJeton(env, request);
     if (!joueur) return erreur('Pseudo inconnu.', 401);
     const corps = await lireCorps(request);
@@ -233,7 +261,7 @@ async function importer(env, request) {
     const ecritures = [];
     const gardes = [];
     for (const [jeu, brut] of Object.entries(recs).slice(0, 40)) {
-        if (!Object.prototype.hasOwnProperty.call(JEUX, jeu)) continue;
+        if (!Object.prototype.hasOwnProperty.call(JEUX, jeu) || pasEncoreOuvert(env, url, jeu)) continue;
         const score = Math.round(Number(brut));
         if (!scoreValide(jeu, score)) continue;
         gardes.push(jeu);
@@ -332,7 +360,7 @@ const SQL_FANTOMES = `CREATE TABLE IF NOT EXISTS fantomes (
     jeu TEXT NOT NULL, joueur INTEGER NOT NULL REFERENCES joueurs(id) ON DELETE CASCADE, temps INTEGER NOT NULL,
     data TEXT NOT NULL, quand TEXT NOT NULL DEFAULT (datetime('now')), PRIMARY KEY (jeu, joueur))`;
 const FANTOME_MAX = 150000; // octets : 3 tours d'environ 3 min font 40 ko
-async function envoyerFantome(env, request) {
+async function envoyerFantome(env, request, url) {
     const joueur = await joueurDuJeton(env, request);
     if (!joueur) return erreur('Pseudo inconnu.', 401);
     let corps = null;
@@ -344,6 +372,8 @@ async function envoyerFantome(env, request) {
     if (!corps) return erreur('Requête illisible.');
     const { jeu } = corps;
     if (!FANTOMES.test(String(jeu)) || !Object.prototype.hasOwnProperty.call(JEUX, jeu)) return erreur('Jeu inconnu.');
+    const ferme = pasEncoreOuvert(env, url, jeu);
+    if (ferme) return erreur(ferme, 403);
     const score = Math.round(Number(corps.score));
     const g = corps.data || {};
     const n = Array.isArray(g.pr) ? g.pr.length : 0;
@@ -381,12 +411,12 @@ export async function onRequest(context) {
         if (route === 'config' && m === 'GET') return json({ captcha: env.TURNSTILE_SECRET && env.TURNSTILE_SITEKEY ? env.TURNSTILE_SITEKEY : null });
         if (route === 'pseudo' && m === 'POST') return await creerPseudo(env, request);
         if (route === 'retrouver' && m === 'POST') return await retrouver(env, request);
-        if (route === 'score' && m === 'POST') return await envoyerScore(env, request);
+        if (route === 'score' && m === 'POST') return await envoyerScore(env, request, url);
         if (route === 'classement' && m === 'GET') return await classement(env, request, url);
-        if (route === 'import' && m === 'POST') return await importer(env, request);
+        if (route === 'import' && m === 'POST') return await importer(env, request, url);
         if (route === 'admin' && m === 'POST') return await admin(env, request);
         if (route === 'avis' && m === 'POST') return await avis(env, request);
-        if (route === 'fantome' && m === 'POST') return await envoyerFantome(env, request);
+        if (route === 'fantome' && m === 'POST') return await envoyerFantome(env, request, url);
         if (route === 'fantome' && m === 'GET') return await fantome(env, url);
         return erreur('Adresse inconnue.', 404);
     } catch (e) {

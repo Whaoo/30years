@@ -10,7 +10,8 @@ import { onRequest } from '../../classement/api.js';
 
 const racine = process.argv[2] || 'dist';
 const port = Number(process.argv[3] || 8788);
-const env = { DB: d1Local(process.env.BASE || ':memory:'), ADMIN_KEY: 'local' };
+// CIRCUITS_OUVERTS=0 : le calendrier des circuits du Col du Fuji s'applique aussi en local (tout est ouvert sinon)
+const env = { DB: d1Local(process.env.BASE || ':memory:'), ADMIN_KEY: 'local', CIRCUITS_OUVERTS: process.env.CIRCUITS_OUVERTS, MAINTENANT: process.env.MAINTENANT };
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.mp4': 'video/mp4', '.json': 'application/json', '.woff2': 'font/woff2', '.ics': 'text/calendar; charset=utf-8' };
 
 http.createServer(async (req, res) => {
